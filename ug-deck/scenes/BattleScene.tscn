@@ -1,0 +1,98 @@
+[gd_scene load_steps=7 format=3 uid="uid://bvxv1qf2cg8np"]
+
+[ext_resource type="Script" path="res://scripts/CombatManager.gd" id="1_a0foy"]
+[ext_resource type="Script" path="res://scripts/DeckManager.gd" id="2_or6qf"]
+[ext_resource type="Script" path="res://scripts/Player.gd" id="3_qpjhb"]
+[ext_resource type="Script" path="res://scripts/Enemy.gd" id="4_yk4pu"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/classroom.png" id="5_m7sfx"]
+[ext_resource type="Script" path="res://scripts/BattleVisuals.gd" id="6_dhufe"]
+
+[node name="BattleScene" type="Node2D"]
+
+[node name="Background" type="Sprite2D" parent="."]
+texture = ExtResource("5_m7sfx")
+centered = false
+scale = Vector2(0.404, 0.404)
+
+[node name="Visuals" type="Node2D" parent="."]
+script = ExtResource("6_dhufe")
+
+[node name="PlayerSprite" type="Sprite2D" parent="Visuals"]
+position = Vector2(260, 285)
+scale = Vector2(0.72, 0.72)
+
+[node name="EnemySprite" type="Sprite2D" parent="Visuals"]
+position = Vector2(865, 280)
+scale = Vector2(0.28, 0.28)
+
+[node name="PlayerPlaceholder" type="Label" parent="Visuals"]
+offset_left = 190.0
+offset_top = 310.0
+offset_right = 345.0
+offset_bottom = 360.0
+text = "Jugador"
+horizontal_alignment = 1
+
+[node name="EnemyPlaceholder" type="Label" parent="Visuals"]
+offset_left = 825.0
+offset_top = 245.0
+offset_right = 980.0
+offset_bottom = 295.0
+text = "Tom Apostol"
+horizontal_alignment = 1
+
+[node name="CombatManager" type="Node" parent="."]
+script = ExtResource("1_a0foy")
+
+[node name="DeckManager" type="Node" parent="."]
+script = ExtResource("2_or6qf")
+
+[node name="Player" type="Node" parent="."]
+script = ExtResource("3_qpjhb")
+
+[node name="Enemy" type="Node" parent="."]
+script = ExtResource("4_yk4pu")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="PlayerStatsLabel" type="Label" parent="UI"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 360.0
+offset_bottom = 48.0
+text = "Jugador"
+
+[node name="EnemyStatsLabel" type="Label" parent="UI"]
+offset_left = 720.0
+offset_top = 24.0
+offset_right = 1080.0
+offset_bottom = 48.0
+text = "Tom Apostol"
+
+[node name="EnergyLabel" type="Label" parent="UI"]
+offset_left = 24.0
+offset_top = 64.0
+offset_right = 240.0
+offset_bottom = 88.0
+text = "Energia"
+
+[node name="EnemyIntentLabel" type="Label" parent="UI"]
+offset_left = 720.0
+offset_top = 64.0
+offset_right = 1080.0
+offset_bottom = 88.0
+text = "Intencion"
+
+[node name="HandContainer" type="HBoxContainer" parent="UI"]
+offset_left = 24.0
+offset_top = 390.0
+offset_right = 1120.0
+offset_bottom = 640.0
+theme_override_constants/separation = 12
+
+[node name="EndTurnButton" type="Button" parent="UI"]
+offset_left = 940.0
+offset_top = 320.0
+offset_right = 1120.0
+offset_bottom = 370.0
+text = "Terminar turno"
