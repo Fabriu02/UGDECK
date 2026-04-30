@@ -18,12 +18,12 @@ scale = Vector2(0.404, 0.404)
 script = ExtResource("6_dhufe")
 
 [node name="PlayerSprite" type="Sprite2D" parent="Visuals"]
-position = Vector2(260, 285)
-scale = Vector2(0.72, 0.72)
+position = Vector2(260, 245)
+scale = Vector2(0.18, 0.18)
 
 [node name="EnemySprite" type="Sprite2D" parent="Visuals"]
-position = Vector2(865, 280)
-scale = Vector2(0.28, 0.28)
+position = Vector2(845, 250)
+scale = Vector2(0.23, 0.23)
 
 [node name="PlayerPlaceholder" type="Label" parent="Visuals"]
 offset_left = 190.0
@@ -96,3 +96,10 @@ offset_top = 320.0
 offset_right = 1120.0
 offset_bottom = 370.0
 text = "Terminar turno"
+
+[node name="AbandonCombatButton" type="Button" parent="UI"]
+offset_left = 930.0
+offset_top = 584.0
+offset_right = 1120.0
+offset_bottom = 632.0
+text = "Abandonar combate"

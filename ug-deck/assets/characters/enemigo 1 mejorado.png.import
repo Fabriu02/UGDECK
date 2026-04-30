@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bf3pnt250hm22"
-path="res://.godot/imported/enemy-manzur.png-caa4eee927bc27a3b59d68745f528912.ctex"
+uid="uid://3aul8hq5whj0"
+path="res://.godot/imported/enemigo 1 mejorado.png-529ba5b3aac053c40295470193377fd6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/enemy-manzur.png"
-dest_files=["res://.godot/imported/enemy-manzur.png-caa4eee927bc27a3b59d68745f528912.ctex"]
+source_file="res://assets/characters/enemigo 1 mejorado.png"
+dest_files=["res://.godot/imported/enemigo 1 mejorado.png-529ba5b3aac053c40295470193377fd6.ctex"]
 
 [params]
 

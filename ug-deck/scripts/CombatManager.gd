@@ -2,6 +2,7 @@ extends Node
 class_name CombatManager
 
 const CARD_SCENE := preload("res://scenes/Card.tscn")
+const MAP_SCENE_PATH := "res://scenes/map/MapScene.tscn"
 
 @onready var player: Player = $"../Player"
 @onready var enemy: Enemy = $"../Enemy"
@@ -13,6 +14,7 @@ const CARD_SCENE := preload("res://scenes/Card.tscn")
 @onready var enemy_intent_label: Label = $"../UI/EnemyIntentLabel"
 @onready var hand_container: HBoxContainer = $"../UI/HandContainer"
 @onready var end_turn_button: Button = $"../UI/EndTurnButton"
+@onready var abandon_combat_button: Button = $"../UI/AbandonCombatButton"
 
 var battle_has_ended := false
 var skip_next_enemy_turn := false
@@ -21,6 +23,7 @@ var skip_next_enemy_turn := false
 func _ready() -> void:
 	randomize()
 	end_turn_button.pressed.connect(end_player_turn)
+	abandon_combat_button.pressed.connect(abandon_combat)
 	start_battle()
 
 
@@ -123,11 +126,24 @@ func check_combat_end() -> void:
 		enemy_intent_label.text = "Victoria: aprobaste este combate."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
+		# Cuando exista la pantalla/boton de victoria, llamar a:
+		# complete_first_battle_and_return_to_map()
 	elif player.is_dead():
 		battle_has_ended = true
 		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
+
+
+func complete_first_battle_and_return_to_map() -> void:
+	GameState.complete_node(GameState.NODE_PRIMER_PARCIAL)
+	GameState.unlock_node(GameState.NODE_TRABAJO_PRACTICO)
+	get_tree().change_scene_to_file(MAP_SCENE_PATH)
+
+
+func abandon_combat() -> void:
+	battle_has_ended = true
+	get_tree().change_scene_to_file(MAP_SCENE_PATH)
 
 
 func _show_hand() -> void:

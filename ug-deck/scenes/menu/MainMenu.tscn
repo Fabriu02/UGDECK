@@ -1,0 +1,90 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/menu/MainMenu.gd" id="1_6owcs"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/menu.png" id="2_yqf53"]
+[ext_resource type="Script" path="res://scripts/ui/AnimatedButton.gd" id="3_x3wfi"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_6owcs")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_yqf53")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -70.0
+offset_bottom = -70.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuContent" type="VBoxContainer" parent="UI/CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="UI/CenterContainer/MenuContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 64
+text = "UG-DECK"
+horizontal_alignment = 1
+
+[node name="JugarButton" type="Button" parent="UI/CenterContainer/MenuContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "JUGAR"
+script = ExtResource("3_x3wfi")
+
+[node name="OpcionesButton" type="Button" parent="UI/CenterContainer/MenuContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "OPCIONES"
+script = ExtResource("3_x3wfi")
+
+[node name="SalirButton" type="Button" parent="UI/CenterContainer/MenuContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "SALIR"
+script = ExtResource("3_x3wfi")
+
+[node name="FeedbackLabel" type="Label" parent="UI/CenterContainer/MenuContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 34)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Opciones proximamente"
+horizontal_alignment = 1

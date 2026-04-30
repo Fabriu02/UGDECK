@@ -1,8 +1,8 @@
 extends Node2D
 class_name BattleVisuals
 
-const PLAYER_IMAGE_PATH := "res://assets/characters/player-1.png"
-const ENEMY_IMAGE_PATH := "res://assets/characters/enemy-manzur.png"
+const PLAYER_IMAGE_PATH := "res://assets/characters/protagonista mejorado.png"
+const ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
 
 @onready var player_sprite: Sprite2D = $PlayerSprite
 @onready var enemy_sprite: Sprite2D = $EnemySprite
