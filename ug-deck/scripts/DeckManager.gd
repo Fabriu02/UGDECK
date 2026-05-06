@@ -25,6 +25,16 @@ func create_starting_deck() -> void:
 	_add_card("Pasar al pizarron", 2, "buff", 10, "+10 de vida maxima.", "pasar_pizarron")
 	_add_card("Corte de luz", 3, "skill", 0, "Descarta toda tu mano e invalida el turno actual del enemigo.", "corte_luz")
 	_add_card("Dormir siesta", 1, "skill", 0, "Descartas una carta y robas otra del mazo de robo.", "dormir_siesta")
+	
+	# DEBUG: Cartas creadas para probar las funciones básicas (Vulnerable, Energía Máxima, Curación, Debilidad, Descarte al Azar, Cansancio y Bonus de Defensa)
+	#_add_card("Pregunta al profesor", 1, "skill", 0, "Aplica Vulnerable al enemigo por 2 turnos.", "pregunta_profesor")
+	#_add_card("Cafe doble", 0, "buff", 1, "Aumenta tu energia maxima en 1 para el resto del combate.", "cafe_doble")
+	#_add_card("Botiquin", 0, "skill", 10, "Te cura 10 de vida.", "curar_debug")
+	#_add_card("Rayo Debilitador", 0, "skill", 0, "Aplica Debil al enemigo por 2 turnos.", "debil_debug")
+	#_add_card("Amnesia", 0, "skill", 1, "Descarta 1 carta al azar.", "descarte_azar_debug")
+	#_add_card("Mala Noche", 0, "debuff", 0, "Te aplica Cansancio por 2 turnos.", "cansancio_debug")
+	#_add_card("Dolor de Panza", 0, "debuff", 0, "Te aplica Debil por 2 turnos.", "debil_jugador_debug")
+	#_add_card("Postura Defensiva", 0, "buff", 5, "Ganas +5 de bonus de defensa.", "bonus_defensa_debug")\
 
 	shuffle_deck()
 
@@ -78,3 +88,14 @@ func reshuffle_discard_into_draw_pile() -> void:
 	draw_pile.append_array(discard_pile)
 	discard_pile.clear()
 	shuffle_deck()
+
+# AGREGADO: Función para descartar cartas de forma aleatoria
+func discard_random_cards(amount: int) -> void:
+	for i in range(amount):
+		if hand.is_empty():
+			return
+			
+		var index := randi() % hand.size()
+		var card := hand[index]
+		hand.remove_at(index)
+		discard_pile.append(card)

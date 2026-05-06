@@ -19,6 +19,9 @@ const MAP_SCENE_PATH := "res://scenes/map/MapScene.tscn"
 var battle_has_ended := false
 var skip_next_enemy_turn := false
 
+# AGREGADO: Variable para saber si el juego está esperando que descartes una carta
+var waiting_for_discard := false 
+
 
 func _ready() -> void:
 	randomize()
@@ -30,6 +33,7 @@ func _ready() -> void:
 func start_battle() -> void:
 	battle_has_ended = false
 	skip_next_enemy_turn = false
+	waiting_for_discard = false
 	end_turn_button.disabled = false
 	player.reset_for_new_battle()
 	enemy.reset_for_new_battle()
@@ -63,6 +67,11 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	if not deck_manager.hand.has(card_data):
 		return
 
+	# AGREGADO: Lógica de interceptación. Si estamos esperando, descartamos en vez de jugar.
+	if waiting_for_discard:
+		_execute_discard_choice(card_data, card_ui)
+		return
+
 	if not player.spend_energy(card_data.cost):
 		update_ui()
 		return
@@ -80,9 +89,15 @@ func end_player_turn() -> void:
 	if battle_has_ended:
 		return
 
+	# AGREGADO: Por seguridad, cancelamos la espera si el jugador decide terminar su turno sin descartar
+	waiting_for_discard = false 
+
 	for card_data in deck_manager.hand:
 		if card_data.effect_id == "sentarse_fondo":
 			player.gain_block(5)
+
+	# AGREGADO: Reducimos la duración de los estados del jugador al terminar su turno
+	player.reducir_duracion_estados()
 
 	deck_manager.discard_hand()
 	deck_manager.discard_played_cards()
@@ -95,6 +110,9 @@ func enemy_turn() -> void:
 		skip_next_enemy_turn = false
 	else:
 		enemy.execute_intent(player)
+
+	# AGREGADO: Reducimos la duración de los estados del enemigo al terminar su turno
+	enemy.reducir_duracion_estados()
 
 	check_combat_end()
 
@@ -117,7 +135,10 @@ func update_ui() -> void:
 		enemy.block
 	]
 	energy_label.text = "Energia: %d/%d" % [player.current_energy, player.max_energy]
-	enemy_intent_label.text = enemy.get_intent_text()
+	
+	# AGREGADO: Solo actualizamos el texto de intención si NO estamos en modo descarte
+	if not waiting_for_discard:
+		enemy_intent_label.text = enemy.get_intent_text()
 
 
 func check_combat_end() -> void:
@@ -189,6 +210,32 @@ func _apply_card_effect(card_data: CardData) -> void:
 		_show_hand()
 	elif card_data.effect_id == "dormir_siesta":
 		_discard_one_card_and_draw()
+		
+	# AGREGADO: Lógica de tu nueva carta (Vulnerable)
+	elif card_data.effect_id == "pregunta_profesor":
+		enemy.aplicar_estado("vulnerable", 0, 2)
+		
+	# AGREGADO: Lógica de la carta de aumentar energía
+	elif card_data.effect_id == "cafe_doble":
+		player.increase_max_energy(card_data.value)
+		
+	# --- AGREGADO: LÓGICAS DE PRUEBA ---
+	elif card_data.effect_id == "curar_debug":
+		player.curar(card_data.value)
+	elif card_data.effect_id == "debil_debug":
+		enemy.aplicar_estado("debil", 0, 2)
+		update_ui() # Refrescamos para ver cómo baja el daño en la intención
+	elif card_data.effect_id == "descarte_azar_debug":
+		deck_manager.discard_random_cards(card_data.value)
+		_show_hand() # Refrescamos la mano para ver qué carta desapareció
+
+	# NUEVAS LÓGICAS DE PRUEBA PARA EL JUGADOR
+	elif card_data.effect_id == "cansancio_debug":
+		player.aplicar_estado("cansancio", 0, 2)
+	elif card_data.effect_id == "debil_jugador_debug":
+		player.aplicar_estado("debil", 0, 2)
+	elif card_data.effect_id == "bonus_defensa_debug":
+		player.bonus_defensa += card_data.value
 
 
 func _play_machetearse() -> void:
@@ -200,10 +247,25 @@ func _play_machetearse() -> void:
 	enemy.take_damage(player.get_attack_damage(damage))
 
 
+# MODIFICADO: Ahora activa el modo selección si tienes cartas
 func _discard_one_card_and_draw() -> void:
-	if not deck_manager.hand.is_empty():
-		var discarded_card: CardData = deck_manager.hand.pop_front()
-		deck_manager.discard_pile.append(discarded_card)
+	if deck_manager.hand.is_empty():
+		deck_manager.draw_cards(1)
+		_show_hand()
+	else:
+		waiting_for_discard = true
+		enemy_intent_label.text = "Elige una carta para descartar"
 
+# AGREGADO: Nueva función que procesa la carta que el jugador decidió tirar
+func _execute_discard_choice(card_data: CardData, card_ui: CardUI) -> void:
+	waiting_for_discard = false
+	
+	# Descartar visual y lógicamente la carta elegida
+	deck_manager.hand.erase(card_data)
+	deck_manager.discard_pile.append(card_data)
+	card_ui.queue_free()
+	
+	# Robar una nueva carta tras descartar
 	deck_manager.draw_cards(1)
 	_show_hand()
+	update_ui()
