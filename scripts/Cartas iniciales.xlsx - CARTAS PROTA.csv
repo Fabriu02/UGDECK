@@ -1,0 +1,54 @@
+CARTAS DEL PROTA,,,,,
+Nombre de la carta,Tipo,Coste energía,Efecto,Descripción,Rareza
+Fotocopia borrosa,Robo,1,Robas 2 cartas y descartas 1 carta.,"El contenido está, la legibilidad no.",Desertor
+Cara de entendido,Defensa,1,"Ganas 9 de escudo. Si no atacaste este turno, ganas 4 extra.",La clave es asentir lento.,Desertor
+Respuesta incompleta,Ataque,1,Inflige 8 de daño. Robas 1 carta si el enemigo tiene menos del 50% de vida.,"Algo sumaba, seguro.",Desertor
+Hacer tiempo,Defensa,1,Ganas 6 de escudo. El próximo ataque enemigo hace 3 menos de daño.,"“Profe, una consulta antes de empezar…”",Desertor
+Cafecito del kiosko,Curación,2,"Recuperas 10 de vida. Si tienes 30 o menos de vida, recuperas 5 extra.",Terapia líquida de media mañana.,Ingresante
+Grupo silenciado,Descarte/control de mano,1,Descarta hasta 2 cartas. Ganas 5 de escudo por cada carta descartada.,Paz mental desbloqueada.,Ingresante
+Estudiar en x2,Buff propio,2,Ganas +3 de ataque durante 2 turnos y robas 1 carta.,"No aprendiste más, pero aprendiste rápido.",Ingresante
+Releer la consigna,Descarte/control de mano,2,Recuperas 1 carta del descarte y la agregas a tu mano.,"Ah, decía “justifique”. Hermoso.",Ingresante
+Chamuyo académico,Debuff enemigo,2,El enemigo pierde 4 de ataque durante 2 turnos.,"No sabe qué dijiste, pero sonó convincente.",Recursante
+Preguntar al grupo,Robo,2,"Robas 3 cartas. Si robas una carta de Ataque, cuesta 1 menos este turno.",El verdadero oráculo universitario.,Recursante
+Apunte heredado,Buff propio,2,Tus cartas de Defensa otorgan +4 de escudo durante 3 turnos.,Pasó por cinco generaciones y todavía sirve.,Recursante
+Borrador mágico,Defensa,2,Ganas 13 de escudo y elimina 1 debuff propio.,"No arregla la nota, pero borra la evidencia.",Recursante
+Parcial sorpresa,Ataque,3,"Inflige 18 de daño. Si el enemigo tiene un debuff, inflige 6 extra.","Aparece sin avisar, como deuda de apuntes.",Recursante
+Crisis pre-parcial,Estados negativos,0,Pierdes 5 de vida. Robas 2 cartas y ganas +4 de ataque este turno.,"Pánico productivo, el peor tipo de productividad.",Ayudante de cátedra
+Tutoría express,Curación,3,Recuperas 14 de vida y robas 1 carta.,Cinco minutos que valen media materia.,Ayudante de cátedra
+Mate compartido,Energía,2,Ganas 1 de energía este turno y 1 energía máxima durante el próximo turno.,Circula conocimiento… y bacterias.,Ayudante de cátedra
+Nervios de acero,Buff propio,3,"Durante 2 turnos, reduces en 25% el daño recibido.","Por fuera tranquilo, por dentro Windows XP.",Ayudante de cátedra
+Tema que sí sabías,Ataque,2,"Inflige 14 de daño. Si tienes 3 o más cartas en mano, inflige 4 extra.",Por fin una que estudiaste.,Ayudante de cátedra
+Recreo estratégico,Curación,2,"Recuperas 8 de vida, ganas 6 de escudo y descartas 1 estado negativo propio.",Diez minutos para volver a ser persona.,Ingeniero
+Final promocionado,Buff propio,4,"Durante 3 turnos, tus cartas cuestan 1 energía menos. No puede reducir costes por debajo de 0.",No rendís final: trascendés.,Ingeniero
+Resumen,Ataque,1,Inflinge 16 de daño.,Tiene lagrimas y mate encima.,
+Torta frita,Defensa,1,Otorga 2 de escudo.,900 pesos de pura gloria.,
+Mate salvador,Estado(Buff),2,Ganas +3 de ataque en los siguientes 2 turnos.,"Oro verde, dame un par y sobrevivo el cuatrimestre.",
+Trasnochar,Estado(Debuff),1,"Pierdes 5 de vida, aumenta en un x2 tu proximo ataque.",Muchas veces es mejor un buen sueño..,
+Usar IA,Ataque,3,Inflinge 9 de daño.,Un gran poder conlleva una gran cantidad de tokens.,
+Machetearse,Ataque,4,"Inflinge un golpe proporcional al 80% de la vida del enemigo, pero hay una probabilidad aleatoria de que te descubran y te echen de la facu",¿Valio la pena? - Ya no estas en la secundaria..,
+Aprobado con 4,Habilidad,4,"Si tu salud llega a 0 en los proximos 2 turnos, sobrevives con 4 de salud.",4 es nota lo demás es lujo.,
+Faltazo,Estado(Debuff),3,"Perdes el siguiente turno, pero sos inmune a cualquier ataque enemigo",,
+Senarse en el fondo,Estado(Buff),2,"Ganas 10 de escudo, si conservas la carta al final del turno ganas 5 de escudo más.",Lo viejo funciona.🚬,
+Pasar al pizarron,Estado(Buff),2,+10 de vida máxima,"Explicaste re bien, te ganaste el respeto del profesor",
+Corte de luz,Habilidad,3,"Descarta toda tu mano,también invalidas el turno actual del enemigo.",Ingeniarselas es de ingenieros. Pero si no hay luz no hago milagros. ,
+Dormir siesta/lavarse la geta,Habilidad,1,Descartas una carta y robas otra del mazo de robo,A ver si nos despertamos asi,
+Mirar el parcial del compañero,Robo,1,"Robas 1 carta. Si es de Ataque, inflige 5 de daño al enemigo.",Investigación visual no autorizada.,Desertor
+Bolígrafo sin tinta,Ataque,0,Inflige 4 de daño. Descarta 1 carta de tu mano.,La lapicera eligió abandonar antes que vos.,Desertor
+Excusa creíble,Defensa,1,"Ganas 7 de escudo. Si tienes menos de 3 cartas en mano, ganas 5 extra.","No resolvió nada, pero compró tiempo.",Desertor
+Quedarse sin hojas,Descarte/control de mano,0,Descarta 1 carta y roba 1 carta.,Siempre pasa en el peor momento.,Desertor
+Agua del dispenser,Curación,1,Recuperas 6 de vida y elimina “Estrés” si lo tienes.,"Sabor a plástico, efecto milagroso.",Ingresante
+Sentarse adelante,Buff propio,2,Ganas +2 de ataque y +3 de escudo por 2 turnos.,"Riesgo alto, recompensa dudosa.",Ingresante
+Pedir que repita,Debuff enemigo,1,El enemigo pierde 3 de ataque este turno. Robas 1 carta.,"Nadie entendió, pero vos te animaste.",Ingresante
+Subrayador fluorescente,Buff propio,1,Tu próxima carta de Ataque inflige +6 de daño.,"Si brilla, debe ser importante.",Ingresante
+Apagar la cámara,Defensa,1,Ganas 10 de escudo. No puedes jugar cartas de Ataque este turno.,"Presente, pero espiritualmente ausente.",Ingresante
+Audio de 7 minutos,Debuff enemigo,2,Aplica “Distracción” al enemigo durante 2 turnos: sus ataques hacen 20% menos daño.,Nadie sale igual después de escucharlo.,Recursante
+Resumen ajeno,Robo,2,Robas 2 cartas. La primera carta robada cuesta 1 menos este turno.,Confianza ciega en un desconocido.,Recursante
+Estudiar la noche anterior,Buff propio,2,Ganas +6 de ataque este turno. Al próximo turno robas 1 carta menos.,"Poder inmediato, deuda emocional.",Recursante
+Parcial recuperatorio,Curación,3,"Recuperas 12 de vida. Si tienes menos de 20 de vida, recuperas 10 adicionales.","Segunda oportunidad, mismo sufrimiento.",Recursante
+Cambio de aula,Descarte/control de mano,2,Descarta toda tu mano y roba la misma cantidad de cartas.,El verdadero jefe era encontrar el salón.,Recursante
+Profe de buen humor,Energía,2,Ganas 2 de energía este turno y 6 de escudo.,"Evento raro, casi legendario.",Ayudante de cátedra
+Bibliografía obligatoria,Ataque,3,"Inflige 20 de daño. Si tienes 5 o más cartas en mano, inflige 5 extra.","Son 400 páginas, pero “entra todo”.",Ayudante de cátedra
+Exposición improvisada,Ataque,2,Inflige 10 de daño a todos los enemigos. Te aplicas “Estrés” por 1 turno.,Tu grupo te miró y entendiste la traición.,Ayudante de cátedra
+Consulta salvadora,Curación,2,"Recuperas 8 de vida, roba 1 carta y elimina 1 estado negativo propio.",Una pregunta bien hecha puede salvar un cuatrimestre.,Ayudante de cátedra
+Semana sin parciales,Buff propio,4,"Durante 2 turnos, al inicio de tu turno robas 1 carta adicional y ganas 1 energía extra.",Una anomalía en el calendario académico.,Ingeniero
+Saber todo el programa,Ataque,5,"Inflige 32 de daño. Si derrotas al enemigo con esta carta, recuperas 15 de vida.",Ya no sos alumno. Sos amenaza institucional.,Ingeniero
