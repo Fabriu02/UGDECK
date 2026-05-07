@@ -1,10 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://dm23u806ecudu"]
 
-[ext_resource type="Script" path="res://scripts/menu/MainMenu.gd" id="1_6owcs"]
-[ext_resource type="Texture2D" path="res://assets/backgrounds/menu.png" id="2_yqf53"]
-[ext_resource type="Script" path="res://scripts/ui/AnimatedButton.gd" id="3_x3wfi"]
+[ext_resource type="Script" uid="uid://u455hfo28l35" path="res://scripts/menu/MainMenu.gd" id="1_6owcs"]
+[ext_resource type="Texture2D" uid="uid://bnnxvcjvi3bci" path="res://assets/backgrounds/menu.png" id="2_yqf53"]
+[ext_resource type="Script" uid="uid://cyrusd8l5ut6" path="res://scripts/ui/AnimatedButton.gd" id="3_x3wfi"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=123666611]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_6owcs")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=743356296]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -25,7 +25,7 @@ texture = ExtResource("2_yqf53")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="UI" type="Control" parent="."]
+[node name="UI" type="Control" parent="." unique_id=873709876]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,7 +34,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="UI"]
+[node name="CenterContainer" type="CenterContainer" parent="UI" unique_id=816615747]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -44,19 +44,19 @@ offset_bottom = -70.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuContent" type="VBoxContainer" parent="UI/CenterContainer"]
+[node name="MenuContent" type="VBoxContainer" parent="UI/CenterContainer" unique_id=1014901982]
 layout_mode = 2
 theme_override_constants/separation = 18
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="UI/CenterContainer/MenuContent"]
+[node name="TitleLabel" type="Label" parent="UI/CenterContainer/MenuContent" unique_id=2137936787]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 64
 text = "UG-DECK"
 horizontal_alignment = 1
 
-[node name="JugarButton" type="Button" parent="UI/CenterContainer/MenuContent"]
+[node name="JugarButton" type="Button" parent="UI/CenterContainer/MenuContent" unique_id=1149139144]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 68)
 layout_mode = 2
@@ -64,7 +64,7 @@ theme_override_font_sizes/font_size = 32
 text = "JUGAR"
 script = ExtResource("3_x3wfi")
 
-[node name="OpcionesButton" type="Button" parent="UI/CenterContainer/MenuContent"]
+[node name="OpcionesButton" type="Button" parent="UI/CenterContainer/MenuContent" unique_id=790299191]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 68)
 layout_mode = 2
@@ -72,7 +72,7 @@ theme_override_font_sizes/font_size = 32
 text = "OPCIONES"
 script = ExtResource("3_x3wfi")
 
-[node name="SalirButton" type="Button" parent="UI/CenterContainer/MenuContent"]
+[node name="SalirButton" type="Button" parent="UI/CenterContainer/MenuContent" unique_id=1783819989]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 68)
 layout_mode = 2
@@ -80,7 +80,7 @@ theme_override_font_sizes/font_size = 32
 text = "SALIR"
 script = ExtResource("3_x3wfi")
 
-[node name="FeedbackLabel" type="Label" parent="UI/CenterContainer/MenuContent"]
+[node name="FeedbackLabel" type="Label" parent="UI/CenterContainer/MenuContent" unique_id=977672496]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 34)
 layout_mode = 2

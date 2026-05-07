@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="nodo_mapa" format=3 uid="uid://b8srke55cadyd"]
+
+[ext_resource type="Script" uid="uid://b6uvyq7j3s58u" path="res://scripts/map/nodo_mapa.gd" id="1_0tnpa"]
+[ext_resource type="Texture2D" uid="uid://dx7jo2j1jmgco" path="res://assets/iconos/Tienda.png" id="1_8dasq"]
+
+[resource]
+script = ExtResource("1_0tnpa")
+type = 2
+node_name = "Kiosko"
+icon = ExtResource("1_8dasq")
+metadata/_custom_type_script = "uid://b6uvyq7j3s58u"

@@ -1,13 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://cg5rhfdxnud1j"]
+[gd_scene format=3 uid="uid://cg5rhfdxnud1j"]
 
-[ext_resource type="Script" path="res://scripts/CardUI.gd" id="1_efgiu"]
+[ext_resource type="Script" uid="uid://dvg03b7tdroov" path="res://scripts/CardUI.gd" id="1_efgiu"]
 
-[node name="Card" type="Button"]
+[node name="Card" type="Button" unique_id=1570146756]
 custom_minimum_size = Vector2(220, 230)
-text = ""
 script = ExtResource("1_efgiu")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1371157410]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,22 +18,22 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1608944489]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=28254258]
 layout_mode = 2
 text = "Nombre"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1728606774]
 layout_mode = 2
 text = "Coste: 0"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1550452448]
 layout_mode = 2
 text = "Descripcion"
 autowrap_mode = 3

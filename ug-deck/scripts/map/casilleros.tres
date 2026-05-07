@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="nodo_mapa" format=3 uid="uid://dppcyikcn5c5g"]
+
+[ext_resource type="Script" uid="uid://b6uvyq7j3s58u" path="res://scripts/map/nodo_mapa.gd" id="1_icfxv"]
+[ext_resource type="Texture2D" uid="uid://cyyc6k5fru7p0" path="res://assets/iconos/casilleros.png" id="1_mgtsw"]
+
+[resource]
+script = ExtResource("1_icfxv")
+type = 3
+node_name = "casilleros"
+icon = ExtResource("1_mgtsw")
+metadata/_custom_type_script = "uid://b6uvyq7j3s58u"

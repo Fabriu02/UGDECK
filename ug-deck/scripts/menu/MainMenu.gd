@@ -1,6 +1,6 @@
 extends Control
 
-const MAP_SCENE_PATH := "res://scenes/map/MapScene.tscn"
+const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 
 @onready var jugar_button: Button = %JugarButton
 @onready var opciones_button: Button = %OpcionesButton

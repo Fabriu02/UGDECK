@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="nodo_mapa" format=3 uid="uid://nv1uxyu8a2yl"]
+
+[ext_resource type="Texture2D" uid="uid://b0jaq241x2m5a" path="res://assets/iconos/Recreo.png" id="1_jrn3d"]
+[ext_resource type="Script" uid="uid://b6uvyq7j3s58u" path="res://scripts/map/nodo_mapa.gd" id="1_od4gd"]
+
+[resource]
+script = ExtResource("1_od4gd")
+type = 4
+node_name = "Recreo"
+icon = ExtResource("1_jrn3d")
+metadata/_custom_type_script = "uid://b6uvyq7j3s58u"

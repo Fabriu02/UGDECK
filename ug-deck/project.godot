@@ -11,13 +11,18 @@ config_version=5
 [application]
 
 config/name="ugDeck"
-run/main_scene="res://scenes/menu/MainMenu.tscn"
+run/main_scene="uid://dm23u806ecudu"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameState="*res://scripts/autoload/GameState.gd"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+pointing/emulate_mouse_from_touch=false
 
 [physics]
 
