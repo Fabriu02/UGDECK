@@ -1,0 +1,22 @@
+CARTAS DE LOS PROFESORES,,,,,
+Nombre de la carta,Tipo,Coste energía,Efecto,Descripción,Rareza
+Pregunta al azar,Ataque,1,"Inflige 8 de daño al jugador. Si el jugador tiene 3 o más cartas en mano, inflige 4 de daño adicional.",Nadie estaba preparado. Ni el que preguntó.,Desertor
+Mirada evaluadora,Debuff enemigo,1,Aplica “Estrés” al jugador durante 1 turno: sus cartas de ataque infligen 25% menos daño.,Esa mirada corrige antes que el parcial.,Desertor
+Borrar el pizarrón,Descarte/control de mano,1,El jugador descarta 1 carta aleatoria de su mano.,Justo cuando ibas entendiendo.,
+“Eso ya lo vimos”,Ataque,1,"Inflige 10 de daño. Si el jugador no tiene escudo, inflige 3 adicional.","Frase corta, daño permanente.",Desertor
+Toma asistencia,Defensa,1,"El profesor gana 8 de escudo. Si el jugador jugó 3 o más cartas el turno anterior, gana 5 extra.",La burocracia también bloquea daño.,Ingresante
+Cambiar el tema,Debuff enemigo,2,Aplica “Distracción” al jugador durante 2 turnos: roba 1 carta menos al inicio del próximo turno.,Veníamos bien… hasta que abrió otra unidad.,Ingresante
+Parcialito sorpresa,Ataque,2,"Inflige 14 de daño. Si el jugador tiene un estado negativo, inflige 6 adicional.","No figura en el programa, pero figura en tu destino.",Ingresante
+Criterio estricto,Buff propio,2,El profesor gana +4 de ataque durante los próximos 2 turnos.,"“Está bien, pero incompleto.”",Ingresante
+Trabajo práctico obligatorio,Debuff enemigo,2,"Durante 2 turnos, la primera carta que juegue el jugador cuesta 1 energía adicional.","No mata, pero desgasta.",Ingresante
+Explicación confusa,Estados negativos,2,Aplica “Confusión” al jugador durante 2 turnos: sus cartas de robo hacen robar 1 carta menos.,"Entendiste menos que antes, pero con más palabras.",Recursante
+Unidad acumulativa,Buff propio,3,El profesor gana +2 de ataque permanente hasta el final del combate.,Todo se relaciona con todo. Lamentablemente.,Recursante
+Parcial integrador,Ataque,3,"Inflige 18 de daño. Si el jugador tiene menos de 3 cartas en mano, inflige 6 adicional.",La palabra “integrador” nunca trae paz.,Recursante
+Corrección en rojo,Ataque,2,Inflige 12 de daño y aplica “Estrés” durante 1 turno.,Cada marca roja pega en el alma.,Recursante
+Recuperatorio anunciado,Defensa,2,El profesor gana 15 de escudo y elimina 1 debuff propio.,"Te da esperanza, pero se protege él.",Recursante
+Pregunta capciosa,Descarte/control de mano,3,"El jugador elige y descarta 2 cartas de su mano. Si descarta menos de 2, recibe 8 de daño.",No era difícil. Era malvada.,Recursante
+Bibliografía extra,Debuff enemigo,3,"Durante 2 turnos, el jugador roba 1 carta menos y sus cartas de habilidad cuestan 1 más.",“También entra este material complementario.”,Ayudante de cátedra
+Oral individual,Ataque,4,Inflige 24 de daño. Ignora el 50% del escudo del jugador.,Silencio absoluto. Sudor académico.,Ayudante de cátedra
+Cambio de consigna,Descarte/control de mano,3,El jugador descarta toda su mano y roba 3 cartas nuevas.,La consigna evolucionó. Vos no.,Ayudante de cátedra
+Clase de repaso mortal,Buff propio,3,El profesor gana +5 de ataque y 10 de escudo.,"Dijo “repaso”, pero era una emboscada.",Ayudante de cátedra
+Final con tribunal,Ataque,5,Inflige 30 de daño. Aplica “Estrés” y “Distracción” durante 1 turno.,Tres profesores. Una silla. Ninguna salida.,Ingeniero

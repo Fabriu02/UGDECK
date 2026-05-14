@@ -22,8 +22,20 @@ func setup(data: CardData) -> void:
 
 	name_label.text = data.card_name
 	cost_label.text = "Coste: %d" % data.cost
-	description_label.text = data.description
+	description_label.text = _build_card_text(data)
 
 
 func _on_pressed() -> void:
 	card_clicked.emit(card_data, self)
+
+
+func _build_card_text(data: CardData) -> String:
+	var parts: Array[String] = []
+
+	if not data.raw_effect_text.is_empty():
+		parts.append(data.raw_effect_text)
+
+	if not data.description.is_empty():
+		parts.append(data.description)
+
+	return "\n\n".join(parts)
