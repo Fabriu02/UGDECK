@@ -110,15 +110,38 @@ func _has_incoming_connection(target_id):
 	return false
 
 func _get_random_resource_for_column(col_index):
+	# 1. El Jefe final siempre va en la última columna
 	if col_index == num_columns - 1:
 		return load("res://scripts/map/examen_final.tres")
-
+	
 	var r = randf()
-	if col_index < 7:
-		if r < 0.7:
+	
+	# --- ZONA INICIAL (Columnas 0, 1, 2) ---
+	if col_index < 3:
+		if r < 0.6: 
 			return load("res://scripts/map/clase_interactiva.tres")
-		return load("res://scripts/map/examen_parcial.tres")
-
-	if r < 0.6:
-		return load("res://scripts/map/examen_parcial.tres")
-	return load("res://scripts/map/clase_interactiva.tres")
+		else: 
+			# ¡Reactivamos Casilleros!
+			return load("res://scripts/map/casilleros.tres")
+			
+	# --- ZONA MEDIA (Columnas 3 a 6) ---
+	elif col_index < 7:
+		if r < 0.35: 
+			return load("res://scripts/map/clase_interactiva.tres")
+		elif r < 0.55: 
+			return load("res://scripts/map/examen_parcial.tres")
+		elif r < 0.80: 
+			# ¡Reactivamos Kiosko!
+			return load("res://scripts/map/kiosko.tres")
+		else: 
+			# ¡Reactivamos Recreo!
+			return load("res://scripts/map/recreo.tres")
+			
+	# --- ZONA FINAL (Cerca del jefe) ---
+	else:
+		if r < 0.5: 
+			return load("res://scripts/map/examen_parcial.tres")
+		elif r < 0.8: 
+			return load("res://scripts/map/kiosko.tres")
+		else: 
+			return load("res://scripts/map/clase_interactiva.tres")

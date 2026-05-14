@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://cmt2loelpjyie"]
+
+[ext_resource type="Script" uid="uid://v20ficjs58p8" path="res://scenes/tienda.gd" id="1_2puif"]
+[ext_resource type="Texture2D" uid="uid://xtt5sy4yofnj" path="res://assets/backgrounds/kiosko.png" id="2_0wul1"]
+[ext_resource type="Texture2D" uid="uid://cykasd5kcqix1" path="res://assets/cuadros/Menu tienda.png" id="3_3a5gv"]
+
+[node name="Tienda" type="Control" unique_id=2057548643]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_2puif")
+
+[node name="Fondo" type="TextureRect" parent="." unique_id=1124548086]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_0wul1")
+expand_mode = 1
+
+[node name="NinePatchRect" type="NinePatchRect" parent="Fondo" unique_id=2016382177]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -464.0
+offset_top = -242.0
+offset_right = 413.0
+offset_bottom = 303.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_3a5gv")
+
+[node name="MarginContainer" type="MarginContainer" parent="Fondo/NinePatchRect" unique_id=293819915]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 160
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Fondo/NinePatchRect/MarginContainer" unique_id=1948100218]
+layout_mode = 2
+
+[node name="EstanteItems" type="GridContainer" parent="Fondo/NinePatchRect/MarginContainer/VBoxContainer" unique_id=1909826148]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="Fondo/NinePatchRect/MarginContainer/VBoxContainer" unique_id=1900258631]
+layout_mode = 2
+
+[node name="PlataUI" type="Label" parent="Fondo/NinePatchRect/MarginContainer/VBoxContainer" unique_id=1533316875]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="Botonvolver" type="Button" parent="Fondo/NinePatchRect/MarginContainer/VBoxContainer" unique_id=1221823916]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8

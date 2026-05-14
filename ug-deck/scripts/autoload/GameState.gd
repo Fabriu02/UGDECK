@@ -4,6 +4,7 @@ extends Node
 var map_data: Dictionary = {}
 var nodo_actual_id: int = -1
 var nodos_completados: Array[int] = [] # Historial del camino que tomó el jugador
+var dinero: int = 150 # Empezamos con $150 de prueba
 
 func _ready() -> void:
 	reset_run_progress()
