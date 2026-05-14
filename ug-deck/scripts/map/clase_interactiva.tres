@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="nodo_mapa" format=3 uid="uid://gcb5te63785k"]
+
+[ext_resource type="Script" uid="uid://b6uvyq7j3s58u" path="res://scripts/map/nodo_mapa.gd" id="1_4yrbo"]
+[ext_resource type="Texture2D" uid="uid://b0g2pd5r2fyfg" path="res://assets/iconos/Sorpresa.png" id="1_m6x3d"]
+[ext_resource type="PackedScene" uid="uid://bvxv1qf2cg8np" path="res://scenes/BattleScene.tscn" id="2_0nxv2"]
+
+[resource]
+script = ExtResource("1_4yrbo")
+node_name = "Sorpresa"
+icon = ExtResource("1_m6x3d")
+escena_nivel = ExtResource("2_0nxv2")
+metadata/_custom_type_script = "uid://b6uvyq7j3s58u"

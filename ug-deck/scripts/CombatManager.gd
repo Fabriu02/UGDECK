@@ -2,7 +2,7 @@ extends Node
 class_name CombatManager
 
 const CARD_SCENE := preload("res://scenes/Card.tscn")
-const MAP_SCENE_PATH := "res://scenes/map/MapScene.tscn"
+const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 
 @onready var player: Player = $"../Player"
 @onready var enemy: Enemy = $"../Enemy"

@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://0lieum7udv1j"]
+
+[ext_resource type="Script" uid="uid://hv21vl3c0cc1" path="res://scenes/map/boton.gd" id="1_57qws"]
+
+[node name="Boton" type="TextureButton" unique_id=1103071827]
+clip_contents = true
+custom_minimum_size = Vector2(0.1, 0.1)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -1142.0
+offset_bottom = -638.0
+grow_horizontal = 2
+grow_vertical = 2
+ignore_texture_size = true
+stretch_mode = 5
+script = ExtResource("1_57qws")

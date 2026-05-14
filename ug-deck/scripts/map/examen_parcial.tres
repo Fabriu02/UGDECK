@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="nodo_mapa" format=3 uid="uid://bkbulttd8x3oc"]
+
+[ext_resource type="Texture2D" uid="uid://bnwad8rx1ov1i" path="res://assets/iconos/examen_parcial.png" id="1_ufuxl"]
+[ext_resource type="Script" uid="uid://b6uvyq7j3s58u" path="res://scripts/map/nodo_mapa.gd" id="1_ypq1y"]
+[ext_resource type="PackedScene" uid="uid://bvxv1qf2cg8np" path="res://scenes/BattleScene.tscn" id="2_cwf5v"]
+
+[resource]
+script = ExtResource("1_ypq1y")
+type = 1
+node_name = "Examen parcial"
+icon = ExtResource("1_ufuxl")
+escena_nivel = ExtResource("2_cwf5v")
+metadata/_custom_type_script = "uid://b6uvyq7j3s58u"

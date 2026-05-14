@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://tw1621k5ofy"]
+
+[ext_resource type="Texture2D" uid="uid://b2biyq1015t1p" path="res://assets/backgrounds/mapa.png" id="1_ebwt4"]
+[ext_resource type="Script" uid="uid://c0uwfku0is5qm" path="res://scenes/map/vista_mapa.gd" id="1_uh8yw"]
+[ext_resource type="PackedScene" uid="uid://0lieum7udv1j" path="res://scenes/map/Boton.tscn" id="2_u8whb"]
+
+[node name="VistaMapa" type="Control" unique_id=1742618765]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_uh8yw")
+map_node_scene = ExtResource("2_u8whb")
+map_offset = Vector2(100, 600)
+
+[node name="Fondocorcho" type="TextureRect" parent="." unique_id=692129482]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_ebwt4")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1577724855]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="contenidomapa" type="Control" parent="ScrollContainer" unique_id=876110866]
+custom_minimum_size = Vector2(2000, 2000)
+layout_mode = 2
+mouse_filter = 1

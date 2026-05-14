@@ -1,11 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://c6ysqau7wxae6"]
 
-[ext_resource type="Script" path="res://scripts/map/MapScene.gd" id="1_f6rfs"]
-[ext_resource type="Texture2D" path="res://assets/backgrounds/mapa.png" id="2_k6w0g"]
-[ext_resource type="Script" path="res://scripts/map/MapNodeButton.gd" id="3_4leu3"]
-[ext_resource type="Script" path="res://scripts/ui/AnimatedButton.gd" id="4_dy1hs"]
+[ext_resource type="Script" uid="uid://cpdnf6ql1r71y" path="res://scripts/map/MapScene.gd" id="1_f6rfs"]
+[ext_resource type="Texture2D" uid="uid://b2biyq1015t1p" path="res://assets/backgrounds/mapa.png" id="2_k6w0g"]
+[ext_resource type="Script" uid="uid://dedrljmw31hjl" path="res://scripts/map/MapNodeButton.gd" id="3_4leu3"]
+[ext_resource type="Script" uid="uid://cyrusd8l5ut6" path="res://scripts/ui/AnimatedButton.gd" id="4_dy1hs"]
 
-[node name="MapScene" type="Control"]
+[node name="MapScene" type="Control" unique_id=293103669]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,7 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_f6rfs")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=451296443]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +26,7 @@ texture = ExtResource("2_k6w0g")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="MapButtonsLayer" type="Control" parent="."]
+[node name="MapButtonsLayer" type="Control" parent="." unique_id=799839162]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -35,7 +35,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PrimerParcialButton" type="Button" parent="MapButtonsLayer"]
+[node name="PrimerParcialButton" type="Button" parent="MapButtonsLayer" unique_id=328957656]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 230.0
@@ -49,7 +49,7 @@ display_name = "Primer parcial"
 scene_path = "res://scenes/BattleScene.tscn"
 is_unlocked = true
 
-[node name="TiendaButton" type="Button" parent="MapButtonsLayer"]
+[node name="TiendaButton" type="Button" parent="MapButtonsLayer" unique_id=2000060814]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 230.0
@@ -61,7 +61,7 @@ script = ExtResource("3_4leu3")
 node_id = "tienda"
 display_name = "Tienda"
 
-[node name="TrabajoPracticoButton" type="Button" parent="MapButtonsLayer"]
+[node name="TrabajoPracticoButton" type="Button" parent="MapButtonsLayer" unique_id=582995880]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 485.0
@@ -73,7 +73,7 @@ script = ExtResource("3_4leu3")
 node_id = "trabajo_practico"
 display_name = "Trabajo practico"
 
-[node name="SegundoParcialButton" type="Button" parent="MapButtonsLayer"]
+[node name="SegundoParcialButton" type="Button" parent="MapButtonsLayer" unique_id=1993472486]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 455.0
@@ -85,7 +85,7 @@ script = ExtResource("3_4leu3")
 node_id = "segundo_parcial"
 display_name = "Segundo parcial"
 
-[node name="FinalButton" type="Button" parent="MapButtonsLayer"]
+[node name="FinalButton" type="Button" parent="MapButtonsLayer" unique_id=688748246]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 780.0
@@ -97,7 +97,7 @@ script = ExtResource("3_4leu3")
 node_id = "final"
 display_name = "Final"
 
-[node name="SalirButton" type="Button" parent="MapButtonsLayer"]
+[node name="SalirButton" type="Button" parent="MapButtonsLayer" unique_id=1184863089]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 35.0
@@ -108,7 +108,7 @@ theme_override_font_sizes/font_size = 20
 text = "VOLVER"
 script = ExtResource("4_dy1hs")
 
-[node name="FeedbackLabel" type="Label" parent="."]
+[node name="FeedbackLabel" type="Label" parent="." unique_id=208028933]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 376.0

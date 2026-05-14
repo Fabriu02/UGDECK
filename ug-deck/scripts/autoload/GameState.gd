@@ -1,69 +1,57 @@
 extends Node
 
-const NODE_PRIMER_PARCIAL := "primer_parcial"
-const NODE_TIENDA := "tienda"
-const NODE_TRABAJO_PRACTICO := "trabajo_practico"
-const NODE_SEGUNDO_PARCIAL := "segundo_parcial"
-const NODE_FINAL := "final"
-
-const ALL_NODE_IDS := [
-	NODE_PRIMER_PARCIAL,
-	NODE_TIENDA,
-	NODE_TRABAJO_PRACTICO,
-	NODE_SEGUNDO_PARCIAL,
-	NODE_FINAL,
-]
-
-var unlocked_nodes: Dictionary = {}
-var completed_nodes: Dictionary = {}
-
+# --- DATOS DEL MAPA PROCEDURAL ---
+var map_data: Dictionary = {}
+var nodo_actual_id: int = -1
+var nodos_completados: Array[int] = [] # Historial del camino que tomó el jugador
 
 func _ready() -> void:
 	reset_run_progress()
 
-
 func reset_run_progress() -> void:
-	unlocked_nodes.clear()
-	completed_nodes.clear()
+	# Limpiamos todo al morir o empezar una nueva partida
+	map_data.clear()
+	nodo_actual_id = -1
+	nodos_completados.clear()
 
-	for node_id in ALL_NODE_IDS:
-		unlocked_nodes[node_id] = false
-		completed_nodes[node_id] = false
-
-	unlock_node(NODE_PRIMER_PARCIAL)
-
-
-func unlock_node(node_id: String) -> void:
+# Llama a esta función cuando el jugador viaja a un nuevo nodo
+func visitar_nodo(node_id: int) -> void:
 	if not _is_known_node(node_id):
-		push_warning("Intento de desbloquear un nodo desconocido: %s" % node_id)
+		push_warning("Intento de visitar un nodo desconocido: %s" % node_id)
 		return
 
-	unlocked_nodes[node_id] = true
+	# Si ya estábamos en un nodo, lo marcamos como completado antes de movernos
+	if nodo_actual_id != -1 and not nodos_completados.has(nodo_actual_id):
+		nodos_completados.append(nodo_actual_id)
 
+	nodo_actual_id = node_id
 
-func lock_node(node_id: String) -> void:
-	if not _is_known_node(node_id):
-		push_warning("Intento de bloquear un nodo desconocido: %s" % node_id)
-		return
+# El mapa ahora decide qué está desbloqueado leyendo las conexiones
+func is_node_unlocked(node_id: int) -> bool:
+	if map_data.is_empty():
+		return false
 
-	unlocked_nodes[node_id] = false
+	# Si no hemos empezado, todos los nodos de la primera columna están desbloqueados
+	if nodo_actual_id == -1:
+		for n in map_data.nodes:
+			if n.id == node_id and n.position.x == 0:
+				return true
+		return false
 
+	# Si ya estamos en el mapa, vemos si hay una línea directa desde donde estamos
+	for conn in map_data.connections:
+		if conn[0] == nodo_actual_id and conn[1] == node_id:
+			return true
 
-func complete_node(node_id: String) -> void:
-	if not _is_known_node(node_id):
-		push_warning("Intento de completar un nodo desconocido: %s" % node_id)
-		return
+	return false
 
-	completed_nodes[node_id] = true
+func is_node_completed(node_id: int) -> bool:
+	return nodos_completados.has(node_id)
 
-
-func is_node_unlocked(node_id: String) -> bool:
-	return bool(unlocked_nodes.get(node_id, false))
-
-
-func is_node_completed(node_id: String) -> bool:
-	return bool(completed_nodes.get(node_id, false))
-
-
-func _is_known_node(node_id: String) -> bool:
-	return ALL_NODE_IDS.has(node_id)
+func _is_known_node(node_id: int) -> bool:
+	if map_data.is_empty():
+		return false
+	for n in map_data.nodes:
+		if n.id == node_id:
+			return true
+	return false
