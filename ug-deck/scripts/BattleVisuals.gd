@@ -8,11 +8,15 @@ const ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
 @onready var enemy_sprite: Sprite2D = $EnemySprite
 @onready var player_placeholder: Label = $PlayerPlaceholder
 @onready var enemy_placeholder: Label = $EnemyPlaceholder
+@onready var player_anim_player: AnimationPlayer = $PlayerSprite/AnimationPlayer
 
 
 func _ready() -> void:
 	_try_load_texture(PLAYER_IMAGE_PATH, player_sprite, player_placeholder)
 	_try_load_texture(ENEMY_IMAGE_PATH, enemy_sprite, enemy_placeholder)
+
+	if player_anim_player.has_animation("idle"):
+		player_anim_player.play("idle")
 
 
 func _try_load_texture(path: String, sprite: Sprite2D, placeholder: Label) -> void:
