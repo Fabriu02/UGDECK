@@ -19,6 +19,14 @@ func _ready() -> void:
 		player_anim_player.play("idle")
 
 
+func set_enemy_image(path: String) -> void:
+	_try_load_texture(path, enemy_sprite, enemy_placeholder)
+
+
+func set_enemy_display_name(display_name: String) -> void:
+	enemy_placeholder.text = display_name
+
+
 func _try_load_texture(path: String, sprite: Sprite2D, placeholder: Label) -> void:
 	if not FileAccess.file_exists(path):
 		sprite.visible = false

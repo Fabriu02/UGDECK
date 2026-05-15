@@ -2,9 +2,11 @@ class_name generador_mapa
 extends Node
 
 # Configuración de la cuadrícula
-var num_columns: int = 10
+var num_columns: int = 4
+var total_nodes: int = 5
 var min_nodes_per_column: int = 1
-var max_nodes_per_column: int = 3
+var max_nodes_per_column: int = 2
+var nodes_per_column: Array[int] = [1, 2, 1, 1]
 
 # Datos del mapa generado
 var generated_nodes = [] # Lista de diccionarios {id, position, resource, connections}
@@ -18,11 +20,7 @@ func generate_map():
 
 	# PASO 1: Generar TODOS los nodos primero
 	for col in range(num_columns):
-		var num_nodes = randi_range(min_nodes_per_column, max_nodes_per_column)
-
-		# Forzar 1 nodo en la primera y última columna (inicio y jefe)
-		if col == 0 or col == num_columns - 1:
-			num_nodes = 1
+		var num_nodes = nodes_per_column[col]
 
 		for row in range(num_nodes):
 			var node_data = {
@@ -113,6 +111,12 @@ func _get_random_resource_for_column(col_index):
 	# 1. El Jefe final siempre va en la última columna
 	if col_index == num_columns - 1:
 		return load("res://scripts/map/examen_final.tres")
+
+	if col_index == 0:
+		return load("res://scripts/map/clase_interactiva.tres")
+
+	if col_index == 1:
+		return load("res://scripts/map/examen_parcial.tres")
 	
 	var r = randf()
 	
@@ -122,7 +126,7 @@ func _get_random_resource_for_column(col_index):
 			return load("res://scripts/map/clase_interactiva.tres")
 		else: 
 			# ¡Reactivamos Casilleros!
-			return load("res://scripts/map/casilleros.tres")
+			return load("res://scripts/map/examen_parcial.tres")
 			
 	# --- ZONA MEDIA (Columnas 3 a 6) ---
 	elif col_index < 7:

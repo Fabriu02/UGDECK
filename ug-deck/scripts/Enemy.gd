@@ -3,6 +3,7 @@ class_name Enemy
 
 @export var max_hp: int = 50
 @export var max_energy: int = 5
+@export var base_block: int = 0
 
 var current_hp: int
 var current_energy: int
@@ -22,7 +23,7 @@ func _ready() -> void:
 func reset_for_new_battle() -> void:
 	current_hp = max_hp
 	current_energy = max_energy
-	block = 0
+	block = base_block
 	attack_bonus = 0
 	attack_bonus_turns = 0
 	permanent_attack_bonus = 0
@@ -48,13 +49,13 @@ func spend_energy(amount: int) -> bool:
 
 # MODIFICADO: Ahora calcula si está vulnerable antes de restar la vida
 func take_damage(amount: int) -> void:
-	var daño_final := amount
+	var dano_final := amount
 	
 	# AGREGADO: Si tiene el estado vulnerable, el daño aumenta un 50%
 	if tiene_estado("vulnerable"):
-		daño_final = int(daño_final * 1.5)
+		dano_final = int(dano_final * 1.5)
 		
-	var remaining_damage := daño_final
+	var remaining_damage := dano_final
 
 	if block > 0:
 		var blocked_damage = min(block, remaining_damage)
@@ -84,19 +85,19 @@ func choose_next_intent(player: Player, player_hand_size: int, player_cards_play
 	])
 
 # AGREGADO: Función para calcular el daño que hace el enemigo (aplicando debilidad)
-func calcular_daño_enemigo(daño_base: int) -> int:
-	var daño_final := float(daño_base + attack_bonus + permanent_attack_bonus)
+func calcular_dano_enemigo(dano_base: int) -> int:
+	var dano_final := float(dano_base + attack_bonus + permanent_attack_bonus)
 
-	daño_final -= get_estado_total_valor("ataque_menos")
+	dano_final -= get_estado_total_valor("ataque_menos")
 	
 	# Si el enemigo tiene el estado "debil", hace 25% menos de daño
 	if tiene_estado("debil"):
-		daño_final *= 0.75
+		dano_final *= 0.75
 
 	if tiene_estado("distraccion"):
-		daño_final *= 0.8
+		dano_final *= 0.8
 		
-	return max(int(daño_final), 0)
+	return max(int(dano_final), 0)
 
 
 func get_playable_card_for_turn(player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> CardData:
@@ -193,7 +194,7 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 			var damage := 8
 			if player_hand_size >= 3:
 				damage += 4
-			return "Ataque %d" % calcular_daño_enemigo(damage)
+			return "Ataque %d" % calcular_dano_enemigo(damage)
 		"mirada_evaluadora":
 			return "Aplica Estrés 1"
 		"borrar_el_pizarron":
@@ -202,7 +203,7 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 			var damage := 10
 			if player.block <= 0:
 				damage += 3
-			return "Ataque %d" % calcular_daño_enemigo(damage)
+			return "Ataque %d" % calcular_dano_enemigo(damage)
 		"toma_asistencia":
 			var shield := 8
 			if player_cards_played_last_turn >= 3:
@@ -214,7 +215,7 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 			var damage := 14
 			if player.has_negative_state():
 				damage += 6
-			return "Ataque %d" % calcular_daño_enemigo(damage)
+			return "Ataque %d" % calcular_dano_enemigo(damage)
 		"criterio_estricto":
 			return "Gana +4 ataque x2"
 		"trabajo_practico_obligatorio":
@@ -227,9 +228,9 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 			var damage := 18
 			if player_hand_size < 3:
 				damage += 6
-			return "Ataque %d" % calcular_daño_enemigo(damage)
+			return "Ataque %d" % calcular_dano_enemigo(damage)
 		"correccion_en_rojo":
-			return "Ataque %d + Estrés" % calcular_daño_enemigo(12)
+			return "Ataque %d + Estrés" % calcular_dano_enemigo(12)
 		"recuperatorio_anunciado":
 			return "Escudo 15 y limpia 1 debuff"
 		"pregunta_capciosa":
@@ -237,12 +238,64 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 		"bibliografia_extra":
 			return "Roba -1 y skills +1 x2"
 		"oral_individual":
-			return "Ataque %d (ignora 50%% escudo)" % calcular_daño_enemigo(24)
+			return "Ataque %d (ignora 50%% escudo)" % calcular_dano_enemigo(24)
 		"cambio_de_consigna":
 			return "Descarta mano y roba 3"
 		"clase_de_repaso_mortal":
 			return "+5 ataque y 10 escudo"
 		"final_con_tribunal":
-			return "Ataque %d + Estrés + Distracción" % calcular_daño_enemigo(30)
+			return "Ataque %d + Estrés + Distracción" % calcular_dano_enemigo(30)
+		"silencio_incomodo":
+			return "Estres 1 y descarte si tenes 4+ cartas"
+		"pregunta_de_repaso":
+			return "Ataque %d" % calcular_dano_enemigo(7)
+		"quien_quiere_pasar":
+			return "Panico: proxima primera carta +1"
+		"lista_incompleta":
+			return "Descarta 1 o recibe 6"
+		"dictado_acelerado":
+			return "Roba -1 y defensas -25%"
+		"ejemplo_sin_resolver":
+			var damage := 13
+			if player.tiene_estado("confusion"):
+				damage += 5
+			return "Ataque %d" % calcular_dano_enemigo(damage)
+		"carpeta_prolija":
+			var shield := 9
+			if attack_bonus > 0 or permanent_attack_bonus > 0:
+				shield += 4
+			return "Escudo %d" % shield
+		"tema_que_entra_seguro":
+			return "Gana +3 ataque x2"
+		"respuesta_incompleta":
+			return "Ataque %d y -4 escudo" % calcular_dano_enemigo(12)
+		"correccion_oral":
+			return "Estres 2"
+		"consigna_ambigua":
+			return "Confusion 2"
+		"teoria_acumulada":
+			return "+2 ataque permanente y 6 escudo"
+		"parcial_con_inciso_sorpresa":
+			var damage := 17
+			if player_hand_size < 2:
+				damage += 7
+			return "Ataque %d" % calcular_dano_enemigo(damage)
+		"revision_severa":
+			return "Descarta 1 y castiga ataques en mano"
+		"esto_es_basico":
+			return "Habilidades +1 energia x2"
+		"bibliografia_obligatoria":
+			return "Distraccion 2"
+		"mesa_examinadora":
+			return "Ataque %d (ignora 40%% escudo si tiene escudo)" % calcular_dano_enemigo(22)
+		"criterio_invisible":
+			return "+4 ataque x2 y limpia 1 debuff"
+		"cambio_de_fecha":
+			return "Descarta 2 aleatorias y roba 1"
+		"final_definitivo":
+			var damage := 28
+			if player.tiene_estado("estres") or player.tiene_estado("distraccion"):
+				damage += 8
+			return "Ataque %d" % calcular_dano_enemigo(damage)
 		_:
 			return card.card_type

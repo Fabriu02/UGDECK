@@ -5,6 +5,14 @@ const CARD_SCENE := preload("res://scenes/Card.tscn")
 const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const PLAYER_DRAW_PER_TURN := 3
+const FIRST_ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
+const SECOND_ENEMY_IMAGE_PATH := "res://assets/characters/pepi enemigo 2.png"
+const FIRST_ENEMY_MAX_HP := 50
+const FIRST_ENEMY_BASE_BLOCK := 0
+const SECOND_ENEMY_MAX_HP := 200
+const SECOND_ENEMY_BASE_BLOCK := 15
+const FIRST_ENEMY_NAME := "Tom Apostol"
+const SECOND_ENEMY_NAME := "Pepi"
 
 @onready var player: Player = $"../Player"
 @onready var enemy: Enemy = $"../Enemy"
@@ -17,9 +25,11 @@ const PLAYER_DRAW_PER_TURN := 3
 @onready var hand_container: HBoxContainer = $"../UI/HandContainer"
 @onready var end_turn_button: Button = $"../UI/EndTurnButton"
 @onready var abandon_combat_button: Button = $"../UI/AbandonCombatButton"
+@onready var battle_visuals: BattleVisuals = $"../Visuals"
 
 var battle_has_ended := false
 var skip_next_enemy_turn := false
+var enemy_turn_finished_by_card := false
 
 # AGREGADO: Variable para saber si el juego está esperando que descartes una carta
 var waiting_for_discard := false 
@@ -31,10 +41,14 @@ var discard_selection_penalty_damage := 0
 var discard_selection_reward_block_per_card := 0
 var player_cards_played_this_turn := 0
 var player_cards_played_last_turn := 0
+var player_played_skill_this_turn := false
+var player_played_skill_last_turn := false
 var skip_next_player_draw := false
 var preserve_hand_for_next_turn := false
 var player_attacked_this_turn := false
 var temporary_card_cost_modifiers: Dictionary = {}
+var current_enemy_name := FIRST_ENEMY_NAME
+var returning_to_map := false
 
 
 func _ready() -> void:
@@ -46,21 +60,52 @@ func _ready() -> void:
 
 func start_battle() -> void:
 	battle_has_ended = false
+	returning_to_map = false
 	skip_next_enemy_turn = false
 	_reset_discard_selection()
 	end_turn_button.disabled = false
 	player_cards_played_this_turn = 0
 	player_cards_played_last_turn = 0
+	player_played_skill_this_turn = false
+	player_played_skill_last_turn = false
 	skip_next_player_draw = false
 	preserve_hand_for_next_turn = false
 	player_attacked_this_turn = false
 	temporary_card_cost_modifiers.clear()
+	_configure_enemy_for_current_node()
 	player.reset_for_new_battle()
 	enemy.reset_for_new_battle()
 	deck_manager.create_starting_deck()
-	enemy.set_professor_deck(EnemyCardLoader.load_professor_cards())
 	enemy.choose_next_intent(player, 0, player_cards_played_last_turn)
 	start_player_turn()
+
+
+func _configure_enemy_for_current_node() -> void:
+	if _is_second_enemy_node():
+		enemy.max_hp = SECOND_ENEMY_MAX_HP
+		enemy.base_block = SECOND_ENEMY_BASE_BLOCK
+		enemy.set_professor_deck(EnemyCardLoader.load_second_professor_cards())
+		battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH)
+		battle_visuals.set_enemy_display_name(SECOND_ENEMY_NAME)
+		current_enemy_name = SECOND_ENEMY_NAME
+	else:
+		enemy.max_hp = FIRST_ENEMY_MAX_HP
+		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
+		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards())
+		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
+		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
+		current_enemy_name = FIRST_ENEMY_NAME
+
+
+func _is_second_enemy_node() -> bool:
+	if GameState.map_data.is_empty() or GameState.nodo_actual_id == -1:
+		return false
+
+	for node_data in GameState.map_data.nodes:
+		if node_data.id == GameState.nodo_actual_id:
+			return node_data.position.x > 0
+
+	return false
 
 
 func start_player_turn() -> void:
@@ -71,6 +116,7 @@ func start_player_turn() -> void:
 	player.reset_for_new_turn()
 	player_cards_played_this_turn = 0
 	player_attacked_this_turn = false
+	player_played_skill_this_turn = false
 	temporary_card_cost_modifiers.clear()
 
 	if player.skip_next_player_turn:
@@ -122,6 +168,8 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	player_cards_played_this_turn += 1
 	if _is_attack_card(card_data):
 		player_attacked_this_turn = true
+	elif _is_skill_card(card_data):
+		player_played_skill_this_turn = true
 
 	_apply_card_effect(card_data)
 	update_ui()
@@ -143,6 +191,7 @@ func end_player_turn() -> void:
 	player.reducir_duracion_estados()
 
 	player_cards_played_last_turn = player_cards_played_this_turn
+	player_played_skill_last_turn = player_played_skill_this_turn
 	end_turn_button.disabled = true
 	enemy_turn()
 
@@ -155,8 +204,11 @@ func enemy_turn() -> void:
 	else:
 		var card_to_play := enemy.get_playable_card_for_turn(player, deck_manager.hand.size(), player_cards_played_last_turn)
 		if card_to_play != null:
+			enemy_turn_finished_by_card = false
 			_execute_enemy_card(card_to_play)
 			if waiting_for_discard:
+				return
+			if enemy_turn_finished_by_card:
 				return
 		else:
 			print("DEBUG Enemy: no encontró carta jugable, pasa el turno.")
@@ -189,7 +241,8 @@ func update_ui() -> void:
 		player.max_hp,
 		player.block
 	]
-	enemy_stats_label.text = "Tom Apostol - Vida: %d/%d | Escudo: %d" % [
+	enemy_stats_label.text = "%s - Vida: %d/%d | Escudo: %d" % [
+		current_enemy_name,
 		enemy.current_hp,
 		enemy.max_hp,
 		enemy.block
@@ -207,24 +260,41 @@ func check_combat_end() -> void:
 		enemy_intent_label.text = "Victoria: aprobaste este combate."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
-		# Cuando exista la pantalla/boton de victoria, llamar a:
-		# complete_first_battle_and_return_to_map()
+		GameState.completar_nodo_actual()
+		_return_to_map()
 	elif player.is_dead():
 		battle_has_ended = true
 		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
+		GameState.volver_al_primer_nodo()
+		_return_to_map()
 
 
 func complete_first_battle_and_return_to_map() -> void:
-	GameState.complete_node(GameState.NODE_PRIMER_PARCIAL)
-	GameState.unlock_node(GameState.NODE_TRABAJO_PRACTICO)
-	get_tree().change_scene_to_file(MAP_SCENE_PATH)
+	GameState.completar_nodo_actual()
+	_return_to_map()
 
 
 func abandon_combat() -> void:
 	battle_has_ended = true
-	get_tree().change_scene_to_file(MAP_SCENE_PATH)
+	_return_to_map()
+
+
+func _return_to_map() -> void:
+	if returning_to_map:
+		return
+
+	returning_to_map = true
+	call_deferred("_deferred_return_to_map")
+
+
+func _deferred_return_to_map() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+
+	tree.change_scene_to_file(MAP_SCENE_PATH)
 
 
 func _show_hand() -> void:
@@ -543,7 +613,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			var damage := 8
 			if deck_manager.hand.size() >= 3:
 				damage += 4
-			player.take_damage(enemy.calcular_daño_enemigo(damage))
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"mirada_evaluadora":
 			player.aplicar_estado("estres", 0, 1)
 		"borrar_el_pizarron":
@@ -553,7 +623,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			var damage := 10
 			if player.block <= 0:
 				damage += 3
-			player.take_damage(enemy.calcular_daño_enemigo(damage))
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"toma_asistencia":
 			var block_gain := 8
 			if player_cards_played_last_turn >= 3:
@@ -565,7 +635,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			var damage := 14
 			if player.has_negative_state():
 				damage += 6
-			player.take_damage(enemy.calcular_daño_enemigo(damage))
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"criterio_estricto":
 			enemy.gain_attack_bonus(4, 2)
 		"trabajo_practico_obligatorio":
@@ -578,19 +648,23 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			var damage := 18
 			if deck_manager.hand.size() < 3:
 				damage += 6
-			player.take_damage(enemy.calcular_daño_enemigo(damage))
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"correccion_en_rojo":
-			player.take_damage(enemy.calcular_daño_enemigo(12))
+			player.take_damage(enemy.calcular_dano_enemigo(12))
 			player.aplicar_estado("estres", 0, 1)
 		"recuperatorio_anunciado":
 			enemy.gain_block(15)
 			enemy.remove_one_negative_state()
 		"pregunta_capciosa":
-			_begin_enemy_forced_discard(2, 8)
+			if not _begin_enemy_forced_discard(2, 8):
+				if not battle_has_ended:
+					_finish_enemy_turn()
+				enemy_turn_finished_by_card = true
+				return
 		"bibliografia_extra":
 			player.aplicar_estado("bibliografia_extra", 1, 2)
 		"oral_individual":
-			player.take_damage_ignoring_block(enemy.calcular_daño_enemigo(24), 0.5)
+			player.take_damage_ignoring_block(enemy.calcular_dano_enemigo(24), 0.5)
 		"cambio_de_consigna":
 			deck_manager.discard_hand()
 			deck_manager.draw_cards(3)
@@ -601,9 +675,80 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			enemy.gain_permanent_attack_bonus(5)
 			enemy.gain_block(10)
 		"final_con_tribunal":
-			player.take_damage(enemy.calcular_daño_enemigo(30))
+			player.take_damage(enemy.calcular_dano_enemigo(30))
 			player.aplicar_estado("estres", 0, 1)
 			player.aplicar_estado("distraccion", 0, 1)
+		"silencio_incomodo":
+			player.aplicar_estado("estres", 0, 1)
+			if deck_manager.hand.size() >= 4:
+				deck_manager.discard_random_cards(1)
+				_show_hand()
+		"pregunta_de_repaso":
+			var damage := 7
+			if player_played_skill_last_turn:
+				damage += 5
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
+		"quien_quiere_pasar":
+			player.aplicar_estado("panico", 0, 1)
+		"lista_incompleta":
+			_begin_enemy_forced_discard(1, 6)
+		"dictado_acelerado":
+			player.aplicar_estado("distraccion", 0, 1)
+			player.aplicar_estado("defensa_menos", 0, 1)
+		"ejemplo_sin_resolver":
+			var damage := 13
+			if player.tiene_estado("confusion"):
+				damage += 5
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
+		"carpeta_prolija":
+			var block_gain := 9
+			if enemy.attack_bonus > 0 or enemy.permanent_attack_bonus > 0:
+				block_gain += 4
+			enemy.gain_block(block_gain)
+		"tema_que_entra_seguro":
+			enemy.gain_attack_bonus(3, 2)
+		"respuesta_incompleta":
+			player.take_damage(enemy.calcular_dano_enemigo(12))
+			player.block = max(player.block - 4, 0)
+		"correccion_oral":
+			player.aplicar_estado("estres", 0, 2)
+		"consigna_ambigua":
+			player.aplicar_estado("confusion", 0, 2)
+		"teoria_acumulada":
+			enemy.gain_permanent_attack_bonus(2)
+			enemy.gain_block(6)
+		"parcial_con_inciso_sorpresa":
+			var damage := 17
+			if deck_manager.hand.size() < 2:
+				damage += 7
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
+		"revision_severa":
+			if not deck_manager.hand.is_empty():
+				deck_manager.discard_random_cards(1)
+				_show_hand()
+			player.take_damage(enemy.calcular_dano_enemigo(_count_attack_cards_in_hand() * 4))
+		"esto_es_basico":
+			player.aplicar_estado("habilidad_mas", 0, 2)
+		"bibliografia_obligatoria":
+			player.aplicar_estado("distraccion", 0, 2)
+		"mesa_examinadora":
+			var damage := enemy.calcular_dano_enemigo(22)
+			if enemy.block > 0:
+				player.take_damage_ignoring_block(damage, 0.4)
+			else:
+				player.take_damage(damage)
+		"criterio_invisible":
+			enemy.gain_attack_bonus(4, 2)
+			enemy.remove_one_negative_state()
+		"cambio_de_fecha":
+			deck_manager.discard_random_cards(2)
+			deck_manager.draw_cards(1)
+			_show_hand()
+		"final_definitivo":
+			var damage := 28
+			if player.tiene_estado("estres") or player.tiene_estado("distraccion"):
+				damage += 8
+			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		_:
 			print("DEBUG Enemy: carta sin implementación específica '%s'." % card_data.card_name)
 
@@ -641,16 +786,17 @@ func _begin_discard_selection(mode: String, amount: int, penalty_damage: int, re
 		enemy_intent_label.text = "Elige una carta para descartar"
 
 
-func _begin_enemy_forced_discard(amount: int, penalty_damage: int) -> void:
+func _begin_enemy_forced_discard(amount: int, penalty_damage: int) -> bool:
 	var available_cards := deck_manager.hand.size()
 	if available_cards <= 0:
 		player.take_damage(penalty_damage)
 		update_ui()
 		check_combat_end()
-		return
+		return false
 
 	_begin_discard_selection("enemy_forced", min(amount, available_cards), penalty_damage)
 	discard_selection_requested_total = amount
+	return true
 
 
 func _finish_enemy_forced_discard() -> void:
@@ -688,6 +834,18 @@ func _apply_player_attack(base_damage: int) -> void:
 
 func _is_attack_card(card_data: CardData) -> bool:
 	return card_data.card_type == "ataque" or card_data.effect_id == "basic_attack" or card_data.effect_id == "machetearse"
+
+
+func _is_skill_card(card_data: CardData) -> bool:
+	return card_data.card_type == "habilidad" or card_data.card_type == "defensa" or card_data.card_type == "robo" or card_data.card_type == "curacion" or card_data.card_type == "energia"
+
+
+func _count_attack_cards_in_hand() -> int:
+	var total := 0
+	for card_data in deck_manager.hand:
+		if _is_attack_card(card_data):
+			total += 1
+	return total
 
 
 func _set_temporary_cost_modifier(card_data: CardData, modifier: int) -> void:

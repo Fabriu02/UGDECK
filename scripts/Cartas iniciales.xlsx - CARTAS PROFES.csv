@@ -20,3 +20,23 @@ Oral individual,Ataque,4,Inflige 24 de daño. Ignora el 50% del escudo del jugad
 Cambio de consigna,Descarte/control de mano,3,El jugador descarta toda su mano y roba 3 cartas nuevas.,La consigna evolucionó. Vos no.,Ayudante de cátedra
 Clase de repaso mortal,Buff propio,3,El profesor gana +5 de ataque y 10 de escudo.,"Dijo “repaso”, pero era una emboscada.",Ayudante de cátedra
 Final con tribunal,Ataque,5,Inflige 30 de daño. Aplica “Estrés” y “Distracción” durante 1 turno.,Tres profesores. Una silla. Ninguna salida.,Ingeniero
+Silencio incómodo,Debuff enemigo,1,"Aplica “Estrés” al jugador durante 1 turno. Si el jugador tiene 4 o más cartas en mano, descarta 1 carta aleatoria.",Nadie habla. Nadie respira. Todos sufren.,Desertor
+Pregunta de repaso,Ataque,1,"Inflige 7 de daño. Si el jugador jugó una carta de habilidad el turno anterior, inflige 5 adicional.","Era de repaso, pero igual dolió.",Desertor
+“¿Quién quiere pasar?”,Estados negativos,1,Aplica “Pánico” durante 1 turno: la próxima carta jugada por el jugador cuesta 1 energía más.,La silla del frente empieza a brillar.,Desertor
+Lista incompleta,Descarte/control de mano,1,"El jugador descarta 1 carta. Si no tiene cartas en mano, recibe 6 de daño.",El problema no es faltar. Es que te nombren.,Desertor
+Dictado acelerado,Debuff enemigo,2,"Durante 1 turno, el jugador roba 1 carta menos y sus cartas de defensa otorgan 25% menos escudo.",Escribir rápido también es una mecánica de supervivencia.,Ingresante
+Ejemplo sin resolver,Ataque,2,"Inflige 13 de daño. Si el jugador tiene “Confusión”, inflige 5 adicional.",Lo explicó… pero dejó justo la parte importante.,Ingresante
+Carpeta prolija,Defensa,1,"El profesor gana 9 de escudo. Si tiene algún buff activo, gana 4 de escudo adicional.",Orden administrativo: la defensa más temida.,Ingresante
+Tema que entra seguro,Buff propio,2,El profesor gana +3 de ataque durante 2 turnos.,"Cuando dice “esto entra”, ya es tarde.",Ingresante
+Respuesta incompleta,Ataque,2,Inflige 12 de daño y reduce el escudo actual del jugador en 4.,Casi estaba bien. Ese “casi” te destruyó.,Ingresante
+Corrección oral,Debuff enemigo,2,Aplica “Estrés” durante 2 turnos: las cartas de ataque del jugador infligen 20% menos daño.,Te corrige antes de que termines la frase.,Recursante
+Consigna ambigua,Estados negativos,2,Aplica “Confusión” durante 2 turnos: la próxima carta de robo del jugador roba 1 carta menos.,La entendiste. Después la leíste de nuevo. Error.,Recursante
+Teoría acumulada,Buff propio,3,El profesor gana +2 de ataque permanente y 6 de escudo.,Cada unidad anterior vuelve como fantasma académico.,Recursante
+Parcial con inciso sorpresa,Ataque,3,"Inflige 17 de daño. Si el jugador tiene menos de 2 cartas en mano, inflige 7 adicional.",El inciso C no estaba en tus planes de vida.,Recursante
+Revisión severa,Descarte/control de mano,2,El jugador elige 1 carta y la descarta. Luego recibe 4 de daño por cada carta de ataque en su mano.,No revisa para ayudar. Revisa para encontrar.,Recursante
+“Esto es básico”,Debuff enemigo,3,"Durante 2 turnos, las cartas de habilidad del jugador cuestan 1 energía adicional.",Nada baja más la moral que esa frase.,Recursante
+Bibliografía obligatoria,Estados negativos,3,Aplica “Distracción” durante 2 turnos: el jugador roba 1 carta menos al inicio del turno.,Eran 3 páginas. Ahora son 80.,Ayudante de cátedra
+Mesa examinadora,Ataque,4,"Inflige 22 de daño. Si el profesor tiene escudo, ignora 40% del escudo del jugador.",Muchas miradas. Pocas esperanzas.,Ayudante de cátedra
+Criterio invisible,Buff propio,3,El profesor gana +4 de ataque durante 2 turnos y elimina 1 debuff propio.,"Nadie sabe cuál es, pero todos lo padecen.",Ayudante de cátedra
+Cambio de fecha,Descarte/control de mano,3,El jugador descarta 2 cartas aleatorias y roba 1 carta.,El calendario también puede ser enemigo.,Ayudante de cátedra
+Final definitivo,Ataque,5,"Inflige 28 de daño. Si el jugador tiene “Estrés” o “Distracción”, inflige 8 adicional.","Esta vez no hay otra mesa. O sí, pero no querés saber.",Ingeniero

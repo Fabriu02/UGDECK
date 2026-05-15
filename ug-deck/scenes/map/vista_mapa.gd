@@ -7,6 +7,8 @@ extends Control
 @export var x_spacing: float = 150.0
 @export var y_spacing: float = 120.0
 @export var map_offset: Vector2 = Vector2(100, 100)
+const NORMAL_NODE_SIZE := Vector2(80, 80)
+const FINAL_NODE_SIZE := Vector2(200, 200)
 
 var map_data: Dictionary
 var visual_nodes = {}
@@ -22,24 +24,37 @@ func _ready():
 	$ScrollContainer/contenidomapa.draw.connect(_on_contenidomapa_draw)
 
 	# Le pedimos al Autoload que genere el mapa si no tiene uno
-	if GameState.map_data.is_empty():
-		var generator = generador_mapa.new()
+	var generator = generador_mapa.new()
+	var current_nodes = GameState.map_data.get("nodes", [])
+	var should_generate_map = GameState.map_data.is_empty() or current_nodes.size() != generator.total_nodes or _get_max_map_column(current_nodes) != generator.num_columns - 1
+	if should_generate_map:
 		GameState.map_data = generator.generate_map()
+		GameState.nodo_actual_id = -1
+		GameState.nodos_completados.clear()
 
 	# Descargamos los datos guardados
 	map_data = GameState.map_data
 	nodo_actual_id = GameState.nodo_actual_id
 
+	await get_tree().process_frame
 	_generate_and_visualize()
+
+func _get_max_map_column(nodes: Array) -> int:
+	var max_column = -1
+	for node_data in nodes:
+		max_column = max(max_column, int(node_data.position.x))
+	return max_column
 
 func _generate_and_visualize():
 	# Solo creamos el generador para leer sus variables (num_columns),
 	# ¡NO llamamos a generate_map() para no borrar el progreso!
 	var generator = generador_mapa.new()
+	map_offset = _get_centered_map_offset(generator)
 
 	for node_data in map_data.nodes:
 		var visual_node = map_node_scene.instantiate()
 		$ScrollContainer/contenidomapa.add_child(visual_node)
+		visual_node.set_anchors_preset(Control.PRESET_TOP_LEFT)
 
 		var visual_pos = map_offset + Vector2(node_data.position.x * x_spacing, node_data.position.y * y_spacing)
 
@@ -63,16 +78,16 @@ func _generate_and_visualize():
 
 		# Si es la última columna (el Jefe / Examen Final)
 		if node_data.position.x == generator.num_columns - 1:
-			visual_node.custom_minimum_size = Vector2(200, 200) # ¡MÁS GIGANTE!
-			visual_node.size = Vector2(200, 200)
+			visual_node.custom_minimum_size = FINAL_NODE_SIZE
+			visual_node.size = FINAL_NODE_SIZE
 
 			# Corrección matemática para el centro
 			visual_node.position -= Vector2(60, 60)
 
 		else:
 			# Materias normales
-			visual_node.custom_minimum_size = Vector2(80, 80)
-			visual_node.size = Vector2(80, 80)
+			visual_node.custom_minimum_size = NORMAL_NODE_SIZE
+			visual_node.size = NORMAL_NODE_SIZE
 
 		visual_nodes[node_data.id] = visual_node
 
@@ -81,8 +96,9 @@ func _generate_and_visualize():
 	$ScrollContainer/contenidomapa.queue_redraw()
 
 	# --- TAMAÑO AUTOMÁTICO Y BASE PARA EL ZOOM ---
-	var ancho_total = map_offset.x + (generator.num_columns * x_spacing) + 200 # 200 de margen derecho
-	var alto_total = map_offset.y + (generator.max_nodes_per_column * y_spacing) + 200 # Margen inferior
+	var viewport_size = $ScrollContainer.size
+	var ancho_total = max(viewport_size.x, map_offset.x + ((generator.num_columns - 1) * x_spacing) + FINAL_NODE_SIZE.x)
+	var alto_total = max(viewport_size.y, map_offset.y + ((generator.max_nodes_per_column - 1) * y_spacing) + FINAL_NODE_SIZE.y)
 
 	# Guardamos el tamaño base para que la ruedita del ratón no lo rompa
 	map_base_size = Vector2(ancho_total, alto_total)
@@ -90,10 +106,20 @@ func _generate_and_visualize():
 
 	_actualizar_estado_visual()
 
+func _get_centered_map_offset(generator: generador_mapa) -> Vector2:
+	var viewport_size = $ScrollContainer.size
+	if viewport_size == Vector2.ZERO:
+		viewport_size = get_viewport_rect().size
+
+	var map_width = ((generator.num_columns - 1) * x_spacing) + FINAL_NODE_SIZE.x - 60.0
+	var map_height = ((generator.max_nodes_per_column - 1) * y_spacing) + FINAL_NODE_SIZE.y
+	var x = max((viewport_size.x - map_width) / 2.0, 0.0)
+	var y = max((viewport_size.y - map_height) / 2.0, 0.0) + 60.0
+
+	return Vector2(x, y)
+
 # --- FUNCIÓN QUE DIBUJA LAS LÍNEAS ---
 func _on_contenidomapa_draw():
-	print("Intentando dibujar ", map_data.connections.size(), " líneas de conexión.")
-
 	for conn in map_data.connections:
 		if not visual_nodes.has(conn[0]) or not visual_nodes.has(conn[1]):
 			continue
@@ -153,6 +179,7 @@ func _actualizar_estado_visual():
 			boton.modulate = Color(0.3, 0.3, 0.3, 1.0)
 		elif data_del_boton.id == nodo_actual_id:
 			# Nodo actual en el que estamos parados (brilla verde)
+			boton.disabled = false
 			boton.modulate = Color(0.8, 1.0, 0.8, 1.0)
 		elif GameState.is_node_unlocked(data_del_boton.id):
 			# Nodos a los que podemos viajar (color normal y clic habilitado)

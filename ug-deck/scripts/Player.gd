@@ -99,7 +99,13 @@ func get_effective_card_cost(card_data: CardData, cards_played_this_turn: int) -
 	if cards_played_this_turn == 0 and tiene_estado("trabajo_practico_obligatorio"):
 		total_cost += 1
 
-	if tiene_estado("bibliografia_extra") and card_data.card_type == "skill":
+	if cards_played_this_turn == 0 and tiene_estado("panico"):
+		total_cost += 1
+
+	if tiene_estado("bibliografia_extra") and (card_data.card_type == "skill" or card_data.card_type == "habilidad"):
+		total_cost += 1
+
+	if tiene_estado("habilidad_mas") and (card_data.card_type == "skill" or card_data.card_type == "habilidad"):
 		total_cost += 1
 
 	if tiene_estado("final_promocionado"):
@@ -131,6 +137,9 @@ func gain_block(amount: int) -> void:
 	
 	# Si tiene el estado distraccion, gana 25% menos de escudo
 	if tiene_estado("distraccion"):
+		escudo_final *= 0.75
+
+	if tiene_estado("defensa_menos"):
 		escudo_final *= 0.75
 
 	escudo_final += defense_card_bonus
@@ -239,6 +248,9 @@ func remove_one_negative_state() -> bool:
 		"confusion",
 		"bibliografia_extra",
 		"trabajo_practico_obligatorio",
+		"panico",
+		"defensa_menos",
+		"habilidad_mas",
 	]
 	for index in range(estados.size()):
 		if removable_states.has(estados[index].nombre):

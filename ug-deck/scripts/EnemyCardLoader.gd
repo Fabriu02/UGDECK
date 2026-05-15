@@ -2,6 +2,7 @@ extends RefCounted
 class_name EnemyCardLoader
 
 const CSV_FILE_NAME := "Cartas iniciales.xlsx - CARTAS PROFES.csv"
+const PROFESSOR_CARD_COUNT := 20
 const REQUIRED_COLUMNS := [
 	"nombre de la carta",
 	"tipo",
@@ -13,12 +14,17 @@ const REQUIRED_COLUMNS := [
 
 
 static func load_professor_cards() -> Array[CardData]:
-	return load_cards_from_csv(CSV_FILE_NAME)
+	return load_cards_from_csv(CSV_FILE_NAME, 0, PROFESSOR_CARD_COUNT)
 
 
-static func load_cards_from_csv(csv_file_name: String) -> Array[CardData]:
+static func load_second_professor_cards() -> Array[CardData]:
+	return load_cards_from_csv(CSV_FILE_NAME, PROFESSOR_CARD_COUNT, PROFESSOR_CARD_COUNT)
+
+
+static func load_cards_from_csv(csv_file_name: String, start_index: int = 0, max_cards: int = -1) -> Array[CardData]:
 	var csv_path := _resolve_csv_path(csv_file_name)
 	var cards: Array[CardData] = []
+	var parsed_cards := 0
 
 	if csv_path.is_empty():
 		print("WARNING EnemyCardLoader: no se pudo resolver la ruta del CSV de cartas.")
@@ -46,7 +52,9 @@ static func load_cards_from_csv(csv_file_name: String) -> Array[CardData]:
 
 		var card := _parse_row(row, headers)
 		if card != null:
-			cards.append(card)
+			if parsed_cards >= start_index and (max_cards < 0 or cards.size() < max_cards):
+				cards.append(card)
+			parsed_cards += 1
 
 	print("DEBUG EnemyCardLoader: cargadas %d cartas desde %s" % [cards.size(), csv_path])
 	return cards
