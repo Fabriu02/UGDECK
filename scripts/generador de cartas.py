@@ -1,6 +1,7 @@
 import os
 import re
 import textwrap
+from pathlib import Path
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 
@@ -8,10 +9,10 @@ from PIL import Image, ImageDraw, ImageFont
 # =========================
 # CONFIGURACIÓN GENERAL
 # =========================
-df = pd.read_csv("Cartas iniciales.xlsx - CARTAS PROTA.csv", skiprows=1)
-CSV_CARTAS = "Cartas iniciales.xlsx - CARTAS PROTA.csv"
-PLANTILLA = "templates/carta_vacia.jpeg"
-CARPETA_SALIDA = "cartas_generadas"
+BASE_DIR = Path(__file__).resolve().parent
+CSV_CARTAS = BASE_DIR / "Cartas iniciales.xlsx - CARTAS PROTA.csv"
+PLANTILLA = BASE_DIR / "templates" / "carta_vacia.png"
+CARPETA_SALIDA = BASE_DIR / "cartas_generadas"
 
 os.makedirs(CARPETA_SALIDA, exist_ok=True)
 
@@ -28,7 +29,7 @@ def cargar_fuente(ruta, tamaño):
 
 
 # Si tenés una fuente pixel, ponela en fuentes/pixel.ttf
-FUENTE_PIXEL = "fuentes/pixel.ttf"
+FUENTE_PIXEL = BASE_DIR / "fuentes" / "pixel.ttf"
 
 fuente_coste = cargar_fuente(FUENTE_PIXEL, 24)
 fuente_nombre = cargar_fuente(FUENTE_PIXEL, 13)
@@ -218,6 +219,9 @@ def generar_carta(fila):
 def leer_cartas():
     # Tu CSV tiene una primera fila que dice "CARTAS DEL PROTA",
     # por eso usamos skiprows=1 para saltarla.
+    if not CSV_CARTAS.exists():
+        raise FileNotFoundError(f"No se encontró el CSV de cartas: {CSV_CARTAS}")
+
     df = pd.read_csv(CSV_CARTAS, skiprows=1)
 
     # Limpia filas vacías
