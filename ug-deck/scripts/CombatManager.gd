@@ -1,7 +1,6 @@
 extends Node
 class_name CombatManager
 
-const CARD_SCENE := preload("res://scenes/Card.tscn")
 const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const PLAYER_DRAW_PER_TURN := 3
@@ -14,6 +13,8 @@ const SECOND_ENEMY_BASE_BLOCK := 15
 const FIRST_ENEMY_NAME := "Tom Apostol"
 const SECOND_ENEMY_NAME := "Pepi"
 
+@export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
+
 @onready var player: Player = $"../Player"
 @onready var enemy: Enemy = $"../Enemy"
 @onready var deck_manager: DeckManager = $"../DeckManager"
@@ -23,6 +24,11 @@ const SECOND_ENEMY_NAME := "Pepi"
 @onready var energy_label: Label = $"../UI/EnergyLabel"
 @onready var enemy_intent_label: Label = $"../UI/EnemyIntentLabel"
 @onready var hand_container: HBoxContainer = $"../UI/HandContainer"
+@onready var card_animation_layer: Control = $"../UI/CardAnimationLayer"
+@onready var draw_pile_area: Control = $"../UI/DrawPileArea"
+@onready var start_fight_banner: Control = $"../UI/StartFightBanner"
+@onready var start_fight_banner_panel: Panel = $"../UI/StartFightBanner/Panel"
+@onready var start_fight_banner_label: Label = $"../UI/StartFightBanner/Panel/Label"
 @onready var end_turn_button: Button = $"../UI/EndTurnButton"
 @onready var abandon_combat_button: Button = $"../UI/AbandonCombatButton"
 @onready var battle_visuals: BattleVisuals = $"../Visuals"
@@ -55,7 +61,7 @@ func _ready() -> void:
 	randomize()
 	end_turn_button.pressed.connect(end_player_turn)
 	abandon_combat_button.pressed.connect(abandon_combat)
-	start_battle()
+	await start_battle()
 
 
 func start_battle() -> void:
@@ -77,7 +83,8 @@ func start_battle() -> void:
 	enemy.reset_for_new_battle()
 	deck_manager.create_starting_deck()
 	enemy.choose_next_intent(player, 0, player_cards_played_last_turn)
-	start_player_turn()
+	await _show_start_fight_banner()
+	await start_player_turn()
 
 
 func _configure_enemy_for_current_node() -> void:
@@ -130,12 +137,13 @@ func start_player_turn() -> void:
 	if skip_next_player_draw:
 		skip_next_player_draw = false
 		preserve_hand_for_next_turn = false
+		_show_hand()
 	else:
 		preserve_hand_for_next_turn = false
 		var draw_amount := player.get_draw_amount(PLAYER_DRAW_PER_TURN)
-		deck_manager.draw_cards(draw_amount)
+		var drawn_cards := deck_manager.draw_cards(draw_amount)
+		await _animate_drawn_cards(drawn_cards)
 
-	_show_hand()
 	update_ui()
 
 
@@ -301,10 +309,157 @@ func _show_hand() -> void:
 	_clear_hand_ui()
 
 	for card_data in deck_manager.hand:
-		var card_ui: CardUI = CARD_SCENE.instantiate()
+		var card_ui: CardUI = card_scene.instantiate()
 		hand_container.add_child(card_ui)
 		card_ui.setup(card_data)
 		card_ui.card_clicked.connect(play_card)
+
+
+func _show_start_fight_banner() -> void:
+	start_fight_banner_label.text = "COMIENZA EL COMBATE"
+	start_fight_banner.visible = true
+	start_fight_banner.modulate.a = 0.0
+	await get_tree().process_frame
+	start_fight_banner_panel.scale = Vector2(0.82, 0.82)
+	start_fight_banner_panel.pivot_offset = start_fight_banner_panel.size / 2.0
+
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(
+		start_fight_banner,
+		"modulate:a",
+		1.0,
+		0.22
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(
+		start_fight_banner_panel,
+		"scale",
+		Vector2.ONE,
+		0.32
+	).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+	await tween.finished
+	await get_tree().create_timer(0.65).timeout
+
+	var fade_tween: Tween = create_tween()
+	fade_tween.tween_property(
+		start_fight_banner,
+		"modulate:a",
+		0.0,
+		0.28
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+	await fade_tween.finished
+	start_fight_banner.visible = false
+	start_fight_banner.modulate.a = 1.0
+	start_fight_banner_panel.scale = Vector2.ONE
+
+
+func animate_card_draw(card_data: CardData) -> void:
+	var drawn_cards: Array[CardData] = [card_data]
+	await _animate_drawn_cards(drawn_cards)
+
+
+func _animate_drawn_cards(drawn_cards: Array[CardData]) -> void:
+	_clear_hand_ui()
+
+	var remaining_drawn_cards: Array[CardData] = drawn_cards.duplicate()
+	for card_data in deck_manager.hand:
+		if remaining_drawn_cards.has(card_data):
+			remaining_drawn_cards.erase(card_data)
+		else:
+			var card_ui: CardUI = card_scene.instantiate()
+			hand_container.add_child(card_ui)
+			card_ui.setup(card_data)
+			card_ui.card_clicked.connect(play_card)
+
+	if drawn_cards.is_empty():
+		return
+
+	await get_tree().process_frame
+
+	var existing_card_count: int = hand_container.get_child_count()
+	var final_card_count: int = existing_card_count + drawn_cards.size()
+	var animated_cards: Array[CardUI] = []
+
+	for index in range(drawn_cards.size()):
+		var card_data: CardData = drawn_cards[index]
+		var card_ui: CardUI = card_scene.instantiate()
+		card_animation_layer.add_child(card_ui)
+		card_ui.setup(card_data)
+		card_ui.disabled = true
+		card_ui.global_position = _get_card_draw_start_position(card_ui, index, drawn_cards.size())
+		card_ui.scale = Vector2(0.2, 0.2)
+		card_ui.modulate.a = 0.0
+		animated_cards.append(card_ui)
+
+	await get_tree().process_frame
+
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+
+	for index in range(animated_cards.size()):
+		var card_ui: CardUI = animated_cards[index]
+		var delay: float = index * 0.08
+		var final_position: Vector2 = _get_hand_card_position(existing_card_count + index, final_card_count)
+
+		tween.tween_property(
+			card_ui,
+			"global_position",
+			final_position,
+			0.35
+		).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+		tween.tween_property(
+			card_ui,
+			"scale",
+			Vector2.ONE,
+			0.35
+		).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+		tween.tween_property(
+			card_ui,
+			"modulate:a",
+			1.0,
+			0.20
+		).set_delay(delay)
+
+	await tween.finished
+
+	for card_ui in animated_cards:
+		card_animation_layer.remove_child(card_ui)
+		hand_container.add_child(card_ui)
+		card_ui.scale = Vector2.ONE
+		card_ui.modulate.a = 1.0
+		card_ui.disabled = false
+		card_ui.card_clicked.connect(play_card)
+
+
+func _get_card_draw_start_position(card_ui: CardUI, card_index: int = 0, card_count: int = 1) -> Vector2:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var card_width: float = maxf(card_ui.size.x, card_ui.custom_minimum_size.x)
+	var spacing: float = 24.0
+	var total_width: float = card_width * card_count + spacing * maxi(card_count - 1, 0)
+	var x: float = viewport_size.x / 2.0 - total_width / 2.0 + (card_width + spacing) * card_index
+	var y: float = viewport_size.y + 40.0
+	return Vector2(x, y)
+
+
+func _get_next_hand_card_position() -> Vector2:
+	var card_count: int = hand_container.get_child_count()
+	return _get_hand_card_position(card_count, card_count + 1)
+
+
+func _get_hand_card_position(card_index: int, card_count: int) -> Vector2:
+	var card_width: float = 220.0
+	var spacing: float = 12.0
+	var total_width: float = card_width * card_count + spacing * maxi(card_count - 1, 0)
+	var hand_width: float = hand_container.size.x
+	var hand_left: float = hand_container.global_position.x
+	var x: float = hand_left + hand_width / 2.0 - total_width / 2.0 + (card_width + spacing) * card_index
+	var y: float = hand_container.global_position.y
+
+	return Vector2(x, y)
 
 
 func _clear_hand_ui() -> void:
