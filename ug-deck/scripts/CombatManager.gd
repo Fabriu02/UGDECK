@@ -6,13 +6,13 @@ const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const PLAYER_DRAW_PER_TURN := 3
 const FIRST_ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
-const SECOND_ENEMY_IMAGE_PATH := "res://assets/characters/pepi enemigo 2.png"
+const SECOND_ENEMY_IMAGE_PATH := "res://assets/characters/pepo enemigo 2.png"
 const FIRST_ENEMY_MAX_HP := 50
 const FIRST_ENEMY_BASE_BLOCK := 0
 const SECOND_ENEMY_MAX_HP := 200
 const SECOND_ENEMY_BASE_BLOCK := 15
 const FIRST_ENEMY_NAME := "Tom Apostol"
-const SECOND_ENEMY_NAME := "Pepi"
+const SECOND_ENEMY_NAME := "Pepo"
 
 @export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
 
