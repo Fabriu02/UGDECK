@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bsl2quwb3acrp"
-path="res://.godot/imported/pepi enemigo 2.png-473102fbcfac6dd147946b82f3a76981.ctex"
+path="res://.godot/imported/pepo enemigo 2.png-e0f55c521b860ac538e76f462be4eec3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/pepi enemigo 2.png"
-dest_files=["res://.godot/imported/pepi enemigo 2.png-473102fbcfac6dd147946b82f3a76981.ctex"]
+source_file="res://assets/characters/pepo enemigo 2.png"
+dest_files=["res://.godot/imported/pepo enemigo 2.png-e0f55c521b860ac538e76f462be4eec3.ctex"]
 
 [params]
 
