@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://df7sqkvloq7di"]
+
+[ext_resource type="Script" uid="uid://bgsww3khnjb13" path="res://recreo.gd" id="1_ummxi"]
+[ext_resource type="Texture2D" uid="uid://cwcuv0n7x3db2" path="res://assets/backgrounds/Recreo.jpg" id="2_7nan7"]
+[ext_resource type="Texture2D" uid="uid://crit6vl4emolv" path="res://assets/iconos/BotonDescansar.png" id="3_qitk8"]
+[ext_resource type="Texture2D" uid="uid://m85o34ue2w5d" path="res://assets/iconos/BotonChambear.png" id="4_krhfc"]
+
+[node name="Recreo" type="Control" unique_id=842298927]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ummxi")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=242837118]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_7nan7")
+
+[node name="Label" type="Label" parent="." unique_id=1214846620]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1276891887]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -266.5
+offset_top = -20.0
+offset_right = 266.5
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 100
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer" unique_id=138200509]
+layout_mode = 2
+
+[node name="BotonDescansar" type="TextureButton" parent="HBoxContainer/VBoxContainer" unique_id=962750574]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 2
+texture_normal = ExtResource("3_qitk8")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="HBoxContainer/VBoxContainer" unique_id=919234440]
+modulate = Color(2.9648543e-05, 0.94744664, 0.22299165, 1)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 32
+text = "Cura 30% de Vida"
+horizontal_alignment = 1
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="HBoxContainer" unique_id=1574513718]
+layout_mode = 2
+
+[node name="BotonRepasar" type="TextureButton" parent="HBoxContainer/VBoxContainer2" unique_id=822688191]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 2
+texture_normal = ExtResource("4_krhfc")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="HBoxContainer/VBoxContainer2" unique_id=1088444477]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.97318476, 0.14383504, 7.70092e-07, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 32
+text = "+5 Vida Máxima"
+horizontal_alignment = 1
+
+[node name="Vuelta" type="Button" parent="." unique_id=1039183039]
+visible = false
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0

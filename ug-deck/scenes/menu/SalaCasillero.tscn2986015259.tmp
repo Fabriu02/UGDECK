@@ -81,17 +81,15 @@ horizontal_alignment = 1
 [node name="Artilugio nombre" type="Label" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=1393897815]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-
-[node name="IconoItem" type="TextureRect" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=1842138099]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 140)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
 
 [node name="Equipar" type="Button" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=1721835572]
 unique_name_in_owner = true
 layout_mode = 2
 text = "RECLAMAR"
 icon_alignment = 1
+
+[node name="IconoItem" type="TextureRect" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=1842138099]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+stretch_mode = 5

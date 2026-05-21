@@ -1,3 +1,4 @@
+
 extends Node
 class_name CombatManager
 
@@ -56,6 +57,9 @@ var temporary_card_cost_modifiers: Dictionary = {}
 var current_enemy_name := FIRST_ENEMY_NAME
 var returning_to_map := false
 
+# AGREGADO: Variable para el artilugio "Calculadora Científica"
+var primera_carta_combate_gratis := false
+
 
 func _ready() -> void:
 	randomize()
@@ -81,10 +85,36 @@ func start_battle() -> void:
 	_configure_enemy_for_current_node()
 	player.reset_for_new_battle()
 	enemy.reset_for_new_battle()
+	
+	# --- AGREGADO: REVISAMOS LA MOCHILA AL EMPEZAR ---
+	_aplicar_artilugios_inicio_combate()
+	# -------------------------------------------------
+	
 	deck_manager.create_starting_deck()
 	enemy.choose_next_intent(player, 0, player_cards_played_last_turn)
 	await _show_start_fight_banner()
 	await start_player_turn()
+
+# --- AGREGADO: LÓGICA DE ARTILUGIOS ---
+func _aplicar_artilugios_inicio_combate() -> void:
+	primera_carta_combate_gratis = false
+	
+	for nombre_artilugio in GameState.artilugios:
+		if GameState.INFO_ARTILUGIOS.has(nombre_artilugio):
+			var info = GameState.INFO_ARTILUGIOS[nombre_artilugio]
+			
+			# Efectos que pasan ni bien entras a la pelea
+			if info.tipo == "inicio_combate":
+				if info.efecto == "escudo_inicial":
+					_gain_player_block(info.valor)
+					print("🛡️ ARTILUGIO: Apuntes te dieron ", info.valor, " de escudo.")
+			
+			# Efectos que se quedan "escuchando" en la pelea
+			elif info.tipo == "pasivo_combate":
+				if info.efecto == "costo_cero":
+					primera_carta_combate_gratis = true
+					print("⚡ ARTILUGIO: Calculadora lista. Tu primera carta costará 0.")
+# ---------------------------------------
 
 
 func _configure_enemy_for_current_node() -> void:
@@ -166,6 +196,14 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	var effective_cost := player.get_effective_card_cost(card_data, player_cards_played_this_turn)
 	effective_cost += _get_temporary_cost_modifier(card_data)
 	effective_cost = max(effective_cost, 0)
+	
+	# --- AGREGADO: ARTILUGIO CALCULADORA ---
+	if primera_carta_combate_gratis:
+		effective_cost = 0
+		primera_carta_combate_gratis = false # Se desactiva para el resto del combate
+		print("⚡ ARTILUGIO: ¡Tu carta costó 0 energía!")
+	# ---------------------------------------
+
 	if not player.spend_energy(effective_cost):
 		update_ui()
 		return

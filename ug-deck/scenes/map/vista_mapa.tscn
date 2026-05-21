@@ -15,6 +15,33 @@ script = ExtResource("1_uh8yw")
 map_node_scene = ExtResource("2_u8whb")
 map_offset = Vector2(100, 600)
 
+[node name="HUD" type="CanvasLayer" parent="." unique_id=442384496]
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD" unique_id=1422365306]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/MarginContainer" unique_id=768011863]
+layout_mode = 2
+
+[node name="TextoVida" type="Label" parent="HUD/MarginContainer/HBoxContainer" unique_id=516055591]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="VSeparator" type="VSeparator" parent="HUD/MarginContainer/HBoxContainer" unique_id=1848506938]
+layout_mode = 2
+
+[node name="TextoPlata" type="Label" parent="HUD/MarginContainer/HBoxContainer" unique_id=1201209593]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="VSeparator2" type="VSeparator" parent="HUD/MarginContainer/HBoxContainer" unique_id=1838647392]
+layout_mode = 2
+
+[node name="ContenedorArtilugios" type="Label" parent="HUD/MarginContainer/HBoxContainer" unique_id=1843699587]
+unique_name_in_owner = true
+layout_mode = 2
+
 [node name="Fondocorcho" type="TextureRect" parent="." unique_id=692129482]
 layout_mode = 1
 anchors_preset = 15

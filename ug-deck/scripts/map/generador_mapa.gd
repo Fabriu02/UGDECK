@@ -2,11 +2,11 @@ class_name generador_mapa
 extends Node
 
 # Configuración de la cuadrícula
-var num_columns: int = 4
-var total_nodes: int = 5
+var num_columns: int = 6
+var total_nodes: int = 11
 var min_nodes_per_column: int = 1
-var max_nodes_per_column: int = 2
-var nodes_per_column: Array[int] = [1, 2, 1, 1]
+var max_nodes_per_column: int = 3
+var nodes_per_column: Array[int] = [1, 2, 3, 2, 2, 1]
 
 # Datos del mapa generado
 var generated_nodes = [] # Lista de diccionarios {id, position, resource, connections}
@@ -108,44 +108,28 @@ func _has_incoming_connection(target_id):
 	return false
 
 func _get_random_resource_for_column(col_index):
-	# 1. El Jefe final siempre va en la última columna
+	# Columna 5 (Última): El Jefe final siempre va al final
 	if col_index == num_columns - 1:
 		return load("res://scripts/map/examen_final.tres")
 
-	if col_index == 0:
+	# Columnas 0 y 2: Siempre Combates (Clases Interactivas)
+	if col_index == 0 or col_index == 2:
 		return load("res://scripts/map/clase_interactiva.tres")
 
-	if col_index == 1:
-		return load("res://scripts/map/examen_parcial.tres")
-	
-	var r = randf()
-	
-	# --- ZONA INICIAL (Columnas 0, 1, 2) ---
-	if col_index < 3:
-		if r < 0.6: 
-			return load("res://scripts/map/clase_interactiva.tres")
-		else: 
-			# ¡Reactivamos Casilleros!
-			return load("res://scripts/map/examen_parcial.tres")
-			
-	# --- ZONA MEDIA (Columnas 3 a 6) ---
-	elif col_index < 7:
-		if r < 0.35: 
-			return load("res://scripts/map/clase_interactiva.tres")
-		elif r < 0.55: 
-			return load("res://scripts/map/examen_parcial.tres")
-		elif r < 0.80: 
-			# ¡Reactivamos Kiosko!
-			return load("res://scripts/map/kiosko.tres")
-		else: 
-			# ¡Reactivamos Recreo!
-			return load("res://scripts/map/recreo.tres")
-			
-	# --- ZONA FINAL (Cerca del jefe) ---
-	else:
-		if r < 0.5: 
-			return load("res://scripts/map/examen_parcial.tres")
-		elif r < 0.8: 
-			return load("res://scripts/map/kiosko.tres")
-		else: 
-			return load("res://scripts/map/clase_interactiva.tres")
+	# Columna 4: Siempre Recreo (La fogata obligatoria para curarse justo antes del Examen Final)
+	if col_index == 4:
+		return load("res://scripts/map/recreo.tres")
+
+	# Columnas 1 y 3 (Las del medio): Sorteo entre Casillero, Kiosko o Recreo
+	if col_index == 1 or col_index == 3:
+		var r = randf()
+		if r < 0.35:
+			# ¡RUTA CORREGIDA AQUÍ!
+			return load("res://scripts/map/casilleros.tres") # Casillero de Botín
+		elif r < 0.70:
+			return load("res://scripts/map/kiosko.tres")        # Tienda
+		else:
+			return load("res://scripts/map/recreo.tres")        # Recreo extra
+
+	# Fallback por seguridad (si pasa algo raro, tira un combate)
+	return load("res://scripts/map/clase_interactiva.tres")

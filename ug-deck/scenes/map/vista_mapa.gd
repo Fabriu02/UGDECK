@@ -3,7 +3,9 @@ extends Control
 @export var map_node_scene: PackedScene = load("res://scenes/map/Boton.tscn")
 @export var line_color: Color = Color.BLACK
 @export var line_width: float = 1.0 # Líneas finas y elegantes
-
+@onready var texto_vida = %TextoVida
+@onready var texto_plata = %TextoPlata
+@onready var contenedor_artilugios = %ContenedorArtilugios
 @export var x_spacing: float = 150.0
 @export var y_spacing: float = 120.0
 @export var map_offset: Vector2 = Vector2(100, 100)
@@ -21,6 +23,7 @@ var map_base_size: Vector2
 
 func _ready():
 	# --- EL TRUCO MAGICO ---
+	
 	$ScrollContainer/contenidomapa.draw.connect(_on_contenidomapa_draw)
 
 	# Le pedimos al Autoload que genere el mapa si no tiene uno
@@ -103,8 +106,38 @@ func _generate_and_visualize():
 	# Guardamos el tamaño base para que la ruedita del ratón no lo rompa
 	map_base_size = Vector2(ancho_total, alto_total)
 	$ScrollContainer/contenidomapa.custom_minimum_size = map_base_size
-
+	
 	_actualizar_estado_visual()
+	_actualizar_hud()
+	
+	
+func _actualizar_hud():
+	# 1. Actualizamos los textos
+	texto_vida.text = "Vida: " + str(GameState.vida_actual) + "/" + str(GameState.vida_maxima)
+	texto_plata.text = "Plata: $" + str(GameState.dinero)
+	
+	# 2. Limpiamos los artilugios viejos por si volvemos de una pelea
+	for hijo in contenedor_artilugios.get_children():
+		hijo.queue_free()
+		
+	# 3. Creamos los iconos de los artilugios que tenemos en la mochila
+	for nombre_artilugio in GameState.artilugios:
+		if GameState.INFO_ARTILUGIOS.has(nombre_artilugio):
+			var info = GameState.INFO_ARTILUGIOS[nombre_artilugio]
+			
+			if info.has("icono"):
+				# Creamos un cuadradito de imagen por código
+				var icono_rect = TextureRect.new()
+				icono_rect.texture = load(info.icono) # Cargamos la imagen desde la ruta
+				
+				# Le damos tamaño fijo de 40x40 para que queden prolijos
+				icono_rect.custom_minimum_size = Vector2(40, 40)
+				icono_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				icono_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				
+				# Lo metemos en la barra
+				contenedor_artilugios.add_child(icono_rect)
+				
 
 func _get_centered_map_offset(generator: generador_mapa) -> Vector2:
 	var viewport_size = $ScrollContainer.size
@@ -150,7 +183,7 @@ func _on_node_clicked(node_data):
 	if GameState.is_node_unlocked(node_data.id):
 		var resource: nodo_mapa = node_data.resource
 		if resource.escena_nivel == null:
-			print("⚠️ La materia '", resource.node_name, "' no tiene una escena asignada en su .tres")
+			print(" La materia '", resource.node_name, "' no tiene una escena asignada en su .tres")
 			return
 
 		# Guardamos en el Autoload que visitamos este nodo
@@ -159,13 +192,13 @@ func _on_node_clicked(node_data):
 		# Actualizamos nuestra variable local
 		nodo_actual_id = GameState.nodo_actual_id
 
-		print("✅ El jugador fue exitosamente a: ", resource.node_name, "!")
+		print("El jugador fue exitosamente a: ", resource.node_name, "!")
 		_actualizar_estado_visual()
 
 		# --- EL TELETRANSPORTE ---
 		get_tree().change_scene_to_packed(resource.escena_nivel)
 	else:
-		print("❌ Movimiento inválido.")
+		print(" Movimiento inválido.")
 
 func _actualizar_estado_visual():
 	for id in visual_nodes:
