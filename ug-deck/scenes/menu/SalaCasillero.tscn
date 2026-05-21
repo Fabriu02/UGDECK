@@ -1,5 +1,10 @@
 [gd_scene format=3 uid="uid://crvarlf7pmpal"]
 
+[ext_resource type="Texture2D" uid="uid://c3ffjme44m60k" path="res://assets/backgrounds/FondoCasilleros.png" id="1_0qxdq"]
+[ext_resource type="Script" uid="uid://d3rt4rcwxq3xv" path="res://scenes/menu/sala_casillero.gd" id="1_o3lf1"]
+[ext_resource type="Texture2D" uid="uid://rlt026qvtm52" path="res://assets/iconos/Casillero_abierto.png" id="2_jtgcg"]
+[ext_resource type="Texture2D" uid="uid://1glfwlvw3pjk" path="res://assets/cuadros/Fondo blanco.png" id="3_o3lf1"]
+
 [node name="SalaCasillero" type="Control" unique_id=1976677099]
 layout_mode = 3
 anchors_preset = 15
@@ -7,3 +12,78 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_o3lf1")
+
+[node name="Fondo" type="TextureRect" parent="." unique_id=1428696052]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.58873457
+anchor_right = 1.0
+anchor_bottom = 1.5887346
+offset_top = 381.5
+offset_bottom = -381.5
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_0qxdq")
+expand_mode = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=125762049]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 295.0
+offset_top = 53.0
+offset_right = 795.0
+offset_bottom = 553.0
+texture = ExtResource("2_jtgcg")
+
+[node name="PanelRecompensa" type="NinePatchRect" parent="." unique_id=1748706400]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 150.0
+offset_top = 48.0
+offset_right = -174.0
+offset_bottom = -65.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_o3lf1")
+region_rect = Rect2(49.219826, 58.88098, 1441.0331, 914.24524)
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelRecompensa" unique_id=101039494]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelRecompensa/MarginContainer" unique_id=270146807]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Mensaje" type="Label" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=18849878]
+modulate = Color(0, 0, 0, 1)
+layout_mode = 2
+text = "ENCONTRASTE BOTIN
+"
+horizontal_alignment = 1
+
+[node name="Artilugio nombre" type="Label" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=1393897815]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Equipar" type="Button" parent="PanelRecompensa/MarginContainer/VBoxContainer" unique_id=1721835572]
+unique_name_in_owner = true
+layout_mode = 2
+text = "RECLAMAR"
+icon_alignment = 1
