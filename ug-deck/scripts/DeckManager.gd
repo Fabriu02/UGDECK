@@ -3,6 +3,8 @@ class_name DeckManager
 
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
 
+signal deck_counts_changed
+
 var draw_pile: Array[CardData] = []
 var hand: Array[CardData] = []
 var discard_pile: Array[CardData] = []
@@ -15,13 +17,14 @@ func create_starting_deck() -> void:
 	discard_pile.clear()
 	played_cards.clear()
 
-	var loaded_cards := PlayerCardLoader.load_player_cards()
+	var loaded_cards := GameState.get_run_deck_copies()
 	if loaded_cards.is_empty():
-		push_warning("DeckManager: no se pudieron cargar cartas del protagonista desde CSV.")
+		push_warning("DeckManager: el mazo persistente de la run esta vacio.")
 	else:
 		draw_pile.append_array(loaded_cards)
 
 	shuffle_deck()
+	print_deck_debug_counts()
 
 
 func _add_card(
@@ -53,17 +56,20 @@ func draw_cards(amount: int) -> Array[CardData]:
 		hand.append(card)
 		drawn_cards.append(card)
 
+	print_deck_debug_counts()
 	return drawn_cards
 
 
 func discard_hand() -> void:
 	discard_pile.append_array(hand)
 	hand.clear()
+	print_deck_debug_counts()
 
 
 func discard_played_cards() -> void:
 	discard_pile.append_array(played_cards)
 	played_cards.clear()
+	print_deck_debug_counts()
 
 
 func discard_specific_card(card: CardData) -> bool:
@@ -72,6 +78,7 @@ func discard_specific_card(card: CardData) -> bool:
 
 	hand.erase(card)
 	discard_pile.append(card)
+	print_deck_debug_counts()
 	return true
 
 
@@ -82,6 +89,7 @@ func reshuffle_discard_into_draw_pile() -> void:
 	draw_pile.append_array(discard_pile)
 	discard_pile.clear()
 	shuffle_deck()
+	print_deck_debug_counts()
 
 # AGREGADO: Función para descartar cartas de forma aleatoria
 func discard_random_cards(amount: int) -> void:
@@ -93,3 +101,11 @@ func discard_random_cards(amount: int) -> void:
 		var card := hand[index]
 		hand.remove_at(index)
 		discard_pile.append(card)
+	print_deck_debug_counts()
+
+
+func print_deck_debug_counts() -> void:
+	print("Mano actual: %d cartas" % hand.size())
+	print("Mazo de robo: %d cartas" % draw_pile.size())
+	print("Descarte: %d cartas" % discard_pile.size())
+	deck_counts_changed.emit()

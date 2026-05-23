@@ -56,4 +56,5 @@ func _comprar(item, boton):
 
 func _on_boton_salir_pressed():
 	# Volvemos al mapa
+	GameState.completar_nodo_actual()
 	get_tree().change_scene_to_file("res://scenes/map/vista_mapa.tscn")

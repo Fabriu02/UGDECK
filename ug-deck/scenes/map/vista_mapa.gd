@@ -1,16 +1,23 @@
 extends Control
 
 @export var map_node_scene: PackedScene = load("res://scenes/map/Boton.tscn")
+@export var card_scene: PackedScene = load("res://scenes/Card.tscn")
 @export var line_color: Color = Color.BLACK
 @export var line_width: float = 1.0 # Líneas finas y elegantes
 @onready var texto_vida = %TextoVida
 @onready var texto_plata = %TextoPlata
 @onready var contenedor_artilugios = %ContenedorArtilugios
+@onready var ver_mazo_button: Button = %VerMazoButton
+@onready var deck_viewer_panel: Panel = %DeckViewerPanel
+@onready var deck_viewer_cards_container: GridContainer = %DeckViewerCardsContainer
+@onready var close_deck_viewer_button: Button = %CloseDeckViewerButton
 @export var x_spacing: float = 150.0
 @export var y_spacing: float = 120.0
 @export var map_offset: Vector2 = Vector2(100, 100)
 const NORMAL_NODE_SIZE := Vector2(80, 80)
 const FINAL_NODE_SIZE := Vector2(200, 200)
+const ZONE_LABEL_SIZE := Vector2(180, 34)
+const ZONE_LABEL_TOP_OFFSET := 52.0
 
 var map_data: Dictionary
 var visual_nodes = {}
@@ -25,11 +32,16 @@ func _ready():
 	# --- EL TRUCO MAGICO ---
 	
 	$ScrollContainer/contenidomapa.draw.connect(_on_contenidomapa_draw)
+	ver_mazo_button.pressed.connect(_show_deck_viewer)
+	close_deck_viewer_button.pressed.connect(_hide_deck_viewer)
 
 	# Le pedimos al Autoload que genere el mapa si no tiene uno
 	var generator = generador_mapa.new()
 	var current_nodes = GameState.map_data.get("nodes", [])
-	var should_generate_map = GameState.map_data.is_empty() or current_nodes.size() != generator.total_nodes or _get_max_map_column(current_nodes) != generator.num_columns - 1
+	var should_generate_map := GameState.map_data.is_empty()
+	should_generate_map = should_generate_map or int(GameState.map_data.get("version", 0)) != generador_mapa.MAP_VERSION
+	should_generate_map = should_generate_map or current_nodes.size() != generator.total_nodes
+	should_generate_map = should_generate_map or _get_max_map_column(current_nodes) != generator.num_columns - 1
 	if should_generate_map:
 		GameState.map_data = generator.generate_map()
 		GameState.nodo_actual_id = -1
@@ -41,6 +53,26 @@ func _ready():
 
 	await get_tree().process_frame
 	_generate_and_visualize()
+
+
+func _show_deck_viewer() -> void:
+	for child in deck_viewer_cards_container.get_children():
+		child.queue_free()
+
+	var unique_cards := GameState.get_unique_run_deck_cards()
+	print("Mostrando mazo desbloqueado: %d cartas unicas" % unique_cards.size())
+	for card_data in unique_cards:
+		var card_ui: CardUI = card_scene.instantiate()
+		deck_viewer_cards_container.add_child(card_ui)
+		card_ui.setup(card_data)
+		card_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	deck_viewer_panel.visible = true
+
+
+func _hide_deck_viewer() -> void:
+	deck_viewer_panel.visible = false
+
 
 func _get_max_map_column(nodes: Array) -> int:
 	var max_column = -1
@@ -54,18 +86,14 @@ func _generate_and_visualize():
 	var generator = generador_mapa.new()
 	map_offset = _get_centered_map_offset(generator)
 
+	_add_zone_labels()
+
 	for node_data in map_data.nodes:
 		var visual_node = map_node_scene.instantiate()
 		$ScrollContainer/contenidomapa.add_child(visual_node)
 		visual_node.set_anchors_preset(Control.PRESET_TOP_LEFT)
 
 		var visual_pos = map_offset + Vector2(node_data.position.x * x_spacing, node_data.position.y * y_spacing)
-
-		var nodes_in_col = 0
-		for n in map_data.nodes:
-			if n.position.x == node_data.position.x: nodes_in_col += 1
-
-		visual_pos.y += (generator.max_nodes_per_column - nodes_in_col) * y_spacing / 2.0
 
 		visual_node.position = visual_pos
 		visual_node.setup(node_data)
@@ -110,6 +138,25 @@ func _generate_and_visualize():
 	_actualizar_estado_visual()
 	_actualizar_hud()
 	
+
+func _add_zone_labels() -> void:
+	for zone_index in range(generador_mapa.GENERATED_ZONE_COUNT):
+		var label := Label.new()
+		var start_column := zone_index * generador_mapa.COLUMNS_PER_ZONE
+		var end_column := start_column + generador_mapa.COLUMNS_PER_ZONE - 1
+		var zone_center_x := map_offset.x + ((start_column + end_column) * 0.5 * x_spacing)
+
+		label.text = "Zona %d" % (zone_index + 1)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.custom_minimum_size = ZONE_LABEL_SIZE
+		label.size = ZONE_LABEL_SIZE
+		label.position = Vector2(zone_center_x - (ZONE_LABEL_SIZE.x * 0.5), map_offset.y - ZONE_LABEL_TOP_OFFSET)
+		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_color_override("font_color", Color(0.12, 0.08, 0.04))
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		$ScrollContainer/contenidomapa.add_child(label)
+
 	
 func _actualizar_hud():
 	# 1. Actualizamos los textos
@@ -144,7 +191,8 @@ func _get_centered_map_offset(generator: generador_mapa) -> Vector2:
 	if viewport_size == Vector2.ZERO:
 		viewport_size = get_viewport_rect().size
 
-	var map_width = ((generator.num_columns - 1) * x_spacing) + FINAL_NODE_SIZE.x - 60.0
+	var max_column := _get_max_map_column(map_data.nodes)
+	var map_width = (max_column * x_spacing) + FINAL_NODE_SIZE.x - 60.0
 	var map_height = ((generator.max_nodes_per_column - 1) * y_spacing) + FINAL_NODE_SIZE.y
 	var x = max((viewport_size.x - map_width) / 2.0, 0.0)
 	var y = max((viewport_size.y - map_height) / 2.0, 0.0) + 60.0

@@ -1,8 +1,8 @@
 extends Node
 class_name Player
 
-@export var max_hp: int = 80
-@export var max_energy: int = 5
+@export var max_hp: int = 50
+@export var max_energy: int = 3
 
 var current_hp: int
 var current_energy: int

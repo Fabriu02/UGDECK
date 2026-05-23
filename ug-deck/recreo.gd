@@ -53,4 +53,5 @@ func _terminar_recreo():
 	await get_tree().create_timer(1.5).timeout
 	
 	# Volvemos de forma automatizada
+	GameState.completar_nodo_actual()
 	get_tree().change_scene_to_file("res://scenes/map/vista_mapa.tscn")

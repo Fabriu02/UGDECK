@@ -3,12 +3,16 @@ class_name BattleVisuals
 
 const PLAYER_IMAGE_PATH := "res://assets/characters/protagonista mejorado.png"
 const ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
+const DEFAULT_ENEMY_SCALE := Vector2(0.7, 0.7)
 
 @onready var player_sprite: Sprite2D = $PlayerSprite
 @onready var enemy_sprite: Sprite2D = $EnemySprite
 @onready var player_placeholder: Label = $PlayerPlaceholder
 @onready var enemy_placeholder: Label = $EnemyPlaceholder
 @onready var player_anim_player: AnimationPlayer = $PlayerSprite/AnimationPlayer
+
+var multi_enemy_labels: Array[Label] = []
+var multi_enemy_sprites: Array[Sprite2D] = []
 
 
 func _ready() -> void:
@@ -19,12 +23,60 @@ func _ready() -> void:
 		player_anim_player.play("idle")
 
 
-func set_enemy_image(path: String) -> void:
+func set_enemy_image(path: String, sprite_scale: Vector2 = DEFAULT_ENEMY_SCALE) -> void:
+	clear_multi_enemy_visuals()
+	enemy_sprite.scale = sprite_scale
 	_try_load_texture(path, enemy_sprite, enemy_placeholder)
 
 
 func set_enemy_display_name(display_name: String) -> void:
 	enemy_placeholder.text = display_name
+
+
+func show_multi_enemy_group(image_path: String, names: Array, hps: Array) -> void:
+	clear_multi_enemy_visuals()
+	enemy_sprite.visible = false
+	enemy_placeholder.visible = false
+
+	var texture := load(image_path) as Texture2D
+	for index in range(names.size()):
+		if texture != null:
+			var sprite := Sprite2D.new()
+			sprite.texture = texture
+			sprite.position = Vector2(735 + index * 105, 245)
+			sprite.scale = Vector2(0.18, 0.18)
+			add_child(sprite)
+			multi_enemy_sprites.append(sprite)
+
+		var label := Label.new()
+		label.text = "%s\n%d/15" % [names[index], hps[index]]
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.position = Vector2(680 + index * 105, 115)
+		label.size = Vector2(110, 52)
+		add_child(label)
+		multi_enemy_labels.append(label)
+
+
+func update_multi_enemy_labels(hps: Array) -> void:
+	for index in range(min(multi_enemy_labels.size(), hps.size())):
+		var label := multi_enemy_labels[index]
+		var current_name := label.text.split("\n")[0]
+		label.text = "%s\n%d/15" % [current_name, hps[index]]
+		label.modulate = Color(0.45, 0.45, 0.45, 1.0) if hps[index] <= 0 else Color.WHITE
+		if index < multi_enemy_sprites.size():
+			multi_enemy_sprites[index].modulate = Color(0.35, 0.35, 0.35, 0.7) if hps[index] <= 0 else Color.WHITE
+
+
+func clear_multi_enemy_visuals() -> void:
+	for label in multi_enemy_labels:
+		if is_instance_valid(label):
+			label.queue_free()
+	multi_enemy_labels.clear()
+
+	for sprite in multi_enemy_sprites:
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	multi_enemy_sprites.clear()
 
 
 func _try_load_texture(path: String, sprite: Sprite2D, placeholder: Label) -> void:

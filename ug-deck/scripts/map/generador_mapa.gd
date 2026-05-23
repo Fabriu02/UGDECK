@@ -1,135 +1,160 @@
 class_name generador_mapa
 extends Node
 
-# Configuración de la cuadrícula
-var num_columns: int = 6
-var total_nodes: int = 11
+const GENERATED_ZONE_COUNT := 2
+const COLUMNS_PER_ZONE := 5
+const BRANCH_COUNT := 3
+const BRANCH_LENGTH := 3
+const MAP_VERSION := 3
+
+var num_columns: int = GENERATED_ZONE_COUNT * COLUMNS_PER_ZONE
+var total_nodes: int = GENERATED_ZONE_COUNT * (2 + BRANCH_COUNT * BRANCH_LENGTH)
 var min_nodes_per_column: int = 1
-var max_nodes_per_column: int = 3
-var nodes_per_column: Array[int] = [1, 2, 3, 2, 2, 1]
+var max_nodes_per_column: int = BRANCH_COUNT
+var nodes_per_column: Array[int] = []
 
-# Datos del mapa generado
-var generated_nodes = [] # Lista de diccionarios {id, position, resource, connections}
-var connections = [] # Lista de pares de IDs [id1, id2]
+const MINIBOSSES := [
+	{"id": "integral_triple", "name": "Integral Triple"},
+	{"id": "calculus", "name": "Calculus"},
+	{"id": "calculadora_vieja", "name": "Calculadora vieja"},
+]
+const INTERMEDIATE_ENEMIES := MINIBOSSES
+const INTERMEDIATE_RESOURCES := [
+	"res://scripts/map/clase_interactiva.tres",
+	"res://scripts/map/casilleros.tres",
+	"res://scripts/map/kiosko.tres",
+	"res://scripts/map/recreo.tres",
+]
 
-func generate_map():
+@export var forced_miniboss_id := ""
+
+var generated_nodes: Array = []
+var connections: Array = []
+
+
+func _init() -> void:
+	for zone_index in range(GENERATED_ZONE_COUNT):
+		nodes_per_column.append_array([1, 3, 3, 3, 1])
+
+
+func generate_map() -> Dictionary:
 	generated_nodes.clear()
 	connections.clear()
 
-	var node_id_counter = 0
+	var previous_zone_boss_id := -1
+	for zone_number in range(1, GENERATED_ZONE_COUNT + 1):
+		var zone_start_column := (zone_number - 1) * COLUMNS_PER_ZONE
+		var zone_ids := generate_zone(zone_number, zone_start_column)
 
-	# PASO 1: Generar TODOS los nodos primero
-	for col in range(num_columns):
-		var num_nodes = nodes_per_column[col]
+		if previous_zone_boss_id != -1:
+			_add_connection(previous_zone_boss_id, zone_ids["miniboss_id"])
 
-		for row in range(num_nodes):
-			var node_data = {
-				"id": node_id_counter,
-				"position": Vector2(col, row), # Posición lógica
-				"resource": _get_random_resource_for_column(col),
-				"connections": []
-			}
-			generated_nodes.append(node_data)
-			node_id_counter += 1
-
-	# PASO 2: Conectarlos ahora que TODOS existen
-	for col in range(num_columns - 1):
-		_connect_columns(col)
+		previous_zone_boss_id = zone_ids["boss_id"]
 
 	print("Mapa generado con ", generated_nodes.size(), " nodos y ", connections.size(), " conexiones.")
-	return {"nodes": generated_nodes, "connections": connections}
+	return {"nodes": generated_nodes, "connections": connections, "version": MAP_VERSION}
 
-# --- Funciones auxiliares de generación ---
 
-func _connect_columns(col_index):
-	var current_col_nodes = []
-	var next_col_nodes = []
+func generate_zone(zone_index: int, start_column: int = 0) -> Dictionary:
+	print("Generando zona %d" % zone_index)
 
-	# Agrupamos qué nodos están en la columna actual y cuáles en la siguiente
-	for n in generated_nodes:
-		if n.position.x == col_index:
-			current_col_nodes.append(n)
-		elif n.position.x == col_index + 1:
-			next_col_nodes.append(n)
+	var selected_miniboss := _select_miniboss()
+	var miniboss_id := _add_node(start_column, 1, load("res://scripts/map/examen_parcial.tres"), "miniboss", selected_miniboss["name"], selected_miniboss["id"])
+	print("Zona %d - Nodo inicial: Minijefe - %s" % [zone_index, selected_miniboss["name"]])
 
-	# ALGORITMO SLAY THE SPIRE: Ordenar por "Y" (fila) para evitar líneas cruzadas
-	current_col_nodes.sort_custom(func(a, b): return a.position.y < b.position.y)
-	next_col_nodes.sort_custom(func(a, b): return a.position.y < b.position.y)
+	var branch_end_ids: Array[int] = []
+	for branch_index in range(BRANCH_COUNT):
+		var previous_id := miniboss_id
+		for step_index in range(BRANCH_LENGTH):
+			var column := start_column + 1 + step_index
+			var resource := _get_random_intermediate_resource()
+			var combat_kind := "event"
+			var encounter_name := resource.node_name
+			var intermediate_enemy_id := ""
+			if resource.type == nodo_mapa.NodeType.CLASE_INTERACTIVA:
+				var enemy_data := _select_intermediate_enemy()
+				combat_kind = "intermediate"
+				encounter_name = enemy_data["name"]
+				intermediate_enemy_id = enemy_data["id"]
 
-	var size_curr = current_col_nodes.size()
-	var size_next = next_col_nodes.size()
+			var node_id := _add_node(column, branch_index, resource, combat_kind, encounter_name, intermediate_enemy_id)
+			_add_connection(previous_id, node_id)
+			previous_id = node_id
+			print("Zona %d - Rama %d Nodo %d: %s" % [
+				zone_index,
+				branch_index + 1,
+				step_index + 1,
+				_get_debug_node_label(generated_nodes[node_id]),
+			])
+		branch_end_ids.append(previous_id)
 
-	# Regla 1: Todo nodo de la columna actual DEBE conectarse hacia adelante
-	for i in range(size_curr):
-		var node_curr = current_col_nodes[i]
+	var boss_name := "Tom Apostol" if zone_index == 1 else "Pepo"
+	var boss_id := _add_node(start_column + COLUMNS_PER_ZONE - 1, 1, load("res://scripts/map/examen_final.tres"), "boss", boss_name)
+	for branch_end_id in branch_end_ids:
+		_add_connection(branch_end_id, boss_id)
 
-		# Calcular el nodo más "recto" hacia adelante
-		var target_idx = 0
-		if size_curr > 1 and size_next > 1:
-			target_idx = int(round(float(i) / (size_curr - 1) * (size_next - 1)))
-		elif size_next > 1:
-			target_idx = randi() % size_next
+	print("Zona %d - Jefe de zona: %s" % [zone_index, boss_name])
+	return {"miniboss_id": miniboss_id, "boss_id": boss_id}
 
-		var target_node = next_col_nodes[target_idx]
-		_add_connection(node_curr.id, target_node.id)
 
-		# 30% de probabilidad de bifurcación (abrir un segundo camino)
-		if randf() < 0.3 and size_next > 1:
-			var offset = 1 if randf() > 0.5 else -1
-			var alt_idx = clamp(target_idx + offset, 0, size_next - 1)
-			if alt_idx != target_idx:
-				_add_connection(node_curr.id, next_col_nodes[alt_idx].id)
+func _add_node(column: int, row: int, resource: nodo_mapa, combat_kind: String, encounter_name: String = "", miniboss_id: String = "") -> int:
+	var node_id := generated_nodes.size()
+	generated_nodes.append({
+		"id": node_id,
+		"position": Vector2(column, row),
+		"resource": resource,
+		"connections": [],
+		"combat_kind": combat_kind,
+		"encounter_name": encounter_name,
+		"miniboss_id": miniboss_id,
+	})
+	return node_id
 
-	# Regla 2: Ningún nodo de la próxima columna puede quedar huérfano (sin conexión de entrada)
-	for j in range(size_next):
-		var target_node = next_col_nodes[j]
-		if not _has_incoming_connection(target_node.id):
-			# Si está huérfano, le tiramos un puente desde el nodo actual más cercano
-			var closest_idx = 0
-			if size_next > 1 and size_curr > 1:
-				closest_idx = int(round(float(j) / (size_next - 1) * (size_curr - 1)))
-			_add_connection(current_col_nodes[closest_idx].id, target_node.id)
 
-# Función para añadir puentes y evitar duplicados
-func _add_connection(from_id, to_id):
-	for conn in connections:
-		if conn[0] == from_id and conn[1] == to_id:
-			return # Ya estaban conectados
+func _select_miniboss() -> Dictionary:
+	if not GameState.debug_forced_miniboss_id.is_empty():
+		for miniboss in MINIBOSSES:
+			if GameState.debug_forced_miniboss_id == miniboss["id"]:
+				print("Minijefe seleccionado: %s" % miniboss["name"])
+				return miniboss
 
+	for miniboss in MINIBOSSES:
+		if forced_miniboss_id == miniboss["id"]:
+			print("Minijefe seleccionado: %s" % miniboss["name"])
+			return miniboss
+
+	var selected: Dictionary = MINIBOSSES[randi() % MINIBOSSES.size()]
+	print("Minijefe seleccionado: %s" % selected["name"])
+	return selected
+
+
+func _select_intermediate_enemy() -> Dictionary:
+	return INTERMEDIATE_ENEMIES[randi() % INTERMEDIATE_ENEMIES.size()]
+
+
+func _get_random_intermediate_resource() -> nodo_mapa:
+	var resource_path: String = INTERMEDIATE_RESOURCES[randi() % INTERMEDIATE_RESOURCES.size()]
+	return load(resource_path)
+
+
+func _add_connection(from_id: int, to_id: int) -> void:
 	connections.append([from_id, to_id])
-	for n in generated_nodes:
-		if n.id == from_id:
-			n.connections.append(to_id)
+	for node_data in generated_nodes:
+		if node_data.id == from_id:
+			node_data.connections.append(to_id)
+			return
 
-func _has_incoming_connection(target_id):
-	for conn in connections:
-		if conn[1] == target_id:
-			return true
-	return false
 
-func _get_random_resource_for_column(col_index):
-	# Columna 5 (Última): El Jefe final siempre va al final
-	if col_index == num_columns - 1:
-		return load("res://scripts/map/examen_final.tres")
-
-	# Columnas 0 y 2: Siempre Combates (Clases Interactivas)
-	if col_index == 0 or col_index == 2:
-		return load("res://scripts/map/clase_interactiva.tres")
-
-	# Columna 4: Siempre Recreo (La fogata obligatoria para curarse justo antes del Examen Final)
-	if col_index == 4:
-		return load("res://scripts/map/recreo.tres")
-
-	# Columnas 1 y 3 (Las del medio): Sorteo entre Casillero, Kiosko o Recreo
-	if col_index == 1 or col_index == 3:
-		var r = randf()
-		if r < 0.35:
-			# ¡RUTA CORREGIDA AQUÍ!
-			return load("res://scripts/map/casilleros.tres") # Casillero de Botín
-		elif r < 0.70:
-			return load("res://scripts/map/kiosko.tres")        # Tienda
-		else:
-			return load("res://scripts/map/recreo.tres")        # Recreo extra
-
-	# Fallback por seguridad (si pasa algo raro, tira un combate)
-	return load("res://scripts/map/clase_interactiva.tres")
+func _get_debug_node_label(node_data: Dictionary) -> String:
+	match String(node_data.get("combat_kind", "")):
+		"miniboss":
+			return "Minijefe - %s" % node_data.get("encounter_name", "")
+		"intermediate":
+			return "Intermedio - %s" % node_data.get("encounter_name", "")
+		"event":
+			return "Nodo intermedio - %s" % node_data.get("encounter_name", "")
+		"boss":
+			return "Jefe de zona - %s" % node_data.get("encounter_name", "")
+		_:
+			var resource: nodo_mapa = node_data.resource
+			return resource.node_name if resource != null else "Nodo intermedio"

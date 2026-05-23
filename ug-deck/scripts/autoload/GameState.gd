@@ -1,5 +1,7 @@
 extends Node
 
+const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
+
 # --- DATOS DEL MAPA PROCEDURAL ---
 var map_data: Dictionary = {}
 var nodo_actual_id: int = -1
@@ -8,6 +10,12 @@ var dinero: int = 150
 var artilugios: Array[String] = []
 var vida_actual: int = 50
 var vida_maxima: int = 50
+var zona_actual: int = 1
+var rareza_recompensa_actual: String = "Ingresante"
+var jefe_zona_actual: String = "Tom Apostol"
+var debug_forced_miniboss_id: String = ""
+var run_deck: Array[CardData] = []
+var run_deck_initialized := false
 
 
 const INFO_ARTILUGIOS = {
@@ -40,6 +48,65 @@ func reset_run_progress() -> void:
 	map_data.clear()
 	nodo_actual_id = -1
 	nodos_completados.clear()
+	zona_actual = 1
+	rareza_recompensa_actual = "Ingresante"
+	jefe_zona_actual = "Tom Apostol"
+	debug_forced_miniboss_id = ""
+	run_deck.clear()
+	run_deck_initialized = false
+
+func ensure_run_deck_initialized() -> void:
+	if run_deck_initialized:
+		return
+
+	run_deck = PlayerCardLoader.load_starting_run_cards()
+	run_deck_initialized = true
+	print("Mazo persistente de la run inicializado: %d cartas" % run_deck.size())
+
+func get_run_deck_copies() -> Array[CardData]:
+	ensure_run_deck_initialized()
+
+	var cards: Array[CardData] = []
+	for card in run_deck:
+		cards.append(_copy_card(card))
+	return cards
+
+func get_unique_run_deck_cards() -> Array[CardData]:
+	ensure_run_deck_initialized()
+
+	var seen_cards := {}
+	var unique_cards: Array[CardData] = []
+	for card in run_deck:
+		var card_key := card.effect_id
+		if card_key.is_empty():
+			card_key = card.card_name
+
+		if seen_cards.has(card_key):
+			continue
+
+		seen_cards[card_key] = true
+		unique_cards.append(_copy_card(card))
+
+	return unique_cards
+
+func get_run_deck_copy_counts() -> Dictionary:
+	ensure_run_deck_initialized()
+
+	var counts := {}
+	for card in run_deck:
+		var card_key := card.effect_id
+		if card_key.is_empty():
+			card_key = card.card_name
+
+		counts[card_key] = int(counts.get(card_key, 0)) + 1
+
+	return counts
+
+func add_card_to_run_deck(card: CardData) -> void:
+	ensure_run_deck_initialized()
+	run_deck.append(_copy_card(card))
+	print("Carta agregada al mazo de la run")
+	print("Tamaño actual del mazo de la run: %d" % run_deck.size())
 
 func visitar_nodo(node_id: int) -> void:
 	if not _is_known_node(node_id):
@@ -54,6 +121,27 @@ func completar_nodo_actual() -> void:
 
 	if not nodos_completados.has(nodo_actual_id):
 		nodos_completados.append(nodo_actual_id)
+
+func get_current_node_data() -> Dictionary:
+	return get_node_data(nodo_actual_id)
+
+func get_node_data(node_id: int) -> Dictionary:
+	if map_data.is_empty():
+		return {}
+
+	for n in map_data.nodes:
+		if n.id == node_id:
+			return n
+
+	return {}
+
+func get_current_miniboss_id() -> String:
+	var node_data := get_current_node_data()
+	return String(node_data.get("miniboss_id", ""))
+
+func get_current_combat_kind() -> String:
+	var node_data := get_current_node_data()
+	return String(node_data.get("combat_kind", "normal"))
 
 func volver_al_primer_nodo() -> void:
 	nodos_completados.clear()
@@ -106,6 +194,19 @@ func _get_first_node_id() -> int:
 			first_node_id = n.id
 
 	return first_node_id
+
+func _copy_card(card: CardData) -> CardData:
+	return CardData.new().setup(
+		card.card_name,
+		card.cost,
+		card.card_type,
+		card.value,
+		card.description,
+		card.effect_id,
+		card.rareza,
+		card.raw_effect_text,
+		card.image_path
+	)
 	
 	
 # --- MODO DESARROLLADOR: GANAR Y SALTAR NIVEL ---

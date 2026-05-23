@@ -80,6 +80,7 @@ func _on_equipar_pressed():
 	boton_equipar.modulate = Color(0.5, 1.0, 0.5)
 	
 	await get_tree().create_timer(1.0).timeout
+	GameState.completar_nodo_actual()
 	get_tree().change_scene_to_file("res://scenes/map/vista_mapa.tscn")
 
 

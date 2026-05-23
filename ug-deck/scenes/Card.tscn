@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dvg03b7tdroov" path="res://scripts/CardUI.gd" id="1_efgiu"]
 
 [node name="Card" type="Button" unique_id=1570146756]
-custom_minimum_size = Vector2(220, 320)
+custom_minimum_size = Vector2(170, 245)
 script = ExtResource("1_efgiu")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1371157410]
@@ -14,22 +14,23 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_bottom = 8
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1608944489]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=28254258]
 layout_mode = 2
+theme_override_font_sizes/font_size = 13
 text = "Nombre"
 horizontal_alignment = 1
 autowrap_mode = 3
 
 [node name="ArtFrame" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 86)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 
 [node name="CardImage" type="TextureRect" parent="MarginContainer/VBoxContainer/ArtFrame"]
@@ -40,10 +41,12 @@ expand_mode = 1
 stretch_mode = 5
 [node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1728606774]
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Coste: 0"
 horizontal_alignment = 1
 
 [node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1550452448]
 layout_mode = 2
+theme_override_font_sizes/font_size = 10
 text = "Descripcion"
 autowrap_mode = 3

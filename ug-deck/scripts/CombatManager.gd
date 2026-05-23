@@ -3,16 +3,25 @@ extends Node
 class_name CombatManager
 
 const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
+const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const PLAYER_DRAW_PER_TURN := 3
 const FIRST_ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
 const SECOND_ENEMY_IMAGE_PATH := "res://assets/characters/pepo enemigo 2.png"
+const INTEGRAL_MINIBOSS_IMAGE_PATH := "res://assets/characters/integral_maldita.png"
+const CALCULUS_MINIBOSS_IMAGE_PATH := "res://assets/characters/calculus_libro_fondo_transparente.png"
+const CALCULADORA_MINIBOSS_IMAGE_PATH := "res://assets/characters/calculadora_maldita_pixelart_transparente.png"
 const FIRST_ENEMY_MAX_HP := 50
 const FIRST_ENEMY_BASE_BLOCK := 0
 const SECOND_ENEMY_MAX_HP := 200
 const SECOND_ENEMY_BASE_BLOCK := 15
 const FIRST_ENEMY_NAME := "Tom Apostol"
 const SECOND_ENEMY_NAME := "Pepo"
+const MINIBOSS_INTEGRAL_TRIPLE := "integral_triple"
+const MINIBOSS_CALCULUS := "calculus"
+const MINIBOSS_CALCULADORA_VIEJA := "calculadora_vieja"
+const CALCULUS_MINIBOSS_SCALE := Vector2(0.18, 0.18)
+const CALCULADORA_MINIBOSS_SCALE := Vector2(0.16, 0.16)
 
 @export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
 
@@ -27,6 +36,17 @@ const SECOND_ENEMY_NAME := "Pepo"
 @onready var hand_container: HBoxContainer = $"../UI/HandContainer"
 @onready var card_animation_layer: Control = $"../UI/CardAnimationLayer"
 @onready var draw_pile_area: Control = $"../UI/DrawPileArea"
+@onready var draw_pile_panel: Panel = $"../UI/DrawPileArea/PilePanel"
+@onready var discard_pile_area: Control = $"../UI/DiscardPileArea"
+@onready var discard_pile_panel: Panel = $"../UI/DiscardPileArea/PilePanel"
+@onready var draw_pile_count_label: Label = $"../UI/DrawPileArea/CountLabel"
+@onready var discard_pile_count_label: Label = $"../UI/DiscardPileArea/CountLabel"
+@onready var deck_viewer_panel: Panel = $"../UI/DeckViewerPanel"
+@onready var deck_viewer_title_label: Label = $"../UI/DeckViewerPanel/ViewerVBox/HeaderBox/DeckViewerTitleLabel"
+@onready var deck_viewer_cards_container: GridContainer = $"../UI/DeckViewerPanel/ViewerVBox/DeckViewerScroll/DeckViewerCardsContainer"
+@onready var close_deck_viewer_button: Button = $"../UI/DeckViewerPanel/ViewerVBox/HeaderBox/CloseDeckViewerButton"
+@onready var reward_panel: Panel = $"../UI/RewardPanel"
+@onready var reward_cards_container: HBoxContainer = $"../UI/RewardPanel/RewardVBox/RewardCardsContainer"
 @onready var start_fight_banner: Control = $"../UI/StartFightBanner"
 @onready var start_fight_banner_panel: Panel = $"../UI/StartFightBanner/Panel"
 @onready var start_fight_banner_label: Label = $"../UI/StartFightBanner/Panel/Label"
@@ -56,6 +76,9 @@ var player_attacked_this_turn := false
 var temporary_card_cost_modifiers: Dictionary = {}
 var current_enemy_name := FIRST_ENEMY_NAME
 var returning_to_map := false
+var multi_enemy_hps: Array = []
+var multi_enemy_names: Array = []
+var multi_enemy_active := false
 
 # AGREGADO: Variable para el artilugio "Calculadora Científica"
 var primera_carta_combate_gratis := false
@@ -63,9 +86,30 @@ var primera_carta_combate_gratis := false
 
 func _ready() -> void:
 	randomize()
+	deck_manager.deck_counts_changed.connect(_update_deck_zone_ui)
+	draw_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
+	discard_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
+	draw_pile_area.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	discard_pile_area.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_ignore_mouse_on_children(draw_pile_area)
+	_ignore_mouse_on_children(discard_pile_area)
+	draw_pile_area.gui_input.connect(_on_draw_pile_area_gui_input)
+	discard_pile_area.gui_input.connect(_on_discard_pile_area_gui_input)
+	draw_pile_area.mouse_entered.connect(_on_draw_pile_area_mouse_entered)
+	draw_pile_area.mouse_exited.connect(_on_draw_pile_area_mouse_exited)
+	discard_pile_area.mouse_entered.connect(_on_discard_pile_area_mouse_entered)
+	discard_pile_area.mouse_exited.connect(_on_discard_pile_area_mouse_exited)
+	close_deck_viewer_button.pressed.connect(_hide_deck_viewer)
 	end_turn_button.pressed.connect(end_player_turn)
 	abandon_combat_button.pressed.connect(abandon_combat)
 	await start_battle()
+
+
+func _ignore_mouse_on_children(control: Control) -> void:
+	for child in control.get_children():
+		if child is Control:
+			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_ignore_mouse_on_children(child as Control)
 
 
 func start_battle() -> void:
@@ -81,6 +125,9 @@ func start_battle() -> void:
 	skip_next_player_draw = false
 	preserve_hand_for_next_turn = false
 	player_attacked_this_turn = false
+	multi_enemy_active = false
+	multi_enemy_hps.clear()
+	multi_enemy_names.clear()
 	temporary_card_cost_modifiers.clear()
 	_configure_enemy_for_current_node()
 	player.reset_for_new_battle()
@@ -118,7 +165,29 @@ func _aplicar_artilugios_inicio_combate() -> void:
 
 
 func _configure_enemy_for_current_node() -> void:
-	if _is_second_enemy_node():
+	var combat_kind := GameState.get_current_combat_kind()
+	if combat_kind == "miniboss":
+		_configure_miniboss(GameState.get_current_miniboss_id())
+	elif combat_kind == "intermediate":
+		_configure_miniboss(GameState.get_current_miniboss_id())
+	elif combat_kind == "boss":
+		battle_visuals.clear_multi_enemy_visuals()
+		_configure_zone_boss()
+	else:
+		battle_visuals.clear_multi_enemy_visuals()
+		enemy.max_hp = FIRST_ENEMY_MAX_HP
+		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
+		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards())
+		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
+		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
+		current_enemy_name = FIRST_ENEMY_NAME
+
+
+func _configure_zone_boss() -> void:
+	var node_data := GameState.get_current_node_data()
+	var boss_name := String(node_data.get("encounter_name", FIRST_ENEMY_NAME))
+
+	if boss_name == SECOND_ENEMY_NAME:
 		enemy.max_hp = SECOND_ENEMY_MAX_HP
 		enemy.base_block = SECOND_ENEMY_BASE_BLOCK
 		enemy.set_professor_deck(EnemyCardLoader.load_second_professor_cards())
@@ -134,15 +203,42 @@ func _configure_enemy_for_current_node() -> void:
 		current_enemy_name = FIRST_ENEMY_NAME
 
 
-func _is_second_enemy_node() -> bool:
-	if GameState.map_data.is_empty() or GameState.nodo_actual_id == -1:
-		return false
+func _configure_miniboss(miniboss_id: String) -> void:
+	enemy.base_block = 0
+	enemy.set_professor_deck(EnemyCardLoader.load_professor_cards_by_rarity("Desertor"))
 
-	for node_data in GameState.map_data.nodes:
-		if node_data.id == GameState.nodo_actual_id:
-			return node_data.position.x > 0
-
-	return false
+	match miniboss_id:
+		MINIBOSS_INTEGRAL_TRIPLE:
+			multi_enemy_active = true
+			multi_enemy_names = ["Integral 1", "Integral 2", "Integral 3"]
+			multi_enemy_hps = [15, 15, 15]
+			enemy.max_hp = 45
+			enemy.current_hp = 45
+			current_enemy_name = "Integral Triple"
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+			battle_visuals.show_multi_enemy_group(INTEGRAL_MINIBOSS_IMAGE_PATH, multi_enemy_names, multi_enemy_hps)
+			for index in range(multi_enemy_hps.size()):
+				print("%s vida: %d" % [multi_enemy_names[index], multi_enemy_hps[index]])
+		MINIBOSS_CALCULUS:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 40
+			enemy.base_block = 0
+			current_enemy_name = "Calculus"
+			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		MINIBOSS_CALCULADORA_VIEJA:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 25
+			enemy.base_block = 0
+			current_enemy_name = "Calculadora vieja"
+			battle_visuals.set_enemy_image(CALCULADORA_MINIBOSS_IMAGE_PATH, CALCULADORA_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		_:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 40
+			current_enemy_name = "Calculus"
+			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
 
 
 func start_player_turn() -> void:
@@ -210,6 +306,7 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 
 	deck_manager.hand.erase(card_data)
 	deck_manager.played_cards.append(card_data)
+	deck_manager.print_deck_debug_counts()
 	card_ui.queue_free()
 	player_cards_played_this_turn += 1
 	if _is_attack_card(card_data):
@@ -293,21 +390,129 @@ func update_ui() -> void:
 		enemy.max_hp,
 		enemy.block
 	]
+	if multi_enemy_active:
+		enemy_stats_label.text = "%s | %s | Escudo: %d" % [
+			current_enemy_name,
+			_get_multi_enemy_status_text(),
+			enemy.block
+		]
 	energy_label.text = "Energia: %d/%d" % [player.current_energy, player.max_energy]
+	_update_deck_zone_ui()
 	
 	# AGREGADO: Solo actualizamos el texto de intención si NO estamos en modo descarte
 	if not waiting_for_discard:
 		enemy_intent_label.text = enemy.get_intent_text(player, deck_manager.hand.size(), player_cards_played_last_turn)
 
 
+func _update_deck_zone_ui() -> void:
+	draw_pile_count_label.text = "%d cartas" % _get_available_deck_cards().size()
+	discard_pile_count_label.text = "%d cartas" % deck_manager.discard_pile.size()
+
+
+func _on_draw_pile_area_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_show_pile_viewer("Mazo disponible", _get_available_deck_cards())
+
+
+func _on_discard_pile_area_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_show_pile_viewer("Mazo de descarte", deck_manager.discard_pile)
+
+
+func _on_draw_pile_area_mouse_entered() -> void:
+	_set_pile_hover(draw_pile_panel, true)
+
+
+func _on_draw_pile_area_mouse_exited() -> void:
+	_set_pile_hover(draw_pile_panel, false)
+
+
+func _on_discard_pile_area_mouse_entered() -> void:
+	_set_pile_hover(discard_pile_panel, true)
+
+
+func _on_discard_pile_area_mouse_exited() -> void:
+	_set_pile_hover(discard_pile_panel, false)
+
+
+func _set_pile_hover(panel: Panel, is_hovered: bool) -> void:
+	panel.modulate = Color(1.18, 1.18, 1.18, 1.0) if is_hovered else Color.WHITE
+
+
+func _get_available_deck_cards() -> Array[CardData]:
+	var available_cards: Array[CardData] = []
+	available_cards.append_array(deck_manager.draw_pile)
+	available_cards.append_array(deck_manager.hand)
+	return available_cards
+
+
+func _show_pile_viewer(title: String, cards: Array) -> void:
+	for child in deck_viewer_cards_container.get_children():
+		child.queue_free()
+
+	var grouped_cards := _group_cards_by_current_copies(cards)
+	var unique_cards: Array = grouped_cards["cards"]
+	var copy_counts: Dictionary = grouped_cards["counts"]
+
+	deck_viewer_title_label.text = title
+	print("%s: %d cartas totales, %d cartas unicas" % [title, cards.size(), unique_cards.size()])
+	for card_data in unique_cards:
+		var card_key := _get_card_group_key(card_data)
+		var copy_count := int(copy_counts.get(card_key, 1))
+
+		var card_ui: CardUI = card_scene.instantiate()
+		deck_viewer_cards_container.add_child(card_ui)
+		card_ui.setup(card_data)
+		card_ui.name_label.text = "%s x%d" % [card_data.card_name, copy_count]
+		card_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	deck_viewer_panel.visible = true
+
+
+func _group_cards_by_current_copies(cards: Array) -> Dictionary:
+	var unique_cards: Array = []
+	var copy_counts: Dictionary = {}
+	var seen_keys := {}
+
+	for card_data in cards:
+		var card_key := _get_card_group_key(card_data)
+		copy_counts[card_key] = int(copy_counts.get(card_key, 0)) + 1
+		if not seen_keys.has(card_key):
+			seen_keys[card_key] = true
+			unique_cards.append(card_data)
+
+	return {
+		"cards": unique_cards,
+		"counts": copy_counts,
+	}
+
+
+func _get_card_group_key(card_data: CardData) -> String:
+	if not card_data.effect_id.is_empty():
+		return card_data.effect_id
+	return card_data.card_name
+
+
+func _hide_deck_viewer() -> void:
+	deck_viewer_panel.visible = false
+
+
+func _get_multi_enemy_status_text() -> String:
+	var parts: Array[String] = []
+	for index in range(multi_enemy_hps.size()):
+		parts.append("%s: %d/15" % [multi_enemy_names[index], multi_enemy_hps[index]])
+	return " | ".join(parts)
+
+
 func check_combat_end() -> void:
-	if enemy.is_dead():
+	if _is_current_encounter_defeated():
 		battle_has_ended = true
+		if GameState.get_current_combat_kind() == "miniboss":
+			print("Minijefe derrotado")
 		enemy_intent_label.text = "Victoria: aprobaste este combate."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
-		GameState.completar_nodo_actual()
-		_return_to_map()
+		_show_card_reward()
 	elif player.is_dead():
 		battle_has_ended = true
 		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
@@ -317,7 +522,53 @@ func check_combat_end() -> void:
 		_return_to_map()
 
 
+func _is_current_encounter_defeated() -> bool:
+	if multi_enemy_active:
+		for hp in multi_enemy_hps:
+			if hp > 0:
+				return false
+		return true
+
+	return enemy.is_dead()
+
+
+func _get_current_encounter_hp() -> int:
+	if multi_enemy_active:
+		return _get_multi_enemy_total_hp()
+	return enemy.current_hp
+
+
 func complete_first_battle_and_return_to_map() -> void:
+	GameState.completar_nodo_actual()
+	_return_to_map()
+
+
+func _show_card_reward() -> void:
+	print("Combate ganado, generando recompensa")
+	print("Rareza de recompensa actual: %s" % GameState.rareza_recompensa_actual)
+
+	for child in reward_cards_container.get_children():
+		child.queue_free()
+
+	var reward_options := PlayerCardLoader.load_reward_options_by_rarity(GameState.rareza_recompensa_actual, 3)
+	var option_names: Array[String] = []
+	for card_data in reward_options:
+		option_names.append(card_data.card_name)
+
+	print("Opciones de recompensa: %s" % ", ".join(option_names))
+
+	reward_panel.visible = true
+	for card_data in reward_options:
+		var card_ui: CardUI = card_scene.instantiate()
+		reward_cards_container.add_child(card_ui)
+		card_ui.setup(card_data)
+		card_ui.card_clicked.connect(_on_reward_card_selected)
+
+
+func _on_reward_card_selected(card_data: CardData, _card_ui: CardUI) -> void:
+	print("Carta elegida: %s" % card_data.card_name)
+	GameState.add_card_to_run_deck(card_data)
+	reward_panel.visible = false
 	GameState.completar_nodo_actual()
 	_return_to_map()
 
@@ -489,8 +740,8 @@ func _get_next_hand_card_position() -> Vector2:
 
 
 func _get_hand_card_position(card_index: int, card_count: int) -> Vector2:
-	var card_width: float = 220.0
-	var spacing: float = 12.0
+	var card_width: float = 170.0
+	var spacing: float = 10.0
 	var total_width: float = card_width * card_count + spacing * maxi(card_count - 1, 0)
 	var hand_width: float = hand_container.size.x
 	var hand_left: float = hand_container.global_position.x
@@ -645,7 +896,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 		var peek_cards := deck_manager.draw_cards(1)
 		_show_hand()
 		if not peek_cards.is_empty() and _is_attack_card(peek_cards[0]):
-			enemy.take_damage(5)
+			_apply_damage_to_current_enemy(5)
 	elif card_data.effect_id == "boligrafo_sin_tinta":
 		_apply_player_attack(4)
 		if not deck_manager.hand.is_empty():
@@ -719,9 +970,9 @@ func _apply_card_effect(card_data: CardData) -> void:
 		player.aplicar_estado("semana_sin_parciales", 1, 2)
 		player.queue_extra_energy_next_turn(1)
 	elif card_data.effect_id == "saber_todo_el_programa":
-		var enemy_hp_before := enemy.current_hp
+		var enemy_hp_before := _get_current_encounter_hp()
 		_apply_player_attack(32)
-		if enemy_hp_before > 0 and enemy.is_dead():
+		if enemy_hp_before > 0 and _is_current_encounter_defeated():
 			player.curar(15)
 	else:
 		_apply_generic_player_card_effect(card_data)
@@ -732,8 +983,8 @@ func _play_machetearse() -> void:
 		player.current_hp = 0
 		return
 
-	var damage := int(ceil(enemy.current_hp * 0.8))
-	enemy.take_damage(player.get_attack_damage(damage))
+	var damage := int(ceil(_get_current_encounter_hp() * 0.8))
+	_apply_damage_to_current_enemy(player.get_attack_damage(damage))
 
 
 # MODIFICADO: Ahora activa el modo selección si tienes cartas
@@ -1025,7 +1276,45 @@ func _gain_player_block(amount: int) -> void:
 
 
 func _apply_player_attack(base_damage: int) -> void:
-	enemy.take_damage(player.get_attack_damage(base_damage))
+	_apply_damage_to_current_enemy(player.get_attack_damage(base_damage))
+
+
+func _apply_damage_to_current_enemy(amount: int) -> void:
+	if not multi_enemy_active:
+		enemy.take_damage(amount)
+		return
+
+	var target_index := _get_first_alive_multi_enemy_index()
+	if target_index == -1:
+		return
+
+	var remaining_damage := amount
+	if enemy.block > 0:
+		var blocked_damage = min(enemy.block, remaining_damage)
+		enemy.block -= blocked_damage
+		remaining_damage -= blocked_damage
+
+	if remaining_damage <= 0:
+		return
+
+	multi_enemy_hps[target_index] = max(multi_enemy_hps[target_index] - remaining_damage, 0)
+	enemy.current_hp = _get_multi_enemy_total_hp()
+	battle_visuals.update_multi_enemy_labels(multi_enemy_hps)
+	print("%s vida: %d" % [multi_enemy_names[target_index], multi_enemy_hps[target_index]])
+
+
+func _get_first_alive_multi_enemy_index() -> int:
+	for index in range(multi_enemy_hps.size()):
+		if multi_enemy_hps[index] > 0:
+			return index
+	return -1
+
+
+func _get_multi_enemy_total_hp() -> int:
+	var total := 0
+	for hp in multi_enemy_hps:
+		total += hp
+	return total
 
 
 func _apply_generic_player_card_effect(card_data: CardData) -> void:
@@ -1374,4 +1663,5 @@ func _recover_last_discard_to_hand() -> void:
 		return
 	var recovered_card: CardData = deck_manager.discard_pile.pop_back()
 	deck_manager.hand.append(recovered_card)
+	deck_manager.print_deck_debug_counts()
 	_show_hand()
