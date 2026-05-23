@@ -8,6 +8,7 @@ class_name CardData
 @export_multiline var description: String = ""
 @export var effect_id: String = ""
 @export var rareza: String = ""
+@export var image_path: String = ""
 @export_multiline var raw_effect_text: String = ""
 
 
@@ -19,7 +20,8 @@ func setup(
 	new_description: String,
 	new_effect_id: String = "",
 	new_rareza: String = "",
-	new_raw_effect_text: String = ""
+	new_raw_effect_text: String = "",
+	new_image_path: String = ""
 ) -> CardData:
 	card_name = new_name
 	cost = new_cost
@@ -29,4 +31,5 @@ func setup(
 	effect_id = new_effect_id
 	rareza = new_rareza
 	raw_effect_text = new_raw_effect_text
+	image_path = new_image_path
 	return self

@@ -12,7 +12,8 @@ from PIL import Image, ImageDraw, ImageFont
 BASE_DIR = Path(__file__).resolve().parent
 CSV_CARTAS = BASE_DIR / "Cartas iniciales.xlsx - CARTAS PROTA.csv"
 PLANTILLA = BASE_DIR / "templates" / "carta_vacia.png"
-CARPETA_SALIDA = BASE_DIR / "cartas_generadas"
+GODOT_PROJECT_DIR = BASE_DIR.parent / "ug-deck"
+CARPETA_SALIDA = GODOT_PROJECT_DIR / "assets" / "cards"
 
 os.makedirs(CARPETA_SALIDA, exist_ok=True)
 
@@ -50,6 +51,12 @@ def limpiar_nombre_archivo(texto):
     texto = texto.strip("_")
     return texto
 
+
+
+
+def ruta_res_carta(nombre):
+    nombre_archivo = limpiar_nombre_archivo(nombre)
+    return f"res://assets/cards/{nombre_archivo}.png"
 
 def texto_centrado(draw, texto, y, fuente, ancho_imagen, color):
     texto = str(texto)
@@ -210,6 +217,7 @@ def generar_carta(fila):
 
     carta.save(salida)
     print(f"Carta generada: {salida}")
+    print(f"Ruta Godot: {ruta_res_carta(nombre)}")
 
 
 # =========================

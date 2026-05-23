@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dvg03b7tdroov" path="res://scripts/CardUI.gd" id="1_efgiu"]
 
 [node name="Card" type="Button" unique_id=1570146756]
-custom_minimum_size = Vector2(220, 230)
+custom_minimum_size = Vector2(220, 320)
 script = ExtResource("1_efgiu")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1371157410]
@@ -28,6 +28,16 @@ text = "Nombre"
 horizontal_alignment = 1
 autowrap_mode = 3
 
+[node name="ArtFrame" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 86)
+layout_mode = 2
+
+[node name="CardImage" type="TextureRect" parent="MarginContainer/VBoxContainer/ArtFrame"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
 [node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1728606774]
 layout_mode = 2
 text = "Coste: 0"

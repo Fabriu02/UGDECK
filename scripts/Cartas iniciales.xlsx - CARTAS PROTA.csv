@@ -20,11 +20,11 @@ Nervios de acero,Buff propio,3,"Durante 2 turnos, reduces en 25% el daño recibi
 Tema que sí sabías,Ataque,2,"Inflige 14 de daño. Si tienes 3 o más cartas en mano, inflige 4 extra.",Por fin una que estudiaste.,Ayudante de cátedra
 Recreo estratégico,Curación,2,"Recuperas 8 de vida, ganas 6 de escudo y descartas 1 estado negativo propio.",Diez minutos para volver a ser persona.,Ingeniero
 Final promocionado,Buff propio,4,"Durante 3 turnos, tus cartas cuestan 1 energía menos. No puede reducir costes por debajo de 0.",No rendís final: trascendés.,Ingeniero
-Resumen,Ataque,1,Inflinge 16 de daño.,Tiene lagrimas y mate encima.,
+Resumen,Ataque,3,Inflinge 16 de daño.,Tiene lagrimas y mate encima.,
 Torta frita,Defensa,1,Otorga 2 de escudo.,900 pesos de pura gloria.,
 Mate salvador,Estado(Buff),2,Ganas +3 de ataque en los siguientes 2 turnos.,"Oro verde, dame un par y sobrevivo el cuatrimestre.",
 Trasnochar,Estado(Debuff),1,"Pierdes 5 de vida, aumenta en un x2 tu proximo ataque.",Muchas veces es mejor un buen sueño..,
-Usar IA,Ataque,3,Inflinge 9 de daño.,Un gran poder conlleva una gran cantidad de tokens.,
+Usar IA,Ataque,1,Inflinge 9 de daño.,Un gran poder conlleva una gran cantidad de tokens.,
 Machetearse,Ataque,4,"Inflinge un golpe proporcional al 80% de la vida del enemigo, pero hay una probabilidad aleatoria de que te descubran y te echen de la facu",¿Valio la pena? - Ya no estas en la secundaria..,
 Aprobado con 4,Habilidad,4,"Si tu salud llega a 0 en los proximos 2 turnos, sobrevives con 4 de salud.",4 es nota lo demás es lujo.,
 Faltazo,Estado(Debuff),3,"Perdes el siguiente turno, pero sos inmune a cualquier ataque enemigo",,

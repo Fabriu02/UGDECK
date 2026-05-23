@@ -6,6 +6,7 @@ signal card_clicked(card_data: CardData, card_ui: CardUI)
 var card_data: CardData
 
 @onready var name_label: Label = $MarginContainer/VBoxContainer/NameLabel
+@onready var card_image: TextureRect = $MarginContainer/VBoxContainer/ArtFrame/CardImage
 @onready var cost_label: Label = $MarginContainer/VBoxContainer/CostLabel
 @onready var description_label: Label = $MarginContainer/VBoxContainer/DescriptionLabel
 
@@ -23,6 +24,20 @@ func setup(data: CardData) -> void:
 	name_label.text = data.card_name
 	cost_label.text = "Coste: %d" % data.cost
 	description_label.text = _build_card_text(data)
+	_update_card_image(data)
+
+
+func _update_card_image(data: CardData) -> void:
+	card_image.texture = null
+	card_image.visible = false
+
+	if data.image_path.is_empty() or not ResourceLoader.exists(data.image_path):
+		return
+
+	var loaded_resource: Resource = ResourceLoader.load(data.image_path)
+	if loaded_resource is Texture2D:
+		card_image.texture = loaded_resource as Texture2D
+		card_image.visible = true
 
 
 func _on_pressed() -> void:

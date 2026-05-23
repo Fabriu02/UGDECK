@@ -130,6 +130,7 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 	var effect_text := _get_cell(row, headers, "efecto")
 	var description := _get_cell(row, headers, "descripcion")
 	var rareza := _get_cell(row, headers, "rareza")
+	var image_path := _get_card_image_path(row, headers)
 	var cost := _parse_int(_get_cell(row, headers, "coste energia"), 0)
 
 	if card_type.is_empty() and effect_text.is_empty():
@@ -143,8 +144,16 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 		description,
 		_build_effect_id(card_name),
 		rareza,
-		effect_text
+		effect_text,
+		image_path
 	)
+
+
+static func _get_card_image_path(row: PackedStringArray, headers: Dictionary) -> String:
+	var image_path := _get_cell(row, headers, "imagen")
+	if image_path.is_empty():
+		image_path = _get_cell(row, headers, "sprite")
+	return image_path
 
 
 static func _get_cell(row: PackedStringArray, headers: Dictionary, header_name: String) -> String:
