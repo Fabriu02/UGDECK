@@ -5,7 +5,7 @@ const GENERATED_ZONE_COUNT := 2
 const COLUMNS_PER_ZONE := 5
 const BRANCH_COUNT := 3
 const BRANCH_LENGTH := 3
-const MAP_VERSION := 3
+const MAP_VERSION := 4
 
 var num_columns: int = GENERATED_ZONE_COUNT * COLUMNS_PER_ZONE
 var total_nodes: int = GENERATED_ZONE_COUNT * (2 + BRANCH_COUNT * BRANCH_LENGTH)
@@ -18,7 +18,11 @@ const MINIBOSSES := [
 	{"id": "calculus", "name": "Calculus"},
 	{"id": "calculadora_vieja", "name": "Calculadora vieja"},
 ]
-const INTERMEDIATE_ENEMIES := MINIBOSSES
+const ZONE_2_ENEMIES := [
+	{"id": "goblin_voltimetro", "name": "Goblin voltimetro"},
+	{"id": "goblin_fisica_2", "name": "Goblin fisica 2"},
+	{"id": "goblin_notebook_fisica_3", "name": "Goblin notebook fisica 3"},
+]
 const INTERMEDIATE_RESOURCES := [
 	"res://scripts/map/clase_interactiva.tres",
 	"res://scripts/map/casilleros.tres",
@@ -58,8 +62,8 @@ func generate_map() -> Dictionary:
 func generate_zone(zone_index: int, start_column: int = 0) -> Dictionary:
 	print("Generando zona %d" % zone_index)
 
-	var selected_miniboss := _select_miniboss()
-	var miniboss_id := _add_node(start_column, 1, load("res://scripts/map/examen_parcial.tres"), "miniboss", selected_miniboss["name"], selected_miniboss["id"])
+	var selected_miniboss := _select_miniboss(zone_index)
+	var miniboss_id := _add_node(start_column, 1, load("res://scripts/map/examen_parcial.tres"), "miniboss", selected_miniboss["name"], selected_miniboss["id"], zone_index)
 	print("Zona %d - Nodo inicial: Minijefe - %s" % [zone_index, selected_miniboss["name"]])
 
 	var branch_end_ids: Array[int] = []
@@ -72,12 +76,12 @@ func generate_zone(zone_index: int, start_column: int = 0) -> Dictionary:
 			var encounter_name := resource.node_name
 			var intermediate_enemy_id := ""
 			if resource.type == nodo_mapa.NodeType.CLASE_INTERACTIVA:
-				var enemy_data := _select_intermediate_enemy()
+				var enemy_data := _select_intermediate_enemy(zone_index)
 				combat_kind = "intermediate"
 				encounter_name = enemy_data["name"]
 				intermediate_enemy_id = enemy_data["id"]
 
-			var node_id := _add_node(column, branch_index, resource, combat_kind, encounter_name, intermediate_enemy_id)
+			var node_id := _add_node(column, branch_index, resource, combat_kind, encounter_name, intermediate_enemy_id, zone_index)
 			_add_connection(previous_id, node_id)
 			previous_id = node_id
 			print("Zona %d - Rama %d Nodo %d: %s" % [
@@ -89,7 +93,7 @@ func generate_zone(zone_index: int, start_column: int = 0) -> Dictionary:
 		branch_end_ids.append(previous_id)
 
 	var boss_name := "Tom Apostol" if zone_index == 1 else "Pepo"
-	var boss_id := _add_node(start_column + COLUMNS_PER_ZONE - 1, 1, load("res://scripts/map/examen_final.tres"), "boss", boss_name)
+	var boss_id := _add_node(start_column + COLUMNS_PER_ZONE - 1, 1, load("res://scripts/map/examen_final.tres"), "boss", boss_name, "", zone_index)
 	for branch_end_id in branch_end_ids:
 		_add_connection(branch_end_id, boss_id)
 
@@ -97,7 +101,7 @@ func generate_zone(zone_index: int, start_column: int = 0) -> Dictionary:
 	return {"miniboss_id": miniboss_id, "boss_id": boss_id}
 
 
-func _add_node(column: int, row: int, resource: nodo_mapa, combat_kind: String, encounter_name: String = "", miniboss_id: String = "") -> int:
+func _add_node(column: int, row: int, resource: nodo_mapa, combat_kind: String, encounter_name: String = "", miniboss_id: String = "", zone_index: int = 1) -> int:
 	var node_id := generated_nodes.size()
 	generated_nodes.append({
 		"id": node_id,
@@ -107,29 +111,36 @@ func _add_node(column: int, row: int, resource: nodo_mapa, combat_kind: String, 
 		"combat_kind": combat_kind,
 		"encounter_name": encounter_name,
 		"miniboss_id": miniboss_id,
+		"zone_index": zone_index,
 	})
 	return node_id
 
 
-func _select_miniboss() -> Dictionary:
+func _select_miniboss(zone_index: int) -> Dictionary:
+	var enemy_pool := _get_enemy_pool_for_zone(zone_index)
 	if not GameState.debug_forced_miniboss_id.is_empty():
-		for miniboss in MINIBOSSES:
+		for miniboss in enemy_pool:
 			if GameState.debug_forced_miniboss_id == miniboss["id"]:
 				print("Minijefe seleccionado: %s" % miniboss["name"])
 				return miniboss
 
-	for miniboss in MINIBOSSES:
+	for miniboss in enemy_pool:
 		if forced_miniboss_id == miniboss["id"]:
 			print("Minijefe seleccionado: %s" % miniboss["name"])
 			return miniboss
 
-	var selected: Dictionary = MINIBOSSES[randi() % MINIBOSSES.size()]
+	var selected: Dictionary = enemy_pool[randi() % enemy_pool.size()]
 	print("Minijefe seleccionado: %s" % selected["name"])
 	return selected
 
 
-func _select_intermediate_enemy() -> Dictionary:
-	return INTERMEDIATE_ENEMIES[randi() % INTERMEDIATE_ENEMIES.size()]
+func _select_intermediate_enemy(zone_index: int) -> Dictionary:
+	var enemy_pool := _get_enemy_pool_for_zone(zone_index)
+	return enemy_pool[randi() % enemy_pool.size()]
+
+
+func _get_enemy_pool_for_zone(zone_index: int) -> Array:
+	return ZONE_2_ENEMIES if zone_index == 2 else MINIBOSSES
 
 
 func _get_random_intermediate_resource() -> nodo_mapa:

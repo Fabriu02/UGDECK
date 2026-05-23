@@ -11,17 +11,24 @@ const SECOND_ENEMY_IMAGE_PATH := "res://assets/characters/pepo enemigo 2.png"
 const INTEGRAL_MINIBOSS_IMAGE_PATH := "res://assets/characters/integral_maldita.png"
 const CALCULUS_MINIBOSS_IMAGE_PATH := "res://assets/characters/calculus_libro_fondo_transparente.png"
 const CALCULADORA_MINIBOSS_IMAGE_PATH := "res://assets/characters/calculadora_maldita_pixelart_transparente.png"
+const GOBLIN_VOLTIMETRO_IMAGE_PATH := "res://assets/characters/goblin_voltimetro_fondo_transparente.png"
+const GOBLIN_FISICA_2_IMAGE_PATH := "res://assets/characters/goblin_fisica2_fondo_transparente.png"
+const GOBLIN_NOTEBOOK_FISICA_3_IMAGE_PATH := "res://assets/characters/goblin_notebook_fisica3_transparente.png"
 const FIRST_ENEMY_MAX_HP := 50
 const FIRST_ENEMY_BASE_BLOCK := 0
-const SECOND_ENEMY_MAX_HP := 200
+const SECOND_ENEMY_MAX_HP := 250
 const SECOND_ENEMY_BASE_BLOCK := 15
 const FIRST_ENEMY_NAME := "Tom Apostol"
 const SECOND_ENEMY_NAME := "Pepo"
 const MINIBOSS_INTEGRAL_TRIPLE := "integral_triple"
 const MINIBOSS_CALCULUS := "calculus"
 const MINIBOSS_CALCULADORA_VIEJA := "calculadora_vieja"
+const ENEMY_GOBLIN_VOLTIMETRO := "goblin_voltimetro"
+const ENEMY_GOBLIN_FISICA_2 := "goblin_fisica_2"
+const ENEMY_GOBLIN_NOTEBOOK_FISICA_3 := "goblin_notebook_fisica_3"
 const CALCULUS_MINIBOSS_SCALE := Vector2(0.18, 0.18)
 const CALCULADORA_MINIBOSS_SCALE := Vector2(0.16, 0.16)
+const GOBLIN_MINIBOSS_SCALE := Vector2(0.22, 0.22)
 
 @export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
 
@@ -177,7 +184,8 @@ func _configure_enemy_for_current_node() -> void:
 		battle_visuals.clear_multi_enemy_visuals()
 		enemy.max_hp = FIRST_ENEMY_MAX_HP
 		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
-		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards())
+		enemy.max_energy = 5
+		enemy.set_professor_deck(_load_current_zone_enemy_deck())
 		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
 		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
 		current_enemy_name = FIRST_ENEMY_NAME
@@ -190,14 +198,16 @@ func _configure_zone_boss() -> void:
 	if boss_name == SECOND_ENEMY_NAME:
 		enemy.max_hp = SECOND_ENEMY_MAX_HP
 		enemy.base_block = SECOND_ENEMY_BASE_BLOCK
-		enemy.set_professor_deck(EnemyCardLoader.load_second_professor_cards())
+		enemy.max_energy = 5
+		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards_by_rarities(["Desertor", "Ingresante"]))
 		battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH)
 		battle_visuals.set_enemy_display_name(SECOND_ENEMY_NAME)
 		current_enemy_name = SECOND_ENEMY_NAME
 	else:
 		enemy.max_hp = FIRST_ENEMY_MAX_HP
 		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
-		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards())
+		enemy.max_energy = 5
+		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards_by_rarity("Desertor"))
 		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
 		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
 		current_enemy_name = FIRST_ENEMY_NAME
@@ -205,7 +215,8 @@ func _configure_zone_boss() -> void:
 
 func _configure_miniboss(miniboss_id: String) -> void:
 	enemy.base_block = 0
-	enemy.set_professor_deck(EnemyCardLoader.load_professor_cards_by_rarity("Desertor"))
+	enemy.max_energy = 3
+	enemy.set_professor_deck(_load_current_zone_enemy_deck())
 
 	match miniboss_id:
 		MINIBOSS_INTEGRAL_TRIPLE:
@@ -222,6 +233,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 		MINIBOSS_CALCULUS:
 			battle_visuals.clear_multi_enemy_visuals()
 			enemy.max_hp = 40
+			enemy.max_energy = 3
 			enemy.base_block = 0
 			current_enemy_name = "Calculus"
 			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
@@ -229,16 +241,54 @@ func _configure_miniboss(miniboss_id: String) -> void:
 		MINIBOSS_CALCULADORA_VIEJA:
 			battle_visuals.clear_multi_enemy_visuals()
 			enemy.max_hp = 25
+			enemy.max_energy = 3
 			enemy.base_block = 0
 			current_enemy_name = "Calculadora vieja"
 			battle_visuals.set_enemy_image(CALCULADORA_MINIBOSS_IMAGE_PATH, CALCULADORA_MINIBOSS_SCALE)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_GOBLIN_VOLTIMETRO:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 60
+			enemy.max_energy = 3
+			enemy.base_block = 0
+			current_enemy_name = "Goblin voltimetro"
+			battle_visuals.set_enemy_image(GOBLIN_VOLTIMETRO_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_GOBLIN_FISICA_2:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 85
+			enemy.max_energy = 3
+			enemy.base_block = 0
+			current_enemy_name = "Goblin fisica 2"
+			battle_visuals.set_enemy_image(GOBLIN_FISICA_2_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_GOBLIN_NOTEBOOK_FISICA_3:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 110
+			enemy.max_energy = 4
+			enemy.base_block = 0
+			current_enemy_name = "Goblin notebook fisica 3"
+			battle_visuals.set_enemy_image(GOBLIN_NOTEBOOK_FISICA_3_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
 		_:
 			battle_visuals.clear_multi_enemy_visuals()
 			enemy.max_hp = 40
+			enemy.max_energy = 3
 			current_enemy_name = "Calculus"
 			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
+
+
+func _load_current_zone_enemy_deck() -> Array[CardData]:
+	var zone_index := _get_current_zone_index()
+	if zone_index >= 2:
+		return EnemyCardLoader.load_professor_cards_by_rarities(["Desertor", "Ingresante"])
+	return EnemyCardLoader.load_professor_cards_by_rarity("Desertor")
+
+
+func _get_current_zone_index() -> int:
+	var node_data := GameState.get_current_node_data()
+	return int(node_data.get("zone_index", 1))
 
 
 func start_player_turn() -> void:
@@ -545,12 +595,13 @@ func complete_first_battle_and_return_to_map() -> void:
 
 func _show_card_reward() -> void:
 	print("Combate ganado, generando recompensa")
-	print("Rareza de recompensa actual: %s" % GameState.rareza_recompensa_actual)
+	var reward_rarities := _get_current_reward_rarities()
+	print("Rareza de recompensa actual: %s" % ", ".join(reward_rarities))
 
 	for child in reward_cards_container.get_children():
 		child.queue_free()
 
-	var reward_options := PlayerCardLoader.load_reward_options_by_rarity(GameState.rareza_recompensa_actual, 3)
+	var reward_options := PlayerCardLoader.load_reward_options_by_rarities(reward_rarities, 3)
 	var option_names: Array[String] = []
 	for card_data in reward_options:
 		option_names.append(card_data.card_name)
@@ -563,6 +614,12 @@ func _show_card_reward() -> void:
 		reward_cards_container.add_child(card_ui)
 		card_ui.setup(card_data)
 		card_ui.card_clicked.connect(_on_reward_card_selected)
+
+
+func _get_current_reward_rarities() -> Array[String]:
+	if _get_current_zone_index() >= 2:
+		return ["Ingresante", "Recursante"]
+	return [GameState.rareza_recompensa_actual]
 
 
 func _on_reward_card_selected(card_data: CardData, _card_ui: CardUI) -> void:
@@ -1047,8 +1104,9 @@ func _execute_enemy_card(card_data: CardData) -> void:
 		print("DEBUG Enemy: no pudo pagar '%s'. Energía=%d coste=%d" % [card_data.card_name, enemy.current_energy, card_data.cost])
 		return
 
-	print("DEBUG Enemy: juega '%s' | energía antes/después %d/%d | efecto=%s" % [
+	print("DEBUG Enemy: juega '%s' [%s] | energía antes/después %d/%d | efecto=%s" % [
 		card_data.card_name,
+		card_data.rareza,
 		enemy.current_energy + card_data.cost,
 		enemy.current_energy,
 		card_data.raw_effect_text,

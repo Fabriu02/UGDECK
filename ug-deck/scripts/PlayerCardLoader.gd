@@ -48,13 +48,17 @@ static func load_starting_run_cards() -> Array[CardData]:
 
 
 static func load_reward_options_by_rarity(rarity: String, amount: int = 3) -> Array[CardData]:
+	return load_reward_options_by_rarities([rarity], amount)
+
+
+static func load_reward_options_by_rarities(rarities: Array, amount: int = 3) -> Array[CardData]:
 	var candidates: Array[CardData] = []
 	for card in load_player_cards():
-		if card.rareza == rarity:
+		if rarities.has(card.rareza):
 			candidates.append(card)
 
 	if candidates.size() < amount:
-		push_warning("PlayerCardLoader: no hay suficientes cartas de rareza '%s'. Se permitiran repetidas temporalmente." % rarity)
+		push_warning("PlayerCardLoader: no hay suficientes cartas de rarezas '%s'. Se permitiran repetidas temporalmente." % ", ".join(rarities))
 
 	var options: Array[CardData] = []
 	var available := candidates.duplicate()

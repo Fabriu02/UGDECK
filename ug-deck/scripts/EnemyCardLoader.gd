@@ -31,6 +31,16 @@ static func load_professor_cards_by_rarity(rarity: String) -> Array[CardData]:
 	return matching_cards
 
 
+static func load_professor_cards_by_rarities(rarities: Array) -> Array[CardData]:
+	var matching_cards: Array[CardData] = []
+	for card in load_cards_from_csv(CSV_FILE_NAME):
+		if rarities.has(card.rareza):
+			matching_cards.append(card)
+
+	print("DEBUG EnemyCardLoader: cartas de profesor rarezas %s: %d" % [", ".join(rarities), matching_cards.size()])
+	return matching_cards
+
+
 static func load_cards_from_csv(csv_file_name: String, start_index: int = 0, max_cards: int = -1) -> Array[CardData]:
 	var csv_path := _resolve_csv_path(csv_file_name)
 	var cards: Array[CardData] = []

@@ -16,6 +16,7 @@ var jefe_zona_actual: String = "Tom Apostol"
 var debug_forced_miniboss_id: String = ""
 var run_deck: Array[CardData] = []
 var run_deck_initialized := false
+var shop_removal_count := 0
 
 
 const INFO_ARTILUGIOS = {
@@ -54,6 +55,7 @@ func reset_run_progress() -> void:
 	debug_forced_miniboss_id = ""
 	run_deck.clear()
 	run_deck_initialized = false
+	shop_removal_count = 0
 
 func ensure_run_deck_initialized() -> void:
 	if run_deck_initialized:
@@ -94,19 +96,33 @@ func get_run_deck_copy_counts() -> Dictionary:
 
 	var counts := {}
 	for card in run_deck:
-		var card_key := card.effect_id
-		if card_key.is_empty():
-			card_key = card.card_name
-
+		var card_key := get_card_key(card)
 		counts[card_key] = int(counts.get(card_key, 0)) + 1
 
 	return counts
+
+func get_card_key(card: CardData) -> String:
+	if not card.effect_id.is_empty():
+		return card.effect_id
+	return card.card_name
 
 func add_card_to_run_deck(card: CardData) -> void:
 	ensure_run_deck_initialized()
 	run_deck.append(_copy_card(card))
 	print("Carta agregada al mazo de la run")
 	print("Tamaño actual del mazo de la run: %d" % run_deck.size())
+
+func remove_card_from_run_deck(card_key: String) -> bool:
+	ensure_run_deck_initialized()
+
+	for index in range(run_deck.size()):
+		if get_card_key(run_deck[index]) == card_key:
+			print("Carta eliminada del mazo de la run: %s" % run_deck[index].card_name)
+			run_deck.remove_at(index)
+			print("Tamaño actual del mazo de la run: %d" % run_deck.size())
+			return true
+
+	return false
 
 func visitar_nodo(node_id: int) -> void:
 	if not _is_known_node(node_id):
@@ -142,6 +158,10 @@ func get_current_miniboss_id() -> String:
 func get_current_combat_kind() -> String:
 	var node_data := get_current_node_data()
 	return String(node_data.get("combat_kind", "normal"))
+
+func get_current_zone_index() -> int:
+	var node_data := get_current_node_data()
+	return int(node_data.get("zone_index", zona_actual))
 
 func volver_al_primer_nodo() -> void:
 	nodos_completados.clear()

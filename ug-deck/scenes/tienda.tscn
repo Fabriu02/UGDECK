@@ -68,4 +68,6 @@ size_flags_horizontal = 0
 [node name="Botonvolver" type="Button" parent="Fondo/NinePatchRect/MarginContainer/VBoxContainer" unique_id=1221823916]
 unique_name_in_owner = true
 layout_mode = 2
+custom_minimum_size = Vector2(160, 44)
 size_flags_horizontal = 8
+text = "Salir"
