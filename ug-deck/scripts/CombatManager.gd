@@ -723,6 +723,8 @@ func _apply_card_effect(card_data: CardData) -> void:
 		_apply_player_attack(32)
 		if enemy_hp_before > 0 and enemy.is_dead():
 			player.curar(15)
+	else:
+		_apply_generic_player_card_effect(card_data)
 
 
 func _play_machetearse() -> void:
@@ -943,6 +945,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 				damage += 8
 			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		_:
+			_apply_generic_enemy_card_effect(card_data)
 			print("DEBUG Enemy: carta sin implementación específica '%s'." % card_data.card_name)
 
 	print("DEBUG Enemy: resultado '%s' | jugador HP %d->%d | jugador escudo %d->%d | enemigo HP %d->%d | enemigo escudo %d->%d" % [
@@ -1025,12 +1028,326 @@ func _apply_player_attack(base_damage: int) -> void:
 	enemy.take_damage(player.get_attack_damage(base_damage))
 
 
+func _apply_generic_player_card_effect(card_data: CardData) -> void:
+	var effect_text := EnemyCardLoader._normalize_text(card_data.raw_effect_text)
+	var amount := _get_card_amount(card_data)
+
+	match card_data.card_type:
+		"ataque":
+			if amount > 0:
+				_apply_player_attack(amount)
+		"defensa":
+			if amount > 0:
+				_gain_player_block(amount)
+			_apply_generic_state_effects_to_enemy(effect_text)
+		"curacion":
+			if amount > 0:
+				player.curar(amount)
+			if effect_text.contains("elimina") or effect_text.contains("descarta 1 estado"):
+				player.remove_one_negative_state()
+		"robo":
+			if amount > 0:
+				deck_manager.draw_cards(amount)
+				_show_hand()
+		"energia":
+			if amount > 0:
+				player.current_energy += amount
+		"debuff enemigo":
+			_apply_generic_state_effects_to_enemy(effect_text)
+			_draw_from_effect_text(effect_text)
+		"buff propio":
+			_apply_generic_player_buff_effect(effect_text)
+			_draw_from_effect_text(effect_text)
+		"estados negativos", "estado(debuff)":
+			_apply_generic_player_negative_effect(effect_text)
+		"descarte_control de mano":
+			_apply_generic_player_discard_effect(effect_text, amount)
+		"habilidad", "estado(buff)":
+			_apply_generic_player_buff_effect(effect_text)
+			_draw_from_effect_text(effect_text)
+		_:
+			print("DEBUG Player: carta sin implementacion generica '%s' tipo=%s efecto=%s" % [
+				card_data.card_name,
+				card_data.card_type,
+				card_data.raw_effect_text,
+			])
+
+
+func _apply_generic_enemy_card_effect(card_data: CardData) -> void:
+	var effect_text := EnemyCardLoader._normalize_text(card_data.raw_effect_text)
+	var amount := _get_card_amount(card_data)
+
+	match card_data.card_type:
+		"ataque":
+			if amount > 0:
+				var damage := enemy.calcular_dano_enemigo(amount)
+				var ignored_block_ratio := _extract_percent(effect_text) / 100.0
+				if ignored_block_ratio > 0.0:
+					player.take_damage_ignoring_block(damage, ignored_block_ratio)
+				else:
+					player.take_damage(damage)
+			_apply_generic_state_effects_to_player(effect_text)
+		"defensa":
+			if amount > 0:
+				enemy.gain_block(amount)
+			if effect_text.contains("elimina"):
+				enemy.remove_one_negative_state()
+		"buff propio":
+			_apply_generic_enemy_buff_effect(effect_text)
+		"debuff enemigo", "estados negativos":
+			_apply_generic_state_effects_to_player(effect_text)
+		"descarte_control de mano":
+			_apply_generic_enemy_discard_effect(effect_text, amount)
+
+
+func _apply_generic_player_buff_effect(effect_text: String) -> void:
+	var duration := _extract_duration(effect_text, 1)
+	var amount := _extract_signed_amount(effect_text)
+
+	if effect_text.contains("ataque") and amount != 0:
+		player.attack_bonus += amount
+		player.attack_bonus_turns = max(player.attack_bonus_turns, duration)
+
+	if effect_text.contains("escudo"):
+		var block_bonus := _extract_number_before(effect_text, "escudo")
+		if block_bonus <= 0:
+			block_bonus = amount
+		if block_bonus > 0:
+			player.bonus_defensa += block_bonus
+			player.aplicar_estado("bonus_defensa_temporal", block_bonus, duration)
+
+	if effect_text.contains("cuestan 1 energia menos") or effect_text.contains("cuesta 1 energia menos"):
+		player.aplicar_estado("final_promocionado", 1, duration)
+
+
+func _apply_generic_player_negative_effect(effect_text: String) -> void:
+	var damage := _extract_number_after_any(effect_text, ["pierdes", "perdes", "pierde"])
+	if damage > 0 and effect_text.contains("vida"):
+		player.lose_hp(damage)
+
+	_draw_from_effect_text(effect_text)
+	_apply_generic_state_effects_to_player(effect_text)
+
+	var attack_bonus := _extract_signed_amount(effect_text)
+	if attack_bonus > 0 and effect_text.contains("ataque"):
+		player.attack_bonus += attack_bonus
+		player.attack_bonus_turns = max(player.attack_bonus_turns, _extract_duration(effect_text, 1))
+
+
+func _apply_generic_player_discard_effect(effect_text: String, amount: int) -> void:
+	if effect_text.contains("toda tu mano"):
+		var hand_count := deck_manager.hand.size()
+		deck_manager.discard_hand()
+		if effect_text.contains("roba"):
+			deck_manager.draw_cards(hand_count)
+		_show_hand()
+		return
+
+	if amount <= 0:
+		return
+
+	var discard_amount = min(amount, deck_manager.hand.size())
+	if discard_amount <= 0:
+		return
+
+	if effect_text.contains("roba"):
+		_begin_discard_selection("player_replace_one", discard_amount, 0)
+	else:
+		_begin_discard_selection("player_replace_zero", discard_amount, 0)
+
+
+func _apply_generic_enemy_buff_effect(effect_text: String) -> void:
+	var amount := _extract_signed_amount(effect_text)
+	var duration := _extract_duration(effect_text, 1)
+
+	if effect_text.contains("ataque permanente") and amount > 0:
+		enemy.gain_permanent_attack_bonus(amount)
+	elif effect_text.contains("ataque") and amount > 0:
+		enemy.gain_attack_bonus(amount, duration)
+
+	var block_amount := _extract_number_after_any(effect_text, ["escudo"])
+	if block_amount <= 0:
+		block_amount = _extract_number_before(effect_text, "escudo")
+	if block_amount > 0:
+		enemy.gain_block(block_amount)
+
+	if effect_text.contains("elimina"):
+		enemy.remove_one_negative_state()
+
+
+func _apply_generic_enemy_discard_effect(effect_text: String, amount: int) -> void:
+	if effect_text.contains("toda su mano") or effect_text.contains("toda tu mano"):
+		deck_manager.discard_hand()
+		_draw_from_effect_text(effect_text)
+		_show_hand()
+		return
+
+	if amount <= 0:
+		return
+
+	if effect_text.contains("elige") or effect_text.contains("descarta menos"):
+		_begin_enemy_forced_discard(amount, _extract_number_after_any(effect_text, ["recibe"]))
+	else:
+		deck_manager.discard_random_cards(amount)
+		_draw_from_effect_text(effect_text)
+		_show_hand()
+
+
+func _apply_generic_state_effects_to_enemy(effect_text: String) -> void:
+	var duration := _extract_duration(effect_text, 1)
+
+	if effect_text.contains("vulnerable"):
+		enemy.aplicar_estado("vulnerable", 0, duration)
+	if effect_text.contains("debil"):
+		enemy.aplicar_estado("debil", 0, duration)
+	if effect_text.contains("distraccion"):
+		enemy.aplicar_estado("distraccion", 0, duration)
+	if effect_text.contains("pierde") and effect_text.contains("ataque"):
+		var amount := _extract_number_after_any(effect_text, ["pierde"])
+		if amount > 0:
+			enemy.aplicar_estado("ataque_menos", amount, duration)
+
+
+func _apply_generic_state_effects_to_player(effect_text: String) -> void:
+	var duration := _extract_duration(effect_text, 1)
+
+	if effect_text.contains("estres"):
+		player.aplicar_estado("estres", 0, duration)
+	if effect_text.contains("distraccion"):
+		player.aplicar_estado("distraccion", 0, duration)
+	if effect_text.contains("confusion"):
+		player.aplicar_estado("confusion", 0, duration)
+	if effect_text.contains("panico"):
+		player.aplicar_estado("panico", 0, duration)
+	if effect_text.contains("cansancio"):
+		player.aplicar_estado("cansancio", 0, duration)
+	if effect_text.contains("defensa") and (effect_text.contains("menos") or effect_text.contains("25% menos")):
+		player.aplicar_estado("defensa_menos", 0, duration)
+	if effect_text.contains("habilidad") and (effect_text.contains("cuestan 1") or effect_text.contains("cuesta 1")):
+		player.aplicar_estado("habilidad_mas", 0, duration)
+	if effect_text.contains("roba 1 carta menos"):
+		player.aplicar_estado("distraccion", 0, duration)
+
+
+func _draw_from_effect_text(effect_text: String) -> void:
+	var amount := _extract_number_after_any(effect_text, ["roba", "robas"])
+	if amount <= 0:
+		return
+
+	deck_manager.draw_cards(amount)
+	_show_hand()
+
+
+func _get_card_amount(card_data: CardData) -> int:
+	if card_data.value > 0:
+		return card_data.value
+
+	return _extract_first_number(EnemyCardLoader._normalize_text(card_data.raw_effect_text))
+
+
+func _extract_duration(effect_text: String, fallback: int) -> int:
+	var duration := _extract_number_before_any(effect_text, ["turno", "turnos"])
+	if duration > 0:
+		return duration
+	return fallback
+
+
+func _extract_signed_amount(effect_text: String) -> int:
+	var regex := RegEx.new()
+	if regex.compile("[+-]\\d+") != OK:
+		return 0
+
+	var result := regex.search(effect_text)
+	if result == null:
+		return 0
+
+	return result.get_string().to_int()
+
+
+func _extract_percent(effect_text: String) -> int:
+	var regex := RegEx.new()
+	if regex.compile("\\d+%") != OK:
+		return 0
+
+	var result := regex.search(effect_text)
+	if result == null:
+		return 0
+
+	return result.get_string().replace("%", "").to_int()
+
+
+func _extract_number_after_any(text: String, keywords: Array[String]) -> int:
+	for keyword in keywords:
+		var number := _extract_number_after(text, keyword)
+		if number > 0:
+			return number
+	return 0
+
+
+func _extract_number_after(text: String, keyword: String) -> int:
+	var keyword_index := text.find(keyword)
+	if keyword_index == -1:
+		return 0
+
+	return _extract_first_number(text.substr(keyword_index + keyword.length()))
+
+
+func _extract_number_before_any(text: String, keywords: Array[String]) -> int:
+	for keyword in keywords:
+		var number := _extract_number_before(text, keyword)
+		if number > 0:
+			return number
+	return 0
+
+
+func _extract_number_before(text: String, keyword: String) -> int:
+	var keyword_index := text.find(keyword)
+	if keyword_index == -1:
+		return 0
+
+	var before_keyword := text.substr(0, keyword_index)
+	var regex := RegEx.new()
+	if regex.compile("\\d+") != OK:
+		return 0
+
+	var matches := regex.search_all(before_keyword)
+	if matches.is_empty():
+		return 0
+
+	return matches[matches.size() - 1].get_string().to_int()
+
+
+func _extract_first_number(text: String) -> int:
+	var regex := RegEx.new()
+	if regex.compile("\\d+") != OK:
+		return 0
+
+	var result := regex.search(text)
+	if result == null:
+		return 0
+
+	return result.get_string().to_int()
+
+
 func _is_attack_card(card_data: CardData) -> bool:
 	return card_data.card_type == "ataque" or card_data.effect_id == "basic_attack" or card_data.effect_id == "machetearse"
 
 
 func _is_skill_card(card_data: CardData) -> bool:
-	return card_data.card_type == "habilidad" or card_data.card_type == "defensa" or card_data.card_type == "robo" or card_data.card_type == "curacion" or card_data.card_type == "energia"
+	var skill_types := [
+		"habilidad",
+		"defensa",
+		"robo",
+		"curacion",
+		"energia",
+		"descarte_control de mano",
+		"buff propio",
+		"debuff enemigo",
+		"estados negativos",
+		"estado(buff)",
+		"estado(debuff)",
+	]
+	return skill_types.has(card_data.card_type)
 
 
 func _count_attack_cards_in_hand() -> int:

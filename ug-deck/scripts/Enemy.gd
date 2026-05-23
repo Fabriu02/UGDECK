@@ -298,4 +298,26 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 				damage += 8
 			return "Ataque %d" % calcular_dano_enemigo(damage)
 		_:
+			return _get_generic_card_preview(card)
+
+
+func _get_generic_card_preview(card: CardData) -> String:
+	match card.card_type:
+		"ataque":
+			if card.value > 0:
+				return "Ataque %d" % calcular_dano_enemigo(card.value)
+			return "Ataque"
+		"defensa":
+			if card.value > 0:
+				return "Escudo %d" % card.value
+			return "Defensa"
+		"descarte_control de mano":
+			if card.value > 0:
+				return "Descarta %d" % card.value
+			return "Descarte"
+		"debuff enemigo", "estados negativos":
+			return "Aplica estado"
+		"buff propio":
+			return "Gana mejora"
+		_:
 			return card.card_type

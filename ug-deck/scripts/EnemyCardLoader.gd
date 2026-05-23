@@ -132,6 +132,7 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 	var rareza := _get_cell(row, headers, "rareza")
 	var image_path := _get_card_image_path(row, headers)
 	var cost := _parse_int(_get_cell(row, headers, "coste energia"), 0)
+	var normalized_type := _normalize_card_type(card_type)
 
 	if card_type.is_empty() and effect_text.is_empty():
 		return null
@@ -139,8 +140,8 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 	return CardData.new().setup(
 		card_name,
 		cost,
-		_normalize_card_type(card_type),
-		0,
+		normalized_type,
+		_extract_primary_value(normalized_type, effect_text),
 		description,
 		_build_effect_id(card_name),
 		rareza,
@@ -176,6 +177,53 @@ static func _parse_int(value: String, fallback: int) -> int:
 
 static func _normalize_card_type(value: String) -> String:
 	return _normalize_text(value).replace("/", "_")
+
+
+static func _extract_primary_value(card_type: String, effect_text: String) -> int:
+	var normalized_effect := _normalize_text(effect_text)
+
+	if card_type == "ataque":
+		return _extract_number_after_any(normalized_effect, ["inflige", "inflinge"])
+	if card_type == "defensa":
+		return _extract_number_after_any(normalized_effect, ["gana", "ganas", "otorga"])
+	if card_type == "curacion":
+		return _extract_number_after_any(normalized_effect, ["recupera", "recuperas"])
+	if card_type == "energia":
+		return _extract_number_after_any(normalized_effect, ["gana", "ganas"])
+	if card_type == "robo":
+		return _extract_number_after_any(normalized_effect, ["roba", "robas"])
+	if card_type == "descarte_control de mano":
+		return _extract_number_after_any(normalized_effect, ["descarta", "descartas"])
+
+	return _extract_first_number(normalized_effect)
+
+
+static func _extract_number_after_any(text: String, keywords: Array[String]) -> int:
+	for keyword in keywords:
+		var number := _extract_number_after(text, keyword)
+		if number > 0:
+			return number
+	return 0
+
+
+static func _extract_number_after(text: String, keyword: String) -> int:
+	var keyword_index := text.find(keyword)
+	if keyword_index == -1:
+		return 0
+
+	return _extract_first_number(text.substr(keyword_index + keyword.length()))
+
+
+static func _extract_first_number(text: String) -> int:
+	var regex := RegEx.new()
+	if regex.compile("\\d+") != OK:
+		return 0
+
+	var result := regex.search(text)
+	if result == null:
+		return 0
+
+	return result.get_string().to_int()
 
 
 static func _build_effect_id(card_name: String) -> String:
