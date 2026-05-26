@@ -536,6 +536,7 @@ func _get_enemy_intent_group_context() -> Dictionary:
 		"control_debuff_count": 0,
 		"strong_attack_count": 0,
 		"announced_damage": 0,
+		"player_played_skill_last_turn": player_played_skill_last_turn,
 	}
 
 

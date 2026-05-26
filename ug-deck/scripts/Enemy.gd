@@ -283,7 +283,7 @@ func _choose_next_intent_by_score(
 		return
 
 	_debug_ai("Candidatas: %s" % _format_card_names(candidates))
-	var lethal_card := _choose_lethal_card(candidates, player, player_hand_size, player_cards_played_last_turn)
+	var lethal_card := _choose_lethal_card(candidates, player, player_hand_size, player_cards_played_last_turn, group_context)
 	if lethal_card != null:
 		planned_card = lethal_card
 		_update_intent_metadata(planned_card, player, player_hand_size, player_cards_played_last_turn, zone_index)
@@ -298,7 +298,7 @@ func _choose_next_intent_by_score(
 		var projected_hp := player.current_hp
 		var lethal := false
 		if card.card_type == "ataque":
-			estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn)
+			estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn, group_context)
 			var damage_preview := _get_player_damage_preview(player, estimated_damage, _get_card_ignored_block_ratio(card))
 			estimated_damage = int(damage_preview.get("damage_after_modifiers", estimated_damage))
 			projected_hp = int(damage_preview.get("resulting_hp", player.current_hp))
@@ -338,14 +338,14 @@ func _choose_next_intent_by_score(
 	])
 
 
-func _choose_lethal_card(cards: Array[CardData], player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> CardData:
+func _choose_lethal_card(cards: Array[CardData], player: Player, player_hand_size: int, player_cards_played_last_turn: int, group_context: Dictionary) -> CardData:
 	_debug_ai("=== IA ENEMIGA DEBUG ===")
 	_debug_ai("HP jugador: %d" % player.current_hp)
 	_debug_ai("Escudo jugador: %d" % player.block)
 
 	var lethal_cards: Array[Dictionary] = []
 	for card in cards:
-		var damage_eval := _get_damage_eval(card, player, player_hand_size, player_cards_played_last_turn)
+		var damage_eval := _get_damage_eval(card, player, player_hand_size, player_cards_played_last_turn, group_context)
 		var is_damage_action := bool(damage_eval.get("is_damage_action", false))
 		var estimated_damage := int(damage_eval.get("estimated_damage", 0))
 		var effective_damage := int(damage_eval.get("effective_damage", 0))
@@ -398,12 +398,12 @@ func _evaluate_card(
 	var is_elite_or_boss := _is_elite_or_boss()
 	var estimated_damage := 0
 	var ignored_block_ratio := 0.0
-	var damage_preview := {}
+	var damage_preview: Dictionary = {}
 	var is_lethal := false
 	var resulting_hp := player.current_hp
 
 	if card.card_type == "ataque":
-		estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn)
+		estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn, group_context)
 		ignored_block_ratio = _get_card_ignored_block_ratio(card)
 		damage_preview = _get_player_damage_preview(player, estimated_damage, ignored_block_ratio)
 		estimated_damage = int(damage_preview.get("damage_after_modifiers", estimated_damage))
@@ -779,10 +779,10 @@ func _is_damage_action(card: CardData, estimated_damage: int = -1) -> bool:
 	return has_damage_text and estimated_damage > 0
 
 
-func _get_damage_eval(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> Dictionary:
+func _get_damage_eval(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int, group_context: Dictionary = {}) -> Dictionary:
 	var estimated_damage := 0
 	if _is_damage_action(card):
-		estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn)
+		estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn, group_context)
 
 	var damage_preview := _get_player_damage_preview(player, estimated_damage, _get_card_ignored_block_ratio(card))
 	var effective_damage := int(damage_preview.get("remaining_damage", 0))
@@ -798,7 +798,7 @@ func _get_damage_eval(card: CardData, player: Player, player_hand_size: int, pla
 	}
 
 
-func _estimate_attack_damage_for_card(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> int:
+func _estimate_attack_damage_for_card(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int, group_context: Dictionary = {}) -> int:
 	match card.effect_id:
 		"pregunta_al_azar":
 			var pregunta_al_azar_damage := 8
@@ -827,7 +827,10 @@ func _estimate_attack_damage_for_card(card: CardData, player: Player, player_han
 		"final_con_tribunal":
 			return calcular_dano_enemigo(30)
 		"pregunta_de_repaso":
-			return calcular_dano_enemigo(7)
+			var pregunta_de_repaso_damage := 7
+			if bool(group_context.get("player_played_skill_last_turn", false)):
+				pregunta_de_repaso_damage += 5
+			return calcular_dano_enemigo(pregunta_de_repaso_damage)
 		"ejemplo_sin_resolver":
 			var ejemplo_sin_resolver_damage := 13
 			if player.tiene_estado("confusion"):
@@ -902,21 +905,21 @@ func _get_player_damage_preview(player: Player, estimated_damage: int, ignored_b
 			"is_lethal": false,
 		}
 
-	var adjusted_damage := estimated_damage
+	var adjusted_damage: int = estimated_damage
 	if player.tiene_estado("estres"):
 		adjusted_damage = int(adjusted_damage * 1.25)
 	if player.tiene_estado("nervios_de_acero"):
 		adjusted_damage = int(adjusted_damage * 0.75)
 
-	var effective_block := player.block
+	var effective_block: int = player.block
 	if ignored_block_ratio > 0.0:
 		var ignored_block := int(floor(player.block * ignored_block_ratio))
-		effective_block = max(player.block - ignored_block, 0)
+		effective_block = int(max(player.block - ignored_block, 0))
 
-	var remaining_damage := max(adjusted_damage - effective_block, 0)
-	var resulting_hp := player.current_hp - remaining_damage
-	var blocked_damage := min(effective_block, adjusted_damage)
-	var resulting_block := max(player.block - blocked_damage, 0)
+	var remaining_damage: int = int(max(adjusted_damage - effective_block, 0))
+	var resulting_hp: int = player.current_hp - remaining_damage
+	var blocked_damage: int = int(min(effective_block, adjusted_damage))
+	var resulting_block: int = int(max(player.block - blocked_damage, 0))
 
 	return {
 		"damage_after_modifiers": adjusted_damage,
