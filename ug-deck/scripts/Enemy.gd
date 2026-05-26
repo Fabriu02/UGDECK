@@ -2,6 +2,9 @@ extends Node
 class_name Enemy
 
 const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
+const LETHAL_PRIORITY_BONUS := 9999
+const FINISHER_LOW_HP_BONUS := 60
+const FINISHER_VULNERABLE_BONUS := 25
 
 @export var max_hp: int = 50
 @export var max_energy: int = 5
@@ -161,6 +164,37 @@ func get_intent_text(player: Player, player_hand_size: int, player_cards_played_
 	return "Intencion: %s - %s | %s" % [next_intent_type, planned_card.card_name, preview]
 
 
+func get_intent_tooltip(player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> String:
+	if planned_card == null:
+		return "El enemigo esperara y ganara 3 de escudo."
+
+	var preview := _get_card_preview(planned_card, player, player_hand_size, player_cards_played_last_turn)
+	var state_preview := _get_effect_state_preview(planned_card)
+	var state_description := _get_effect_state_description(planned_card)
+
+	match planned_card.card_type:
+		"ataque":
+			if state_description.is_empty():
+				return "El enemigo atacara: %s." % preview
+			return "El enemigo atacara: %s. Tambien aplicara: %s." % [preview, state_description]
+		"defensa":
+			return "El enemigo ganara escudo o defensa: %s." % preview
+		"buff propio":
+			return "El enemigo se aplicara una mejora: %s." % preview
+		"debuff enemigo", "estados negativos":
+			if not state_description.is_empty():
+				return "El enemigo aplicara %s: %s" % [state_preview, state_description]
+			return "El enemigo aplicara un estado negativo."
+		"descarte_control de mano":
+			return "El enemigo alterara tu mano: %s." % preview
+		"curacion":
+			return "El enemigo se curara: %s." % preview
+		_:
+			if not state_description.is_empty():
+				return "El enemigo usara %s y aplicara: %s." % [planned_card.card_name, state_description]
+			return "El enemigo usara %s: %s." % [planned_card.card_name, preview]
+
+
 func record_executed_intent(card: CardData, zone_index: int) -> void:
 	last_card_type = card.card_type
 	last_card_name = card.card_name
@@ -249,17 +283,39 @@ func _choose_next_intent_by_score(
 		return
 
 	_debug_ai("Candidatas: %s" % _format_card_names(candidates))
+	var lethal_card := _choose_lethal_card(candidates, player, player_hand_size, player_cards_played_last_turn)
+	if lethal_card != null:
+		planned_card = lethal_card
+		_update_intent_metadata(planned_card, player, player_hand_size, player_cards_played_last_turn, zone_index)
+		_debug_ai("Accion elegida por prioridad letal: %s" % planned_card.card_name)
+		return
+
 	var best_card: CardData = null
 	var best_score := -999999
 	for card in candidates:
 		var base_score := _evaluate_card(card, player, player_hand_size, player_cards_played_last_turn, zone_index, group_context)
+		var estimated_damage := 0
+		var projected_hp := player.current_hp
+		var lethal := false
+		if card.card_type == "ataque":
+			estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn)
+			var damage_preview := _get_player_damage_preview(player, estimated_damage, _get_card_ignored_block_ratio(card))
+			estimated_damage = int(damage_preview.get("damage_after_modifiers", estimated_damage))
+			projected_hp = int(damage_preview.get("resulting_hp", player.current_hp))
+			lethal = bool(damage_preview.get("is_lethal", false))
 		var random_score := randi_range(-5, 5)
 		var score := base_score + random_score
-		_debug_ai("Score final '%s': %d (score=%d, random=%d)" % [
+		_debug_ai("Eval '%s' | tipo=%s | vida jugador=%d | escudo jugador=%d | dano estimado=%d | vida resultante=%d | letal=%s | score=%d | random=%d | final=%d" % [
 			card.card_name,
-			score,
+			card.card_type,
+			player.current_hp,
+			player.block,
+			estimated_damage,
+			projected_hp,
+			str(lethal),
 			base_score,
 			random_score,
+			score,
 		])
 		if best_card == null or score > best_score:
 			best_card = card
@@ -282,6 +338,50 @@ func _choose_next_intent_by_score(
 	])
 
 
+func _choose_lethal_card(cards: Array[CardData], player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> CardData:
+	_debug_ai("=== IA ENEMIGA DEBUG ===")
+	_debug_ai("HP jugador: %d" % player.current_hp)
+	_debug_ai("Escudo jugador: %d" % player.block)
+
+	var lethal_cards: Array[Dictionary] = []
+	for card in cards:
+		var damage_eval := _get_damage_eval(card, player, player_hand_size, player_cards_played_last_turn)
+		var is_damage_action := bool(damage_eval.get("is_damage_action", false))
+		var estimated_damage := int(damage_eval.get("estimated_damage", 0))
+		var effective_damage := int(damage_eval.get("effective_damage", 0))
+		var resulting_hp := int(damage_eval.get("resulting_hp", player.current_hp))
+		var is_lethal := bool(damage_eval.get("is_lethal", false))
+
+		_debug_ai("Accion evaluada: %s | Tipo: %s | Dano estimado: %d | Dano efectivo: %d | Es dano: %s | Es letal: %s | Score: fase letal previa" % [
+			card.card_name,
+			card.card_type,
+			estimated_damage,
+			effective_damage,
+			str(is_damage_action),
+			str(is_lethal),
+		])
+
+		if is_damage_action and is_lethal:
+			lethal_cards.append({
+				"card": card,
+				"effective_damage": effective_damage,
+				"estimated_damage": estimated_damage,
+				"resulting_hp": resulting_hp,
+			})
+
+	if lethal_cards.is_empty():
+		return null
+
+	lethal_cards.sort_custom(func(a, b): return int(a.get("effective_damage", 0)) > int(b.get("effective_damage", 0)))
+	var chosen_card: CardData = lethal_cards[0]["card"]
+	_debug_ai("Accion letal elegida: %s | Dano efectivo: %d | Vida resultante: %d" % [
+		chosen_card.card_name,
+		int(lethal_cards[0].get("effective_damage", 0)),
+		int(lethal_cards[0].get("resulting_hp", player.current_hp)),
+	])
+	return chosen_card
+
+
 func _evaluate_card(
 	card: CardData,
 	player: Player,
@@ -296,6 +396,19 @@ func _evaluate_card(
 	var phase := _get_enemy_phase()
 	var current_is_strong_attack := _is_strong_attack(card, zone_index)
 	var is_elite_or_boss := _is_elite_or_boss()
+	var estimated_damage := 0
+	var ignored_block_ratio := 0.0
+	var damage_preview := {}
+	var is_lethal := false
+	var resulting_hp := player.current_hp
+
+	if card.card_type == "ataque":
+		estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn)
+		ignored_block_ratio = _get_card_ignored_block_ratio(card)
+		damage_preview = _get_player_damage_preview(player, estimated_damage, ignored_block_ratio)
+		estimated_damage = int(damage_preview.get("damage_after_modifiers", estimated_damage))
+		is_lethal = bool(damage_preview.get("is_lethal", false))
+		resulting_hp = int(damage_preview.get("resulting_hp", player.current_hp))
 
 	if last_card_name == card.card_name:
 		score -= 12
@@ -309,13 +422,14 @@ func _evaluate_card(
 
 	match card.card_type:
 		"ataque":
-			var estimated_damage := _estimate_attack_damage(card)
 			if player.block <= 0:
 				score += 20
 			elif player.block >= 8:
 				score -= 10
 			if player.current_hp <= int(ceil(player.max_hp * 0.3)):
 				score += 20
+			if player.tiene_estado("vulnerable"):
+				score += FINISHER_VULNERABLE_BONUS
 			if effect_text.contains("reduce el escudo") and player.block <= 0:
 				score -= 15
 			if phase == "agresivo":
@@ -324,13 +438,10 @@ func _evaluate_card(
 				score += 20
 			if player.block > 0 and (effect_text.contains("ignora") or effect_text.contains("reduce el escudo")):
 				score += 15
-			if estimated_damage >= player.current_hp and player.current_hp <= int(ceil(player.max_hp * 0.3)):
-				if zone_index <= 1:
-					score -= 45
-				else:
-					score -= 30
-			if estimated_damage >= player.current_hp and player.current_hp <= int(ceil(player.max_hp * 0.1)):
-				score -= 35
+			if not is_lethal and resulting_hp <= int(ceil(player.max_hp * 0.2)):
+				score += FINISHER_LOW_HP_BONUS
+			elif not is_lethal and resulting_hp <= int(ceil(player.max_hp * 0.35)):
+				score += 30
 		"defensa":
 			if hp_ratio <= 0.5:
 				score += 15
@@ -383,11 +494,21 @@ func _evaluate_card(
 
 	score = _apply_archetype_score_modifiers(score, card, hp_ratio, current_is_strong_attack)
 
-	if int(group_context.get("control_debuff_count", 0)) > 0 and _is_control_or_debuff_card(card):
+	if is_lethal:
+		score += LETHAL_PRIORITY_BONUS
+		_debug_ai("Lethal detectado en '%s': dano=%d, escudo=%d, vida resultante=%d, bonus=%d" % [
+			card.card_name,
+			estimated_damage,
+			player.block,
+			resulting_hp,
+			LETHAL_PRIORITY_BONUS,
+		])
+
+	if not is_lethal and int(group_context.get("control_debuff_count", 0)) > 0 and _is_control_or_debuff_card(card):
 		score -= 50
-	if int(group_context.get("strong_attack_count", 0)) >= 2 and current_is_strong_attack:
+	if not is_lethal and int(group_context.get("strong_attack_count", 0)) >= 2 and current_is_strong_attack:
 		score -= 40
-	if int(group_context.get("announced_damage", 0)) >= _get_zone_damage_soft_cap(zone_index) and card.card_type == "ataque":
+	if not is_lethal and int(group_context.get("announced_damage", 0)) >= _get_zone_damage_soft_cap(zone_index) and card.card_type == "ataque":
 		score -= 30
 
 	return score
@@ -642,6 +763,96 @@ func _estimate_attack_damage(card: CardData) -> int:
 	return calcular_dano_enemigo(_estimate_card_amount(card))
 
 
+func _is_damage_action(card: CardData, estimated_damage: int = -1) -> bool:
+	if card.card_type == "ataque":
+		return true
+
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	var has_damage_text := (
+		effect_text.contains("inflige")
+		or effect_text.contains("pierde vida")
+		or effect_text.contains("pierdes vida")
+		or (effect_text.contains("recibe") and effect_text.contains("dano"))
+	)
+	if estimated_damage < 0:
+		estimated_damage = _estimate_attack_damage(card)
+	return has_damage_text and estimated_damage > 0
+
+
+func _get_damage_eval(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> Dictionary:
+	var estimated_damage := 0
+	if _is_damage_action(card):
+		estimated_damage = _estimate_attack_damage_for_card(card, player, player_hand_size, player_cards_played_last_turn)
+
+	var damage_preview := _get_player_damage_preview(player, estimated_damage, _get_card_ignored_block_ratio(card))
+	var effective_damage := int(damage_preview.get("remaining_damage", 0))
+	var resulting_hp := int(damage_preview.get("resulting_hp", player.current_hp))
+	var is_damage_action := _is_damage_action(card, estimated_damage)
+
+	return {
+		"is_damage_action": is_damage_action,
+		"estimated_damage": int(damage_preview.get("damage_after_modifiers", estimated_damage)),
+		"effective_damage": effective_damage,
+		"resulting_hp": resulting_hp,
+		"is_lethal": is_damage_action and resulting_hp <= 0,
+	}
+
+
+func _estimate_attack_damage_for_card(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> int:
+	match card.effect_id:
+		"pregunta_al_azar":
+			var pregunta_al_azar_damage := 8
+			if player_hand_size >= 3:
+				pregunta_al_azar_damage += 4
+			return calcular_dano_enemigo(pregunta_al_azar_damage)
+		"eso_ya_lo_vimos":
+			var eso_ya_lo_vimos_damage := 10
+			if player.block <= 0:
+				eso_ya_lo_vimos_damage += 3
+			return calcular_dano_enemigo(eso_ya_lo_vimos_damage)
+		"parcialito_sorpresa":
+			var parcialito_sorpresa_damage := 14
+			if player.has_negative_state():
+				parcialito_sorpresa_damage += 6
+			return calcular_dano_enemigo(parcialito_sorpresa_damage)
+		"parcial_integrador":
+			var parcial_integrador_damage := 18
+			if player_hand_size < 3:
+				parcial_integrador_damage += 6
+			return calcular_dano_enemigo(parcial_integrador_damage)
+		"correccion_en_rojo":
+			return calcular_dano_enemigo(12)
+		"oral_individual":
+			return calcular_dano_enemigo(24)
+		"final_con_tribunal":
+			return calcular_dano_enemigo(30)
+		"pregunta_de_repaso":
+			return calcular_dano_enemigo(7)
+		"ejemplo_sin_resolver":
+			var ejemplo_sin_resolver_damage := 13
+			if player.tiene_estado("confusion"):
+				ejemplo_sin_resolver_damage += 5
+			return calcular_dano_enemigo(ejemplo_sin_resolver_damage)
+		"respuesta_incompleta":
+			return calcular_dano_enemigo(12)
+		"parcial_con_inciso_sorpresa":
+			var parcial_con_inciso_sorpresa_damage := 17
+			if player_hand_size < 2:
+				parcial_con_inciso_sorpresa_damage += 7
+			return calcular_dano_enemigo(parcial_con_inciso_sorpresa_damage)
+		"revision_severa":
+			return calcular_dano_enemigo(player_hand_size * 4)
+		"mesa_examinadora":
+			return calcular_dano_enemigo(22)
+		"final_definitivo":
+			var final_definitivo_damage := 28
+			if player.tiene_estado("estres") or player.tiene_estado("distraccion"):
+				final_definitivo_damage += 8
+			return calcular_dano_enemigo(final_definitivo_damage)
+		_:
+			return _estimate_attack_damage(card)
+
+
 func _estimate_card_amount(card: CardData) -> int:
 	if card.value > 0:
 		return card.value
@@ -660,6 +871,60 @@ func _extract_first_number(text: String) -> int:
 
 func _is_control_or_debuff_card(card: CardData) -> bool:
 	return card.card_type == "descarte_control de mano" or card.card_type == "debuff enemigo" or card.card_type == "estados negativos"
+
+
+func _get_card_ignored_block_ratio(card: CardData) -> float:
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	if not effect_text.contains("ignora"):
+		return 0.0
+	return float(_extract_percent(effect_text)) / 100.0
+
+
+func _extract_percent(text: String) -> int:
+	var regex := RegEx.new()
+	if regex.compile("\\d+%") != OK:
+		return 0
+
+	var result := regex.search(text)
+	if result == null:
+		return 0
+
+	return result.get_string().replace("%", "").to_int()
+
+
+func _get_player_damage_preview(player: Player, estimated_damage: int, ignored_block_ratio: float = 0.0) -> Dictionary:
+	if player.immune_to_enemy_attack_turns > 0:
+		return {
+			"damage_after_modifiers": 0,
+			"remaining_damage": 0,
+			"resulting_hp": player.current_hp,
+			"resulting_block": player.block,
+			"is_lethal": false,
+		}
+
+	var adjusted_damage := estimated_damage
+	if player.tiene_estado("estres"):
+		adjusted_damage = int(adjusted_damage * 1.25)
+	if player.tiene_estado("nervios_de_acero"):
+		adjusted_damage = int(adjusted_damage * 0.75)
+
+	var effective_block := player.block
+	if ignored_block_ratio > 0.0:
+		var ignored_block := int(floor(player.block * ignored_block_ratio))
+		effective_block = max(player.block - ignored_block, 0)
+
+	var remaining_damage := max(adjusted_damage - effective_block, 0)
+	var resulting_hp := player.current_hp - remaining_damage
+	var blocked_damage := min(effective_block, adjusted_damage)
+	var resulting_block := max(player.block - blocked_damage, 0)
+
+	return {
+		"damage_after_modifiers": adjusted_damage,
+		"remaining_damage": remaining_damage,
+		"resulting_hp": resulting_hp,
+		"resulting_block": resulting_block,
+		"is_lethal": resulting_hp <= 0,
+	}
 
 
 func _is_strong_attack(card: CardData, zone_index: int) -> bool:
@@ -838,10 +1103,14 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 
 
 func _get_generic_card_preview(card: CardData) -> String:
+	var state_preview := _get_effect_state_preview(card)
 	match card.card_type:
 		"ataque":
 			if card.value > 0:
-				return "Ataque %d" % calcular_dano_enemigo(card.value)
+				var attack_preview := "Ataque %d" % calcular_dano_enemigo(card.value)
+				if not state_preview.is_empty():
+					attack_preview += " + %s" % state_preview
+				return attack_preview
 			return "Ataque"
 		"defensa":
 			if card.value > 0:
@@ -852,8 +1121,58 @@ func _get_generic_card_preview(card: CardData) -> String:
 				return "Descarta %d" % card.value
 			return "Descarte"
 		"debuff enemigo", "estados negativos":
+			if not state_preview.is_empty():
+				return "Aplica %s" % state_preview
 			return "Aplica estado"
 		"buff propio":
 			return "Gana mejora"
 		_:
 			return card.card_type
+
+
+func _get_effect_state_preview(card: CardData) -> String:
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	var states: Array[String] = []
+
+	if effect_text.contains("estres"):
+		states.append("Estres")
+	if effect_text.contains("distraccion") or effect_text.contains("roba 1 carta menos"):
+		states.append("Distraccion")
+	if effect_text.contains("confusion"):
+		states.append("Confusion")
+	if effect_text.contains("panico"):
+		states.append("Panico")
+	if effect_text.contains("vulnerable"):
+		states.append("Vulnerable")
+	if effect_text.contains("debil"):
+		states.append("Debil")
+	if effect_text.contains("habilidad") and (effect_text.contains("cuestan 1") or effect_text.contains("cuesta 1")):
+		states.append("Habilidad +1")
+	if effect_text.contains("defensa") and effect_text.contains("menos"):
+		states.append("Defensa -25%")
+
+	return " + ".join(states)
+
+
+func _get_effect_state_description(card: CardData) -> String:
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	var descriptions: Array[String] = []
+
+	if effect_text.contains("estres"):
+		descriptions.append("Estres reduce el dano de ataques del jugador y hace que reciba mas dano.")
+	if effect_text.contains("distraccion") or effect_text.contains("roba 1 carta menos"):
+		descriptions.append("Distraccion reduce el robo de cartas del jugador.")
+	if effect_text.contains("confusion"):
+		descriptions.append("Confusion reduce el robo de cartas.")
+	if effect_text.contains("panico"):
+		descriptions.append("Panico aumenta en 1 el coste de la proxima primera carta.")
+	if effect_text.contains("vulnerable"):
+		descriptions.append("Vulnerable hace que el objetivo reciba mas dano.")
+	if effect_text.contains("debil"):
+		descriptions.append("Debil reduce el dano de los ataques.")
+	if effect_text.contains("habilidad") and (effect_text.contains("cuestan 1") or effect_text.contains("cuesta 1")):
+		descriptions.append("Las habilidades cuestan 1 energia mas.")
+	if effect_text.contains("defensa") and effect_text.contains("menos"):
+		descriptions.append("Las defensas otorgan menos escudo.")
+
+	return " ".join(descriptions)

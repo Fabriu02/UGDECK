@@ -702,6 +702,7 @@ func update_ui() -> void:
 	# AGREGADO: Solo actualizamos el texto de intención si NO estamos en modo descarte
 	if not waiting_for_discard:
 		enemy_intent_label.text = enemy.get_intent_text(player, deck_manager.hand.size(), player_cards_played_last_turn)
+		enemy_intent_label.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn)
 
 
 func _update_deck_zone_ui() -> void:
