@@ -14,21 +14,51 @@ const CALCULADORA_MINIBOSS_IMAGE_PATH := "res://assets/characters/calculadora_ma
 const GOBLIN_VOLTIMETRO_IMAGE_PATH := "res://assets/characters/goblin_voltimetro_fondo_transparente.png"
 const GOBLIN_FISICA_2_IMAGE_PATH := "res://assets/characters/goblin_fisica2_fondo_transparente.png"
 const GOBLIN_NOTEBOOK_FISICA_3_IMAGE_PATH := "res://assets/characters/goblin_notebook_fisica3_transparente.png"
+const ROBOT_NO_PROMOCIONAR_IMAGE_PATH := "res://assets/characters/robot_no_guardar_promocion_transparente.png"
+const PINGU_LINUX_IMAGE_PATH := "res://assets/characters/pingu_linux.png"
+const TORRE_CHICA_IMAGE_PATH := "res://assets/characters/mini_torrecita_1_transparente.png"
+const TORRE_MEDIA_IMAGE_PATH := "res://assets/characters/mini_torrecita_2_transparente.png"
+const TORRE_GRANDE_IMAGE_PATH := "res://assets/characters/mini_torrecita_3_transparente.png"
+const TOMAS_KHUM_IMAGE_PATH := "res://assets/characters/tomas_khum.png"
 const FIRST_ENEMY_MAX_HP := 50
 const FIRST_ENEMY_BASE_BLOCK := 0
 const SECOND_ENEMY_MAX_HP := 250
 const SECOND_ENEMY_BASE_BLOCK := 15
+const THIRD_ENEMY_MAX_HP := 320
+const THIRD_ENEMY_BASE_BLOCK := 15
 const FIRST_ENEMY_NAME := "Tom Apostol"
 const SECOND_ENEMY_NAME := "Pepo"
+const THIRD_ENEMY_NAME := "Tomás Khum"
 const MINIBOSS_INTEGRAL_TRIPLE := "integral_triple"
 const MINIBOSS_CALCULUS := "calculus"
 const MINIBOSS_CALCULADORA_VIEJA := "calculadora_vieja"
 const ENEMY_GOBLIN_VOLTIMETRO := "goblin_voltimetro"
 const ENEMY_GOBLIN_FISICA_2 := "goblin_fisica_2"
 const ENEMY_GOBLIN_NOTEBOOK_FISICA_3 := "goblin_notebook_fisica_3"
+const ENEMY_ROBOT_NO_PROMOCIONAR := "robot_no_promocionar"
+const ENEMY_PINGU_LINUX := "pingu_linux"
+const ENCOUNTER_TORRES_CHICA_MEDIA_CHICA := "torres_chica_media_chica"
+const ENCOUNTER_TORRES_MEDIA_GRANDE := "torres_media_grande"
+const ENCOUNTER_PINGU_TORRE_CHICA := "pingu_torre_chica"
+const ENCOUNTER_ROBOT_TORRE_MEDIA := "robot_torre_media"
+const ARCHETYPE_ENJAMBRE := "Enjambre"
+const ARCHETYPE_DUELISTA_BASICO := "Duelista básico"
+const ARCHETYPE_FRAGIL_MOLESTO := "Frágil molesto"
+const ARCHETYPE_JEFE_INICIAL := "Jefe inicial"
+const ARCHETYPE_MOLESTO_TECNICO := "Molesto técnico"
+const ARCHETYPE_TANQUE_MEDIO := "Tanque medio"
+const ARCHETYPE_ELITE_PESADO := "Elite pesado"
+const ARCHETYPE_JEFE_TANQUE := "Jefe tanque"
+const ARCHETYPE_JEFE_ZONA_3 := "Jefe zona 3"
 const CALCULUS_MINIBOSS_SCALE := Vector2(0.18, 0.18)
 const CALCULADORA_MINIBOSS_SCALE := Vector2(0.16, 0.16)
 const GOBLIN_MINIBOSS_SCALE := Vector2(0.22, 0.22)
+const ROBOT_ZONE_3_SCALE := Vector2(0.26, 0.26)
+const PINGU_ZONE_3_SCALE := Vector2(0.22, 0.22)
+const TORRE_CHICA_SCALE := Vector2(0.12, 0.12)
+const TORRE_MEDIA_SCALE := Vector2(0.13, 0.13)
+const TORRE_GRANDE_SCALE := Vector2(0.14, 0.14)
+const TOMAS_KHUM_SCALE := Vector2(0.34, 0.34)
 
 @export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
 
@@ -84,6 +114,7 @@ var temporary_card_cost_modifiers: Dictionary = {}
 var current_enemy_name := FIRST_ENEMY_NAME
 var returning_to_map := false
 var multi_enemy_hps: Array = []
+var multi_enemy_max_hps: Array = []
 var multi_enemy_names: Array = []
 var multi_enemy_active := false
 
@@ -134,6 +165,7 @@ func start_battle() -> void:
 	player_attacked_this_turn = false
 	multi_enemy_active = false
 	multi_enemy_hps.clear()
+	multi_enemy_max_hps.clear()
 	multi_enemy_names.clear()
 	temporary_card_cost_modifiers.clear()
 	_configure_enemy_for_current_node()
@@ -145,7 +177,6 @@ func start_battle() -> void:
 	# -------------------------------------------------
 	
 	deck_manager.create_starting_deck()
-	enemy.choose_next_intent(player, 0, player_cards_played_last_turn)
 	await _show_start_fight_banner()
 	await start_player_turn()
 
@@ -185,7 +216,7 @@ func _configure_enemy_for_current_node() -> void:
 		enemy.max_hp = FIRST_ENEMY_MAX_HP
 		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
 		enemy.max_energy = 5
-		enemy.set_professor_deck(_load_current_zone_enemy_deck())
+		_set_enemy_deck_for_current_zone([], FIRST_ENEMY_NAME)
 		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
 		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
 		current_enemy_name = FIRST_ENEMY_NAME
@@ -195,39 +226,51 @@ func _configure_zone_boss() -> void:
 	var node_data := GameState.get_current_node_data()
 	var boss_name := String(node_data.get("encounter_name", FIRST_ENEMY_NAME))
 
-	if boss_name == SECOND_ENEMY_NAME:
-		enemy.max_hp = SECOND_ENEMY_MAX_HP
-		enemy.base_block = SECOND_ENEMY_BASE_BLOCK
-		enemy.max_energy = 5
-		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards_by_rarities(["Desertor", "Ingresante"]))
-		battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH)
-		battle_visuals.set_enemy_display_name(SECOND_ENEMY_NAME)
-		current_enemy_name = SECOND_ENEMY_NAME
-	else:
-		enemy.max_hp = FIRST_ENEMY_MAX_HP
-		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
-		enemy.max_energy = 5
-		enemy.set_professor_deck(EnemyCardLoader.load_professor_cards_by_rarity("Desertor"))
-		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
-		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
-		current_enemy_name = FIRST_ENEMY_NAME
+	match boss_name:
+		SECOND_ENEMY_NAME:
+			enemy.max_hp = SECOND_ENEMY_MAX_HP
+			enemy.base_block = SECOND_ENEMY_BASE_BLOCK
+			enemy.max_energy = 5
+			var pepo_archetypes := _get_zone_boss_archetypes(2)
+			_set_enemy_deck_for_current_zone(pepo_archetypes, SECOND_ENEMY_NAME)
+			battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH)
+			battle_visuals.set_enemy_display_name(SECOND_ENEMY_NAME)
+			current_enemy_name = SECOND_ENEMY_NAME
+		THIRD_ENEMY_NAME:
+			enemy.max_hp = THIRD_ENEMY_MAX_HP
+			enemy.base_block = THIRD_ENEMY_BASE_BLOCK
+			enemy.max_energy = 5
+			_set_zone_3_boss_deck()
+			battle_visuals.set_enemy_image(TOMAS_KHUM_IMAGE_PATH, TOMAS_KHUM_SCALE)
+			battle_visuals.set_enemy_display_name(THIRD_ENEMY_NAME)
+			current_enemy_name = THIRD_ENEMY_NAME
+		_:
+			enemy.max_hp = FIRST_ENEMY_MAX_HP
+			enemy.base_block = FIRST_ENEMY_BASE_BLOCK
+			enemy.max_energy = 5
+			var tom_archetypes := _get_zone_boss_archetypes(1)
+			_set_enemy_deck_for_current_zone(tom_archetypes, FIRST_ENEMY_NAME)
+			battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
+			battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
+			current_enemy_name = FIRST_ENEMY_NAME
 
 
 func _configure_miniboss(miniboss_id: String) -> void:
 	enemy.base_block = 0
 	enemy.max_energy = 3
-	enemy.set_professor_deck(_load_current_zone_enemy_deck())
+	var enemy_archetypes := _get_enemy_archetypes(miniboss_id)
 
 	match miniboss_id:
 		MINIBOSS_INTEGRAL_TRIPLE:
 			multi_enemy_active = true
 			multi_enemy_names = ["Integral 1", "Integral 2", "Integral 3"]
 			multi_enemy_hps = [15, 15, 15]
+			multi_enemy_max_hps = [15, 15, 15]
 			enemy.max_hp = 45
 			enemy.current_hp = 45
 			current_enemy_name = "Integral Triple"
 			battle_visuals.set_enemy_display_name(current_enemy_name)
-			battle_visuals.show_multi_enemy_group(INTEGRAL_MINIBOSS_IMAGE_PATH, multi_enemy_names, multi_enemy_hps)
+			battle_visuals.show_multi_enemy_group(INTEGRAL_MINIBOSS_IMAGE_PATH, multi_enemy_names, multi_enemy_hps, multi_enemy_max_hps)
 			for index in range(multi_enemy_hps.size()):
 				print("%s vida: %d" % [multi_enemy_names[index], multi_enemy_hps[index]])
 		MINIBOSS_CALCULUS:
@@ -270,6 +313,62 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			current_enemy_name = "Goblin notebook fisica 3"
 			battle_visuals.set_enemy_image(GOBLIN_NOTEBOOK_FISICA_3_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_ROBOT_NO_PROMOCIONAR:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 130
+			enemy.max_energy = 4
+			enemy.base_block = 10
+			current_enemy_name = "Robot no promocionar"
+			battle_visuals.set_enemy_image(ROBOT_NO_PROMOCIONAR_IMAGE_PATH, ROBOT_ZONE_3_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_PINGU_LINUX:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 95
+			enemy.max_energy = 4
+			enemy.base_block = 0
+			current_enemy_name = "Pingü Linux"
+			battle_visuals.set_enemy_image(PINGU_LINUX_IMAGE_PATH, PINGU_ZONE_3_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENCOUNTER_TORRES_CHICA_MEDIA_CHICA:
+			_configure_multi_enemy_encounter(
+				"Torres",
+				["Torre chica", "Torre media", "Torre chica"],
+				[35, 45, 35],
+				[TORRE_CHICA_IMAGE_PATH, TORRE_MEDIA_IMAGE_PATH, TORRE_CHICA_IMAGE_PATH],
+				[TORRE_CHICA_SCALE, TORRE_MEDIA_SCALE, TORRE_CHICA_SCALE],
+				3,
+				0
+			)
+		ENCOUNTER_TORRES_MEDIA_GRANDE:
+			_configure_multi_enemy_encounter(
+				"Torres",
+				["Torre media", "Torre grande"],
+				[45, 55],
+				[TORRE_MEDIA_IMAGE_PATH, TORRE_GRANDE_IMAGE_PATH],
+				[TORRE_MEDIA_SCALE, TORRE_GRANDE_SCALE],
+				3,
+				5
+			)
+		ENCOUNTER_PINGU_TORRE_CHICA:
+			_configure_multi_enemy_encounter(
+				"Pingü Linux / Torre chica",
+				["Pingü Linux", "Torre chica"],
+				[95, 35],
+				[PINGU_LINUX_IMAGE_PATH, TORRE_CHICA_IMAGE_PATH],
+				[PINGU_ZONE_3_SCALE, TORRE_CHICA_SCALE],
+				4,
+				0
+			)
+		ENCOUNTER_ROBOT_TORRE_MEDIA:
+			_configure_multi_enemy_encounter(
+				"Robot no promocionar / Torre media",
+				["Robot no promocionar", "Torre media"],
+				[130, 45],
+				[ROBOT_NO_PROMOCIONAR_IMAGE_PATH, TORRE_MEDIA_IMAGE_PATH],
+				[ROBOT_ZONE_3_SCALE, TORRE_MEDIA_SCALE],
+				4,
+				10
+			)
 		_:
 			battle_visuals.clear_multi_enemy_visuals()
 			enemy.max_hp = 40
@@ -278,17 +377,163 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 
+	_set_enemy_deck_for_current_zone(enemy_archetypes, current_enemy_name, miniboss_id)
 
-func _load_current_zone_enemy_deck() -> Array[CardData]:
+
+func _configure_multi_enemy_encounter(
+	display_name: String,
+	names: Array,
+	hps: Array,
+	image_paths: Array,
+	sprite_scales: Array,
+	max_energy: int,
+	base_block: int
+) -> void:
+	multi_enemy_active = true
+	multi_enemy_names = names.duplicate()
+	multi_enemy_hps = hps.duplicate()
+	multi_enemy_max_hps = hps.duplicate()
+	enemy.max_hp = _get_multi_enemy_total_hp()
+	enemy.current_hp = enemy.max_hp
+	enemy.max_energy = max_energy
+	enemy.base_block = base_block
+	current_enemy_name = display_name
+	battle_visuals.set_enemy_display_name(current_enemy_name)
+	battle_visuals.show_multi_enemy_group(image_paths, multi_enemy_names, multi_enemy_hps, multi_enemy_max_hps, sprite_scales)
+
+
+func _set_enemy_deck_for_current_zone(enemy_archetypes: Array = [], debug_name: String = "", encounter_id: String = "") -> void:
 	var zone_index := _get_current_zone_index()
-	if zone_index >= 2:
-		return EnemyCardLoader.load_professor_cards_by_rarities(["Desertor", "Ingresante"])
-	return EnemyCardLoader.load_professor_cards_by_rarity("Desertor")
+	var rarities := _get_enemy_rarities_for_encounter(encounter_id, zone_index)
+	var cards := _load_current_zone_enemy_deck(enemy_archetypes, rarities)
+	enemy.set_professor_deck(cards, enemy_archetypes, debug_name, zone_index, rarities)
+
+
+func _set_zone_3_boss_deck() -> void:
+	var zone_index := 3
+	var rarities := _get_enemy_rarities_for_zone(zone_index)
+	var base_cards := EnemyCardLoader.load_professor_cards_by_rarities(rarities)
+	var primary_archetypes := [ARCHETYPE_JEFE_ZONA_3]
+	var primary_cards := _filter_cards_by_archetypes_strict(base_cards, primary_archetypes)
+
+	if not primary_cards.is_empty():
+		print("DEBUG CombatManager: Tomás Khum usa arquetipo Jefe zona 3: %d/%d cartas" % [primary_cards.size(), base_cards.size()])
+		enemy.set_professor_deck(primary_cards, primary_archetypes, THIRD_ENEMY_NAME, zone_index, rarities)
+		return
+
+	var fallback_archetypes := primary_archetypes.duplicate()
+	fallback_archetypes.append_array(_get_zone_boss_archetypes(zone_index))
+	var fallback_cards := _filter_cards_by_archetypes_strict(base_cards, fallback_archetypes)
+	if fallback_cards.is_empty():
+		push_warning("CombatManager: Tomás Khum no encontro cartas por arquetipo. Usa fallback por rareza/zona.")
+		enemy.set_professor_deck(base_cards, primary_archetypes, THIRD_ENEMY_NAME, zone_index, rarities)
+		return
+
+	print("DEBUG CombatManager: Tomás Khum usa fallback de arquetipos jefe zona 3: %d/%d cartas" % [fallback_cards.size(), base_cards.size()])
+	enemy.set_professor_deck(fallback_cards, fallback_archetypes, THIRD_ENEMY_NAME, zone_index, rarities)
+
+
+func _load_current_zone_enemy_deck(enemy_archetypes: Array = [], forced_rarities: Array = []) -> Array[CardData]:
+	var zone_index := _get_current_zone_index()
+	var rarities := forced_rarities if not forced_rarities.is_empty() else _get_enemy_rarities_for_zone(zone_index)
+	print("DEBUG CombatManager: Zona %d rarezas enemigas permitidas: %s | arquetipos: %s" % [
+		zone_index,
+		", ".join(rarities),
+		", ".join(enemy_archetypes),
+	])
+	return EnemyCardLoader.load_professor_cards_by_rarities_and_archetypes(rarities, enemy_archetypes)
+
+
+func _get_enemy_rarities_for_encounter(encounter_id: String, zone_index: int) -> Array:
+	if zone_index == 3 and encounter_id == ENCOUNTER_TORRES_CHICA_MEDIA_CHICA:
+		return ["Desertor", "Ingresante"]
+	return _get_enemy_rarities_for_zone(zone_index)
+
+
+func _get_enemy_rarities_for_zone(zone_index: int) -> Array:
+	match zone_index:
+		1:
+			return ["Desertor"]
+		2:
+			return ["Desertor", "Ingresante"]
+		3:
+			return ["Desertor", "Ingresante", "Recursante"]
+		_:
+			return ["Desertor", "Ingresante", "Recursante", "Ayudante de cátedra", "Ingeniero"]
+
+
+func _get_zone_boss_archetypes(zone_index: int) -> Array[String]:
+	if zone_index >= 3:
+		return [
+			ARCHETYPE_JEFE_TANQUE,
+			ARCHETYPE_ELITE_PESADO,
+			ARCHETYPE_MOLESTO_TECNICO,
+			ARCHETYPE_TANQUE_MEDIO,
+			ARCHETYPE_JEFE_INICIAL,
+		]
+	if zone_index == 2:
+		return [
+			ARCHETYPE_JEFE_TANQUE,
+			ARCHETYPE_MOLESTO_TECNICO,
+			ARCHETYPE_TANQUE_MEDIO,
+			ARCHETYPE_ELITE_PESADO,
+		]
+
+	return [
+		ARCHETYPE_JEFE_INICIAL,
+		ARCHETYPE_ENJAMBRE,
+		ARCHETYPE_DUELISTA_BASICO,
+		ARCHETYPE_FRAGIL_MOLESTO,
+	]
+
+
+func _filter_cards_by_archetypes_strict(cards: Array[CardData], enemy_archetypes: Array) -> Array[CardData]:
+	var filtered_cards: Array[CardData] = []
+	for card in cards:
+		for archetype in enemy_archetypes:
+			if EnemyCardLoader.card_matches_enemy_archetype(card, String(archetype)):
+				filtered_cards.append(card)
+				break
+	return filtered_cards
+
+
+func _get_enemy_archetypes(enemy_id: String) -> Array:
+	match enemy_id:
+		MINIBOSS_INTEGRAL_TRIPLE, ENCOUNTER_TORRES_CHICA_MEDIA_CHICA, ENCOUNTER_TORRES_MEDIA_GRANDE:
+			return [ARCHETYPE_ENJAMBRE]
+		MINIBOSS_CALCULUS:
+			return [ARCHETYPE_DUELISTA_BASICO]
+		MINIBOSS_CALCULADORA_VIEJA:
+			return [ARCHETYPE_FRAGIL_MOLESTO]
+		ENEMY_GOBLIN_VOLTIMETRO, ENEMY_PINGU_LINUX:
+			return [ARCHETYPE_MOLESTO_TECNICO]
+		ENEMY_GOBLIN_FISICA_2, ENEMY_ROBOT_NO_PROMOCIONAR:
+			return [ARCHETYPE_TANQUE_MEDIO]
+		ENEMY_GOBLIN_NOTEBOOK_FISICA_3:
+			return [ARCHETYPE_ELITE_PESADO]
+		ENCOUNTER_PINGU_TORRE_CHICA:
+			return [ARCHETYPE_MOLESTO_TECNICO, ARCHETYPE_ENJAMBRE]
+		ENCOUNTER_ROBOT_TORRE_MEDIA:
+			return [ARCHETYPE_TANQUE_MEDIO, ARCHETYPE_ENJAMBRE]
+		_:
+			return []
 
 
 func _get_current_zone_index() -> int:
 	var node_data := GameState.get_current_node_data()
 	return int(node_data.get("zone_index", 1))
+
+
+func _prepare_enemy_intent_for_player_turn() -> void:
+	enemy.choose_next_intent(player, deck_manager.hand.size(), player_cards_played_last_turn, _get_current_zone_index(), _get_enemy_intent_group_context())
+
+
+func _get_enemy_intent_group_context() -> Dictionary:
+	return {
+		"control_debuff_count": 0,
+		"strong_attack_count": 0,
+		"announced_damage": 0,
+	}
 
 
 func start_player_turn() -> void:
@@ -306,6 +551,7 @@ func start_player_turn() -> void:
 		player.skip_next_player_turn = false
 		_clear_hand_ui()
 		player_cards_played_last_turn = 0
+		_prepare_enemy_intent_for_player_turn()
 		update_ui()
 		enemy_turn()
 		return
@@ -320,6 +566,7 @@ func start_player_turn() -> void:
 		var drawn_cards := deck_manager.draw_cards(draw_amount)
 		await _animate_drawn_cards(drawn_cards)
 
+	_prepare_enemy_intent_for_player_turn()
 	update_ui()
 
 
@@ -404,7 +651,8 @@ func enemy_turn() -> void:
 			if enemy_turn_finished_by_card:
 				return
 		else:
-			print("DEBUG Enemy: no encontró carta jugable, pasa el turno.")
+			enemy.gain_block(3)
+			print("DEBUG Enemy: no encontro carta jugable, espera y gana 3 de escudo.")
 
 	_finish_enemy_turn()
 
@@ -424,7 +672,6 @@ func _finish_enemy_turn() -> void:
 	if battle_has_ended:
 		return
 
-	enemy.choose_next_intent(player, deck_manager.hand.size(), player_cards_played_last_turn)
 	start_player_turn()
 
 
@@ -550,7 +797,8 @@ func _hide_deck_viewer() -> void:
 func _get_multi_enemy_status_text() -> String:
 	var parts: Array[String] = []
 	for index in range(multi_enemy_hps.size()):
-		parts.append("%s: %d/15" % [multi_enemy_names[index], multi_enemy_hps[index]])
+		var max_hp := int(multi_enemy_max_hps[index]) if index < multi_enemy_max_hps.size() else int(multi_enemy_hps[index])
+		parts.append("%s: %d/%d" % [multi_enemy_names[index], multi_enemy_hps[index], max_hp])
 	return " | ".join(parts)
 
 
@@ -1055,6 +1303,8 @@ func _discard_one_card_and_draw() -> void:
 # AGREGADO: Nueva función que procesa la carta que el jugador decidió tirar
 func _execute_discard_choice(card_data: CardData, card_ui: CardUI) -> void:
 	if not deck_manager.discard_specific_card(card_data):
+		if deck_manager.hand.is_empty():
+			_finish_discard_selection_without_cards()
 		return
 
 	card_ui.queue_free()
@@ -1104,6 +1354,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 		print("DEBUG Enemy: no pudo pagar '%s'. Energía=%d coste=%d" % [card_data.card_name, enemy.current_energy, card_data.cost])
 		return
 
+	enemy.record_executed_intent(card_data, _get_current_zone_index())
 	print("DEBUG Enemy: juega '%s' [%s] | energía antes/después %d/%d | efecto=%s" % [
 		card_data.card_name,
 		card_data.rareza,
@@ -1274,6 +1525,10 @@ func _execute_enemy_card(card_data: CardData) -> void:
 
 
 func _begin_discard_selection(mode: String, amount: int, penalty_damage: int, reward_block_per_card: int = 0) -> void:
+	if amount <= 0 or deck_manager.hand.is_empty():
+		_finish_discard_selection_without_cards(mode, penalty_damage)
+		return
+
 	waiting_for_discard = true
 	discard_selection_mode = mode
 	discard_selection_remaining = amount
@@ -1294,6 +1549,7 @@ func _begin_discard_selection(mode: String, amount: int, penalty_damage: int, re
 func _begin_enemy_forced_discard(amount: int, penalty_damage: int) -> bool:
 	var available_cards := deck_manager.hand.size()
 	if available_cards <= 0:
+		_reset_discard_selection()
 		player.take_damage(penalty_damage)
 		update_ui()
 		check_combat_end()
@@ -1329,6 +1585,31 @@ func _reset_discard_selection() -> void:
 	discard_selection_reward_block_per_card = 0
 
 
+func _finish_discard_selection_without_cards(mode: String = "", penalty_damage: int = 0) -> void:
+	var resolved_mode := mode
+	if resolved_mode.is_empty():
+		resolved_mode = discard_selection_mode
+	var resolved_penalty_damage := penalty_damage
+	if resolved_penalty_damage <= 0:
+		resolved_penalty_damage = discard_selection_penalty_damage
+
+	_reset_discard_selection()
+
+	match resolved_mode:
+		"player_replace_one":
+			deck_manager.draw_cards(1)
+			_show_hand()
+		"enemy_forced":
+			if resolved_penalty_damage > 0:
+				player.take_damage(resolved_penalty_damage)
+		_:
+			pass
+
+	end_turn_button.disabled = false
+	update_ui()
+	check_combat_end()
+
+
 func _gain_player_block(amount: int) -> void:
 	player.gain_block(amount)
 
@@ -1357,7 +1638,7 @@ func _apply_damage_to_current_enemy(amount: int) -> void:
 
 	multi_enemy_hps[target_index] = max(multi_enemy_hps[target_index] - remaining_damage, 0)
 	enemy.current_hp = _get_multi_enemy_total_hp()
-	battle_visuals.update_multi_enemy_labels(multi_enemy_hps)
+	battle_visuals.update_multi_enemy_labels(multi_enemy_hps, multi_enemy_max_hps)
 	print("%s vida: %d" % [multi_enemy_names[target_index], multi_enemy_hps[target_index]])
 
 

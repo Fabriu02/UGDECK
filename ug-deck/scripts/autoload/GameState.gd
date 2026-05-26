@@ -49,6 +49,10 @@ func reset_run_progress() -> void:
 	map_data.clear()
 	nodo_actual_id = -1
 	nodos_completados.clear()
+	dinero = 150
+	artilugios.clear()
+	vida_maxima = 50
+	vida_actual = vida_maxima
 	zona_actual = 1
 	rareza_recompensa_actual = "Ingresante"
 	jefe_zona_actual = "Tom Apostol"

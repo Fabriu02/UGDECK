@@ -1,9 +1,12 @@
 extends Node
 class_name Enemy
 
+const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
+
 @export var max_hp: int = 50
 @export var max_energy: int = 5
 @export var base_block: int = 0
+@export var debug_enemy_ai := true
 
 var current_hp: int
 var current_energy: int
@@ -13,6 +16,20 @@ var attack_bonus_turns: int = 0
 var permanent_attack_bonus: int = 0
 var professor_deck: Array[CardData] = []
 var planned_card: CardData
+var next_intent_card: CardData
+var next_intent_type: String = ""
+var next_intent_value: int = 0
+var next_intent_text: String = ""
+var turn_count: int = 0
+var last_card_type: String = ""
+var last_card_name: String = ""
+var last_intent_was_strong_attack := false
+var last_intent_was_control_or_debuff := false
+var allowed_enemy_archetypes: Array[String] = []
+var enemy_debug_name: String = ""
+var enemy_debug_archetypes: Array[String] = []
+var enemy_debug_zone_index: int = 1
+var enemy_debug_rarities: Array[String] = []
 
 # AGREGADO: Variable para guardar los estados (como "vulnerable")
 var estados: Array = []
@@ -28,12 +45,50 @@ func reset_for_new_battle() -> void:
 	attack_bonus_turns = 0
 	permanent_attack_bonus = 0
 	planned_card = null
+	next_intent_card = null
+	next_intent_type = ""
+	next_intent_value = 0
+	next_intent_text = ""
+	turn_count = 0
+	last_card_type = ""
+	last_card_name = ""
+	last_intent_was_strong_attack = false
+	last_intent_was_control_or_debuff = false
 	# AGREGADO: Limpiamos los estados al iniciar una batalla
 	estados.clear()
 
 
-func set_professor_deck(cards: Array[CardData]) -> void:
+func set_professor_deck(
+	cards: Array[CardData],
+	enemy_archetypes: Array = [],
+	debug_name: String = "",
+	zone_index: int = 1,
+	allowed_rarities: Array = []
+) -> void:
 	professor_deck = cards.duplicate()
+	enemy_debug_name = debug_name
+	enemy_debug_zone_index = zone_index
+	allowed_enemy_archetypes.clear()
+	enemy_debug_archetypes.clear()
+	enemy_debug_rarities.clear()
+	for archetype in enemy_archetypes:
+		var archetype_text := String(archetype)
+		var normalized_archetype := EnemyCardLoader._normalize_text(String(archetype))
+		if not normalized_archetype.is_empty() and not allowed_enemy_archetypes.has(normalized_archetype):
+			allowed_enemy_archetypes.append(normalized_archetype)
+			enemy_debug_archetypes.append(archetype_text)
+	for rarity in allowed_rarities:
+		enemy_debug_rarities.append(String(rarity))
+
+	var names: Array[String] = []
+	for card in professor_deck:
+		names.append(card.card_name)
+	_debug_ai("Pool final %d cartas | Rarezas: %s | Arquetipos: %s | Cartas: %s" % [
+		professor_deck.size(),
+		", ".join(enemy_debug_rarities),
+		", ".join(enemy_debug_archetypes),
+		", ".join(names),
+	])
 
 
 func start_turn() -> void:
@@ -65,24 +120,9 @@ func take_damage(amount: int) -> void:
 	if remaining_damage > 0:
 		current_hp = max(current_hp - remaining_damage, 0)
 
-# MODIFICADO: Agregada una 4ta opción al "dado" del enemigo
-func choose_next_intent(player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> void:
-	if professor_deck.is_empty():
-		planned_card = null
-		return
-
-	var candidates := _get_cards_with_cost_at_most(max_energy)
-	if candidates.is_empty():
-		candidates = professor_deck
-
-	planned_card = candidates[randi() % candidates.size()]
-	print("DEBUG Enemy: próxima intención '%s' (%s, coste %d). Mano jugador=%d, cartas turno anterior=%d" % [
-		planned_card.card_name,
-		planned_card.card_type,
-		planned_card.cost,
-		player_hand_size,
-		player_cards_played_last_turn,
-	])
+# La intención se decide por score y se ejecuta recién en el turno enemigo.
+func choose_next_intent(player: Player, player_hand_size: int, player_cards_played_last_turn: int, zone_index: int = 1, group_context: Dictionary = {}) -> void:
+	_choose_next_intent_by_score(player, player_hand_size, player_cards_played_last_turn, zone_index, group_context)
 
 # AGREGADO: Función para calcular el daño que hace el enemigo (aplicando debilidad)
 func calcular_dano_enemigo(dano_base: int) -> int:
@@ -104,21 +144,29 @@ func get_playable_card_for_turn(player: Player, player_hand_size: int, player_ca
 	if planned_card != null and planned_card.cost <= current_energy:
 		return planned_card
 
-	var candidates := _get_cards_with_cost_at_most(current_energy)
-	if candidates.is_empty():
-		return null
-
-	planned_card = candidates[randi() % candidates.size()]
-	print("DEBUG Enemy: cambió intención a '%s' por energía insuficiente." % planned_card.card_name)
-	return planned_card
+	if planned_card != null:
+		_debug_ai("Descartada por energia al ejecutar '%s'. Energia=%d coste=%d" % [
+			planned_card.card_name,
+			current_energy,
+			planned_card.cost,
+		])
+	return null
 
 # MODIFICADO: Texto para la interfaz (ahora muestra el daño reducido si está débil)
 func get_intent_text(player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> String:
 	if planned_card == null:
-		return "Intencion: Sin carta"
+		return "Intencion: Esperar | Escudo 3"
 
 	var preview := _get_card_preview(planned_card, player, player_hand_size, player_cards_played_last_turn)
-	return "Intencion: %s | %s" % [planned_card.card_name, preview]
+	return "Intencion: %s - %s | %s" % [next_intent_type, planned_card.card_name, preview]
+
+
+func record_executed_intent(card: CardData, zone_index: int) -> void:
+	last_card_type = card.card_type
+	last_card_name = card.card_name
+	last_intent_was_strong_attack = _is_strong_attack(card, zone_index)
+	last_intent_was_control_or_debuff = _is_control_or_debuff_card(card)
+	turn_count += 1
 
 func is_dead() -> bool:
 	return current_hp <= 0
@@ -178,6 +226,494 @@ func reducir_duracion_estados() -> void:
 		
 	# Filtramos para quedarnos solo con los estados que aún tienen duración
 	estados = estados.filter(func(estado): return estado.duracion > 0)
+
+
+func _choose_next_intent_by_score(
+	player: Player,
+	player_hand_size: int,
+	player_cards_played_last_turn: int,
+	zone_index: int,
+	group_context: Dictionary
+) -> void:
+	if professor_deck.is_empty():
+		planned_card = null
+		_set_wait_intent("pool de cartas vacio")
+		return
+
+	var candidates := _get_cards_with_cost_at_most(max_energy)
+	_debug_discarded_by_energy(max_energy)
+	candidates = _filter_cards_by_allowed_archetypes(candidates)
+	if candidates.is_empty():
+		planned_card = null
+		_set_wait_intent("sin cartas candidatas despues de filtrar energia/arquetipo")
+		return
+
+	_debug_ai("Candidatas: %s" % _format_card_names(candidates))
+	var best_card: CardData = null
+	var best_score := -999999
+	for card in candidates:
+		var base_score := _evaluate_card(card, player, player_hand_size, player_cards_played_last_turn, zone_index, group_context)
+		var random_score := randi_range(-5, 5)
+		var score := base_score + random_score
+		_debug_ai("Score final '%s': %d (score=%d, random=%d)" % [
+			card.card_name,
+			score,
+			base_score,
+			random_score,
+		])
+		if best_card == null or score > best_score:
+			best_card = card
+			best_score = score
+
+	planned_card = best_card
+	if planned_card == null:
+		_set_wait_intent("ninguna carta obtuvo score valido")
+		return
+
+	_update_intent_metadata(planned_card, player, player_hand_size, player_cards_played_last_turn, zone_index)
+	_debug_ai("Elegida '%s' (%s, coste %d, score %d). Mano jugador=%d, cartas turno anterior=%d, fase=%s" % [
+		planned_card.card_name,
+		planned_card.card_type,
+		planned_card.cost,
+		best_score,
+		player_hand_size,
+		player_cards_played_last_turn,
+		_get_enemy_phase(),
+	])
+
+
+func _evaluate_card(
+	card: CardData,
+	player: Player,
+	player_hand_size: int,
+	player_cards_played_last_turn: int,
+	zone_index: int,
+	group_context: Dictionary
+) -> int:
+	var score := _get_card_type_base_score(card.card_type)
+	var hp_ratio := _get_hp_ratio()
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	var phase := _get_enemy_phase()
+	var current_is_strong_attack := _is_strong_attack(card, zone_index)
+	var is_elite_or_boss := _is_elite_or_boss()
+
+	if last_card_name == card.card_name:
+		score -= 12
+	if last_card_type == "ataque" and card.card_type == "ataque":
+		if last_intent_was_strong_attack and current_is_strong_attack:
+			score -= 85
+		elif not current_is_strong_attack and not is_elite_or_boss:
+			score -= 3
+		elif current_is_strong_attack and not is_elite_or_boss:
+			score -= 8
+
+	match card.card_type:
+		"ataque":
+			var estimated_damage := _estimate_attack_damage(card)
+			if player.block <= 0:
+				score += 20
+			elif player.block >= 8:
+				score -= 10
+			if player.current_hp <= int(ceil(player.max_hp * 0.3)):
+				score += 20
+			if effect_text.contains("reduce el escudo") and player.block <= 0:
+				score -= 15
+			if phase == "agresivo":
+				score += 10
+			elif phase == "desesperado":
+				score += 20
+			if player.block > 0 and (effect_text.contains("ignora") or effect_text.contains("reduce el escudo")):
+				score += 15
+			if estimated_damage >= player.current_hp and player.current_hp <= int(ceil(player.max_hp * 0.3)):
+				if zone_index <= 1:
+					score -= 45
+				else:
+					score -= 30
+			if estimated_damage >= player.current_hp and player.current_hp <= int(ceil(player.max_hp * 0.1)):
+				score -= 35
+		"defensa":
+			if hp_ratio <= 0.5:
+				score += 15
+			if hp_ratio <= 0.3:
+				score += 25
+			if phase == "desesperado":
+				score += 10
+			if block >= max(10, int(max_hp * 0.2)):
+				score -= 15
+		"buff propio":
+			if turn_count <= 2:
+				score += 15
+			if hp_ratio > 0.5:
+				score += 10
+			if effect_text.contains("ataque") and (attack_bonus > 0 or permanent_attack_bonus > 0):
+				score -= 15
+		"debuff enemigo", "estados negativos":
+			var state_name := _get_primary_player_state_from_card(card)
+			if state_name.is_empty() or not player.tiene_estado(state_name):
+				score += 15
+			else:
+				score -= 15
+			if player_hand_size >= 4:
+				score += 10
+			if last_intent_was_control_or_debuff:
+				if zone_index <= 1:
+					score -= 65
+				else:
+					score -= 45
+		"descarte_control de mano":
+			if player_hand_size >= 4:
+				score += 20
+			elif player_hand_size <= 2:
+				score -= 25
+			if last_intent_was_control_or_debuff:
+				if zone_index <= 1:
+					score -= 65
+				else:
+					score -= 45
+		"curacion":
+			if hp_ratio <= 0.4:
+				score += 35
+			elif hp_ratio > 0.7:
+				score -= 25
+		"energia", "robo":
+			score -= 10
+		"habilidad":
+			if turn_count <= 2:
+				score += 5
+
+	score = _apply_archetype_score_modifiers(score, card, hp_ratio, current_is_strong_attack)
+
+	if int(group_context.get("control_debuff_count", 0)) > 0 and _is_control_or_debuff_card(card):
+		score -= 50
+	if int(group_context.get("strong_attack_count", 0)) >= 2 and current_is_strong_attack:
+		score -= 40
+	if int(group_context.get("announced_damage", 0)) >= _get_zone_damage_soft_cap(zone_index) and card.card_type == "ataque":
+		score -= 30
+
+	return score
+
+
+func _get_card_type_base_score(card_type: String) -> int:
+	match card_type:
+		"ataque":
+			return 50
+		"defensa":
+			return 35
+		"buff propio":
+			return 30
+		"debuff enemigo", "estados negativos":
+			return 35
+		"descarte_control de mano":
+			return 30
+		"curacion":
+			return 25
+		"robo":
+			return 20
+		"energia":
+			return 25
+		"habilidad":
+			return 25
+		_:
+			return 20
+
+
+func _apply_archetype_score_modifiers(score: int, card: CardData, hp_ratio: float, current_is_strong_attack: bool) -> int:
+	if _has_enemy_archetype("Tanque medio"):
+		match card.card_type:
+			"defensa":
+				score += 15
+			"buff propio":
+				score += 10
+			"debuff enemigo", "estados negativos", "descarte_control de mano":
+				score -= 10
+
+	if _has_enemy_archetype("Molesto tecnico"):
+		match card.card_type:
+			"debuff enemigo", "estados negativos", "descarte_control de mano":
+				score += 15
+			"ataque", "defensa":
+				score -= 5
+
+	if _has_enemy_archetype("Enjambre"):
+		match card.card_type:
+			"ataque":
+				score += 15
+			"defensa":
+				score -= 5
+			"debuff enemigo", "estados negativos", "descarte_control de mano":
+				score -= 20
+		if current_is_strong_attack:
+			score -= 10
+
+	if _has_enemy_archetype("Jefe zona 3"):
+		match card.card_type:
+			"ataque", "defensa", "buff propio":
+				score += 10
+			"debuff enemigo", "estados negativos":
+				score += 5
+
+		if hp_ratio <= 0.35:
+			if card.card_type == "ataque":
+				score += 15
+				if current_is_strong_attack:
+					score += 10
+			elif card.card_type == "defensa":
+				score += 15
+			elif card.card_type == "descarte_control de mano":
+				score -= 10
+		elif hp_ratio <= 0.65:
+			if card.card_type == "buff propio":
+				score += 10
+			elif card.card_type == "debuff enemigo" or card.card_type == "estados negativos":
+				score += 10
+			elif current_is_strong_attack:
+				score += 8
+		else:
+			if card.card_type == "defensa" or card.card_type == "buff propio":
+				score += 5
+
+	return score
+
+
+func _update_intent_metadata(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int, zone_index: int) -> void:
+	next_intent_card = card
+	next_intent_type = _get_intent_type_from_card(card)
+	next_intent_value = _estimate_intent_value(card, zone_index)
+	next_intent_text = _get_card_preview(card, player, player_hand_size, player_cards_played_last_turn)
+
+
+func _set_wait_intent(reason: String = "") -> void:
+	next_intent_card = null
+	next_intent_type = "Esperar"
+	next_intent_value = 3
+	next_intent_text = "Escudo 3"
+	if not reason.is_empty():
+		_debug_ai("Fallback a Esperar: %s" % reason)
+
+
+func _choose_lowest_cost_card(cards: Array[CardData]) -> CardData:
+	var chosen: CardData = null
+	for card in cards:
+		if chosen == null or card.cost < chosen.cost:
+			chosen = card
+	return chosen
+
+
+func _filter_cards_by_allowed_archetypes(cards: Array[CardData]) -> Array[CardData]:
+	if allowed_enemy_archetypes.is_empty():
+		return cards
+
+	var filtered_cards: Array[CardData] = []
+	var has_cards_with_archetypes := false
+	for card in cards:
+		if not card.enemy_archetypes.is_empty():
+			has_cards_with_archetypes = true
+		if _card_matches_allowed_archetypes(card):
+			filtered_cards.append(card)
+		else:
+			_debug_ai("Descartada por arquetipo. Carta=%s | Arquetipos carta=%s | Permitidos=%s" % [
+				card.card_name,
+				", ".join(card.enemy_archetypes),
+				", ".join(allowed_enemy_archetypes),
+			])
+
+	if filtered_cards.is_empty():
+		if not has_cards_with_archetypes:
+			push_warning("Enemy: el pool no tiene arquetipos cargados. Se usa el pool recibido.")
+			return cards
+		push_warning("Enemy: ninguna carta coincide con los arquetipos permitidos %s. Se usa fallback por rareza/zona." % ", ".join(allowed_enemy_archetypes))
+		return cards
+
+	_debug_ai("Filtro por arquetipo: %d/%d cartas" % [filtered_cards.size(), cards.size()])
+	return filtered_cards
+
+
+func _card_matches_allowed_archetypes(card: CardData) -> bool:
+	for archetype in allowed_enemy_archetypes:
+		if EnemyCardLoader.card_matches_enemy_archetype(card, archetype):
+			return true
+	return false
+
+
+func _debug_discarded_by_energy(max_cost: int) -> void:
+	if not debug_enemy_ai:
+		return
+
+	for card in professor_deck:
+		if card.cost > max_cost:
+			_debug_ai("Descartada por energia '%s'. Coste=%d energia maxima=%d" % [
+				card.card_name,
+				card.cost,
+				max_cost,
+			])
+
+
+func _format_card_names(cards: Array[CardData]) -> String:
+	var names: Array[String] = []
+	for card in cards:
+		names.append("%s(%s,c%d)" % [card.card_name, card.card_type, card.cost])
+	return ", ".join(names)
+
+
+func _debug_ai(message: String) -> void:
+	if not debug_enemy_ai:
+		return
+
+	var display_name := enemy_debug_name
+	if display_name.is_empty():
+		display_name = name
+
+	var archetype_text := ", ".join(enemy_debug_archetypes)
+	if archetype_text.is_empty():
+		archetype_text = "sin arquetipo"
+
+	var rarity_text := ", ".join(enemy_debug_rarities)
+	if rarity_text.is_empty():
+		rarity_text = "sin rarezas"
+
+	print("DEBUG Enemy AI [%s | Zona %d | %s | %s]: %s" % [
+		display_name,
+		enemy_debug_zone_index,
+		archetype_text,
+		rarity_text,
+		message,
+	])
+
+
+func _has_enemy_archetype(archetype: String) -> bool:
+	return allowed_enemy_archetypes.has(EnemyCardLoader._normalize_text(archetype))
+
+
+func _is_elite_or_boss() -> bool:
+	return (
+		allowed_enemy_archetypes.has(EnemyCardLoader._normalize_text("Elite pesado"))
+		or allowed_enemy_archetypes.has(EnemyCardLoader._normalize_text("Jefe inicial"))
+		or allowed_enemy_archetypes.has(EnemyCardLoader._normalize_text("Jefe tanque"))
+		or allowed_enemy_archetypes.has(EnemyCardLoader._normalize_text("Jefe zona 3"))
+	)
+
+
+func _get_enemy_phase() -> String:
+	var hp_ratio := _get_hp_ratio()
+	if hp_ratio <= 0.25:
+		return "desesperado"
+	if hp_ratio <= 0.5:
+		return "agresivo"
+	return "normal"
+
+
+func _get_hp_ratio() -> float:
+	if max_hp <= 0:
+		return 1.0
+	return float(current_hp) / float(max_hp)
+
+
+func _get_intent_type_from_card(card: CardData) -> String:
+	match card.card_type:
+		"ataque":
+			return "Ataque"
+		"defensa":
+			return "Defensa"
+		"buff propio":
+			return "Buff"
+		"debuff enemigo", "estados negativos":
+			return "Debuff"
+		"descarte_control de mano":
+			return "Control"
+		"curacion":
+			return "Curacion"
+		"energia":
+			return "Energia"
+		"habilidad":
+			return "Habilidad"
+		_:
+			return "Desconocido"
+
+
+func _estimate_intent_value(card: CardData, zone_index: int) -> int:
+	if card.card_type == "ataque":
+		return _estimate_attack_damage(card)
+	if card.card_type == "defensa":
+		return _estimate_card_amount(card)
+	return 0
+
+
+func _estimate_attack_damage(card: CardData) -> int:
+	return calcular_dano_enemigo(_estimate_card_amount(card))
+
+
+func _estimate_card_amount(card: CardData) -> int:
+	if card.value > 0:
+		return card.value
+	return _extract_first_number(EnemyCardLoader._normalize_text(card.raw_effect_text))
+
+
+func _extract_first_number(text: String) -> int:
+	var regex := RegEx.new()
+	if regex.compile("\\d+") != OK:
+		return 0
+	var result := regex.search(text)
+	if result == null:
+		return 0
+	return result.get_string().to_int()
+
+
+func _is_control_or_debuff_card(card: CardData) -> bool:
+	return card.card_type == "descarte_control de mano" or card.card_type == "debuff enemigo" or card.card_type == "estados negativos"
+
+
+func _is_strong_attack(card: CardData, zone_index: int) -> bool:
+	if card.card_type != "ataque":
+		return false
+
+	var estimated_damage := _estimate_attack_damage(card)
+	if estimated_damage <= 0 and card.cost >= 3:
+		return true
+	if EnemyCardLoader._normalize_text(card.raw_effect_text).contains("reduce el escudo"):
+		return estimated_damage >= max(_get_strong_attack_threshold(zone_index) - 1, 1)
+
+	return estimated_damage >= _get_strong_attack_threshold(zone_index)
+
+
+func _get_strong_attack_threshold(zone_index: int) -> int:
+	match zone_index:
+		1:
+			return 9
+		2:
+			return 13
+		3:
+			return 18
+		_:
+			return 24
+
+
+func _get_zone_damage_soft_cap(zone_index: int) -> int:
+	match zone_index:
+		1:
+			return 16
+		2:
+			return 24
+		3:
+			return 28
+		_:
+			return 34
+
+
+func _get_primary_player_state_from_card(card: CardData) -> String:
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	if effect_text.contains("estres"):
+		return "estres"
+	if effect_text.contains("distraccion") or effect_text.contains("roba 1 carta menos"):
+		return "distraccion"
+	if effect_text.contains("confusion"):
+		return "confusion"
+	if effect_text.contains("panico"):
+		return "panico"
+	if effect_text.contains("habilidad") and (effect_text.contains("cuestan 1") or effect_text.contains("cuesta 1")):
+		return "habilidad_mas"
+	if effect_text.contains("defensa") and effect_text.contains("menos"):
+		return "defensa_menos"
+	return ""
 
 
 func _get_cards_with_cost_at_most(max_cost: int) -> Array[CardData]:

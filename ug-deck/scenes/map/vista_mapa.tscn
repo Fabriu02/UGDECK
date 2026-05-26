@@ -52,6 +52,19 @@ offset_right = 1130.0
 offset_bottom = 58.0
 text = "Ver mazo"
 
+[node name="SalirMenuButton" type="Button" parent="HUD"]
+unique_name_in_owner = true
+offset_left = 830.0
+offset_top = 18.0
+offset_right = 982.0
+offset_bottom = 58.0
+text = "Salir al menu"
+
+[node name="ExitRunConfirmDialog" type="ConfirmationDialog" parent="HUD"]
+unique_name_in_owner = true
+title = "Salir al menu"
+dialog_text = "Si salis al menu vas a perder todo el progreso de esta run."
+
 [node name="DeckViewerPanel" type="Panel" parent="HUD"]
 unique_name_in_owner = true
 visible = false

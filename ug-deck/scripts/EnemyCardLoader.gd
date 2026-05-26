@@ -31,6 +31,14 @@ static func load_professor_cards_by_rarity(rarity: String) -> Array[CardData]:
 	return matching_cards
 
 
+static func load_professor_cards_by_rarity_and_archetype(rarity: String, enemy_archetype: String) -> Array[CardData]:
+	return load_professor_cards_by_rarity_and_archetypes(rarity, [enemy_archetype])
+
+
+static func load_professor_cards_by_rarity_and_archetypes(rarity: String, enemy_archetypes: Array) -> Array[CardData]:
+	return _filter_cards_by_enemy_archetypes(load_professor_cards_by_rarity(rarity), enemy_archetypes)
+
+
 static func load_professor_cards_by_rarities(rarities: Array) -> Array[CardData]:
 	var matching_cards: Array[CardData] = []
 	for card in load_cards_from_csv(CSV_FILE_NAME):
@@ -39,6 +47,14 @@ static func load_professor_cards_by_rarities(rarities: Array) -> Array[CardData]
 
 	print("DEBUG EnemyCardLoader: cartas de profesor rarezas %s: %d" % [", ".join(rarities), matching_cards.size()])
 	return matching_cards
+
+
+static func load_professor_cards_by_rarities_and_archetype(rarities: Array, enemy_archetype: String) -> Array[CardData]:
+	return load_professor_cards_by_rarities_and_archetypes(rarities, [enemy_archetype])
+
+
+static func load_professor_cards_by_rarities_and_archetypes(rarities: Array, enemy_archetypes: Array) -> Array[CardData]:
+	return _filter_cards_by_enemy_archetypes(load_professor_cards_by_rarities(rarities), enemy_archetypes)
 
 
 static func load_cards_from_csv(csv_file_name: String, start_index: int = 0, max_cards: int = -1) -> Array[CardData]:
@@ -150,6 +166,7 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 	var effect_text := _get_cell(row, headers, "efecto")
 	var description := _get_cell(row, headers, "descripcion")
 	var rareza := _get_cell(row, headers, "rareza")
+	var enemy_archetypes := _parse_enemy_archetypes(_get_cell(row, headers, "arquetipo enemigo"))
 	var image_path := _get_card_image_path(row, headers)
 	var cost := _parse_int(_get_cell(row, headers, "coste energia"), 0)
 	var normalized_type := _normalize_card_type(card_type)
@@ -166,7 +183,8 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 		_build_effect_id(card_name),
 		rareza,
 		effect_text,
-		image_path
+		image_path,
+		enemy_archetypes
 	)
 
 
@@ -187,6 +205,53 @@ static func _get_cell(row: PackedStringArray, headers: Dictionary, header_name: 
 
 	return row[index].strip_edges()
 
+
+static func _parse_enemy_archetypes(value: String) -> Array[String]:
+	var parsed_archetypes: Array[String] = []
+	for archetype in value.split("/"):
+		var normalized_archetype := _normalize_text(archetype)
+		if not normalized_archetype.is_empty():
+			parsed_archetypes.append(normalized_archetype)
+	return parsed_archetypes
+
+
+static func card_matches_enemy_archetype(card: CardData, enemy_archetype: String) -> bool:
+	var normalized_archetype := _normalize_text(enemy_archetype)
+	if normalized_archetype.is_empty():
+		return true
+	if card.enemy_archetypes.is_empty():
+		return false
+
+	return card.enemy_archetypes.has(normalized_archetype)
+
+
+static func _filter_cards_by_enemy_archetype(cards: Array[CardData], enemy_archetype: String) -> Array[CardData]:
+	return _filter_cards_by_enemy_archetypes(cards, [enemy_archetype])
+
+
+static func _filter_cards_by_enemy_archetypes(cards: Array[CardData], enemy_archetypes: Array) -> Array[CardData]:
+	var normalized_archetypes: Array[String] = []
+	for enemy_archetype in enemy_archetypes:
+		var normalized_archetype := _normalize_text(String(enemy_archetype))
+		if not normalized_archetype.is_empty() and not normalized_archetypes.has(normalized_archetype):
+			normalized_archetypes.append(normalized_archetype)
+
+	if normalized_archetypes.is_empty():
+		return cards
+
+	var matching_cards: Array[CardData] = []
+	for card in cards:
+		for normalized_archetype in normalized_archetypes:
+			if card_matches_enemy_archetype(card, normalized_archetype):
+				matching_cards.append(card)
+				break
+
+	if matching_cards.is_empty():
+		push_warning("EnemyCardLoader: no se encontraron cartas para los arquetipos enemigos '%s'. Se usa fallback por rareza/zona." % ", ".join(normalized_archetypes))
+		return cards
+
+	print("DEBUG EnemyCardLoader: cartas para arquetipos %s: %d/%d" % [", ".join(normalized_archetypes), matching_cards.size(), cards.size()])
+	return matching_cards
 
 static func _parse_int(value: String, fallback: int) -> int:
 	var cleaned := value.strip_edges()
@@ -272,35 +337,20 @@ static func _normalize_text(value: String) -> String:
 	var normalized := value.to_lower().strip_edges()
 	var replacements := {
 		"á": "a",
-		"Ã¡": "a",
 		"é": "e",
-		"Ã©": "e",
 		"í": "i",
-		"Ã­": "i",
 		"ó": "o",
-		"Ã³": "o",
 		"ú": "u",
-		"Ãº": "u",
 		"ä": "a",
-		"Ã¤": "a",
 		"ë": "e",
-		"Ã«": "e",
 		"ï": "i",
-		"Ã¯": "i",
 		"ö": "o",
-		"Ã¶": "o",
 		"ü": "u",
-		"Ã¼": "u",
 		"à": "a",
-		"Ã ": "a",
 		"è": "e",
-		"Ã¨": "e",
 		"ì": "i",
-		"Ã¬": "i",
 		"ò": "o",
-		"Ã²": "o",
 		"ù": "u",
-		"Ã¹": "u",
 		"ñ": "n",
 		"Ã±": "n",
 		"“": "",

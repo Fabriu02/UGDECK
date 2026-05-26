@@ -1,11 +1,11 @@
 class_name generador_mapa
 extends Node
 
-const GENERATED_ZONE_COUNT := 2
+const GENERATED_ZONE_COUNT := 3
 const COLUMNS_PER_ZONE := 5
 const BRANCH_COUNT := 3
 const BRANCH_LENGTH := 3
-const MAP_VERSION := 4
+const MAP_VERSION := 5
 
 var num_columns: int = GENERATED_ZONE_COUNT * COLUMNS_PER_ZONE
 var total_nodes: int = GENERATED_ZONE_COUNT * (2 + BRANCH_COUNT * BRANCH_LENGTH)
@@ -22,6 +22,14 @@ const ZONE_2_ENEMIES := [
 	{"id": "goblin_voltimetro", "name": "Goblin voltimetro"},
 	{"id": "goblin_fisica_2", "name": "Goblin fisica 2"},
 	{"id": "goblin_notebook_fisica_3", "name": "Goblin notebook fisica 3"},
+]
+const ZONE_3_ENCOUNTERS := [
+	{"id": "robot_no_promocionar", "name": "Robot no promocionar"},
+	{"id": "pingu_linux", "name": "Pingü Linux"},
+	{"id": "torres_chica_media_chica", "name": "Torre chica / Torre media / Torre chica"},
+	{"id": "torres_media_grande", "name": "Torre media / Torre grande"},
+	{"id": "pingu_torre_chica", "name": "Pingü Linux / Torre chica"},
+	{"id": "robot_torre_media", "name": "Robot no promocionar / Torre media"},
 ]
 const INTERMEDIATE_RESOURCES := [
 	"res://scripts/map/clase_interactiva.tres",
@@ -92,7 +100,7 @@ func generate_zone(zone_index: int, start_column: int = 0) -> Dictionary:
 			])
 		branch_end_ids.append(previous_id)
 
-	var boss_name := "Tom Apostol" if zone_index == 1 else "Pepo"
+	var boss_name := _get_boss_name_for_zone(zone_index)
 	var boss_id := _add_node(start_column + COLUMNS_PER_ZONE - 1, 1, load("res://scripts/map/examen_final.tres"), "boss", boss_name, "", zone_index)
 	for branch_end_id in branch_end_ids:
 		_add_connection(branch_end_id, boss_id)
@@ -140,7 +148,23 @@ func _select_intermediate_enemy(zone_index: int) -> Dictionary:
 
 
 func _get_enemy_pool_for_zone(zone_index: int) -> Array:
-	return ZONE_2_ENEMIES if zone_index == 2 else MINIBOSSES
+	match zone_index:
+		2:
+			return ZONE_2_ENEMIES
+		3:
+			return ZONE_3_ENCOUNTERS
+		_:
+			return MINIBOSSES
+
+
+func _get_boss_name_for_zone(zone_index: int) -> String:
+	match zone_index:
+		2:
+			return "Pepo"
+		3:
+			return "Tomás Khum"
+		_:
+			return "Tom Apostol"
 
 
 func _get_random_intermediate_resource() -> nodo_mapa:

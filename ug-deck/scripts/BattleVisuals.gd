@@ -13,6 +13,7 @@ const DEFAULT_ENEMY_SCALE := Vector2(0.7, 0.7)
 
 var multi_enemy_labels: Array[Label] = []
 var multi_enemy_sprites: Array[Sprite2D] = []
+var multi_enemy_max_hps: Array[int] = []
 
 
 func _ready() -> void:
@@ -33,23 +34,28 @@ func set_enemy_display_name(display_name: String) -> void:
 	enemy_placeholder.text = display_name
 
 
-func show_multi_enemy_group(image_path: String, names: Array, hps: Array) -> void:
+func show_multi_enemy_group(image_paths: Variant, names: Array, hps: Array, max_hps: Array = [], sprite_scales: Array = []) -> void:
 	clear_multi_enemy_visuals()
 	enemy_sprite.visible = false
 	enemy_placeholder.visible = false
 
-	var texture := load(image_path) as Texture2D
+	multi_enemy_max_hps.clear()
 	for index in range(names.size()):
+		var image_path := _get_multi_enemy_image_path(image_paths, index)
+		var texture := load(image_path) as Texture2D
+		var max_hp := int(max_hps[index]) if index < max_hps.size() else int(hps[index])
+		multi_enemy_max_hps.append(max_hp)
+
 		if texture != null:
 			var sprite := Sprite2D.new()
 			sprite.texture = texture
 			sprite.position = Vector2(735 + index * 105, 245)
-			sprite.scale = Vector2(0.18, 0.18)
+			sprite.scale = _get_multi_enemy_sprite_scale(sprite_scales, index)
 			add_child(sprite)
 			multi_enemy_sprites.append(sprite)
 
 		var label := Label.new()
-		label.text = "%s\n%d/15" % [names[index], hps[index]]
+		label.text = "%s\n%d/%d" % [names[index], hps[index], max_hp]
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.position = Vector2(680 + index * 105, 115)
 		label.size = Vector2(110, 52)
@@ -57,11 +63,12 @@ func show_multi_enemy_group(image_path: String, names: Array, hps: Array) -> voi
 		multi_enemy_labels.append(label)
 
 
-func update_multi_enemy_labels(hps: Array) -> void:
+func update_multi_enemy_labels(hps: Array, max_hps: Array = []) -> void:
 	for index in range(min(multi_enemy_labels.size(), hps.size())):
 		var label := multi_enemy_labels[index]
 		var current_name := label.text.split("\n")[0]
-		label.text = "%s\n%d/15" % [current_name, hps[index]]
+		var max_hp := _get_multi_enemy_max_hp(index, hps, max_hps)
+		label.text = "%s\n%d/%d" % [current_name, hps[index], max_hp]
 		label.modulate = Color(0.45, 0.45, 0.45, 1.0) if hps[index] <= 0 else Color.WHITE
 		if index < multi_enemy_sprites.size():
 			multi_enemy_sprites[index].modulate = Color(0.35, 0.35, 0.35, 0.7) if hps[index] <= 0 else Color.WHITE
@@ -77,6 +84,29 @@ func clear_multi_enemy_visuals() -> void:
 		if is_instance_valid(sprite):
 			sprite.queue_free()
 	multi_enemy_sprites.clear()
+	multi_enemy_max_hps.clear()
+
+
+func _get_multi_enemy_image_path(image_paths: Variant, index: int) -> String:
+	if image_paths is Array:
+		var paths := image_paths as Array
+		if index < paths.size():
+			return String(paths[index])
+	return String(image_paths)
+
+
+func _get_multi_enemy_sprite_scale(sprite_scales: Array, index: int) -> Vector2:
+	if index < sprite_scales.size() and typeof(sprite_scales[index]) == TYPE_VECTOR2:
+		return sprite_scales[index]
+	return Vector2(0.18, 0.18)
+
+
+func _get_multi_enemy_max_hp(index: int, hps: Array, max_hps: Array) -> int:
+	if index < max_hps.size():
+		return int(max_hps[index])
+	if index < multi_enemy_max_hps.size():
+		return multi_enemy_max_hps[index]
+	return int(hps[index])
 
 
 func _try_load_texture(path: String, sprite: Sprite2D, placeholder: Label) -> void:

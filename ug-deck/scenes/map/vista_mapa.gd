@@ -1,5 +1,7 @@
 extends Control
 
+const MAIN_MENU_SCENE_PATH := "res://scenes/menu/MainMenu.tscn"
+
 @export var map_node_scene: PackedScene = load("res://scenes/map/Boton.tscn")
 @export var card_scene: PackedScene = load("res://scenes/Card.tscn")
 @export var line_color: Color = Color.BLACK
@@ -8,6 +10,8 @@ extends Control
 @onready var texto_plata = %TextoPlata
 @onready var contenedor_artilugios = %ContenedorArtilugios
 @onready var ver_mazo_button: Button = %VerMazoButton
+@onready var salir_menu_button: Button = %SalirMenuButton
+@onready var exit_run_confirm_dialog: ConfirmationDialog = %ExitRunConfirmDialog
 @onready var deck_viewer_panel: Panel = %DeckViewerPanel
 @onready var deck_viewer_cards_container: GridContainer = %DeckViewerCardsContainer
 @onready var close_deck_viewer_button: Button = %CloseDeckViewerButton
@@ -33,7 +37,11 @@ func _ready():
 	
 	$ScrollContainer/contenidomapa.draw.connect(_on_contenidomapa_draw)
 	ver_mazo_button.pressed.connect(_show_deck_viewer)
+	salir_menu_button.pressed.connect(_on_salir_menu_pressed)
+	exit_run_confirm_dialog.confirmed.connect(_on_exit_run_confirmed)
 	close_deck_viewer_button.pressed.connect(_hide_deck_viewer)
+	exit_run_confirm_dialog.get_ok_button().text = "Salir y perder progreso"
+	exit_run_confirm_dialog.get_cancel_button().text = "Cancelar"
 
 	# Le pedimos al Autoload que genere el mapa si no tiene uno
 	var generator = generador_mapa.new()
@@ -72,6 +80,16 @@ func _show_deck_viewer() -> void:
 
 func _hide_deck_viewer() -> void:
 	deck_viewer_panel.visible = false
+
+
+func _on_salir_menu_pressed() -> void:
+	exit_run_confirm_dialog.popup_centered()
+
+
+func _on_exit_run_confirmed() -> void:
+	GameState.reset_run_progress()
+	await get_tree().create_timer(0.08).timeout
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
 
 
 func _get_max_map_column(nodes: Array) -> int:
