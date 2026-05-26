@@ -16,11 +16,7 @@ func _ready():
 func _on_descansar_pressed():
 	# 1. Calculamos el 30% de la vida máxima
 	var curacion = int(GameState.vida_maxima * 0.3)
-	GameState.vida_actual += curacion
-	
-	# 2. Nos aseguramos de no pasarnos del máximo de vida
-	if GameState.vida_actual > GameState.vida_maxima:
-		GameState.vida_actual = GameState.vida_maxima
+	GameState.heal_player(curacion)
 		
 	# LOG DE VERIFICACIÓN: Verás en la consola abajo cómo cambiaron tus estadísticas reales
 	print("❤️ RECREO: ¡Descansaste! Vida guardada en GameState: ", GameState.vida_actual, "/", GameState.vida_maxima)
@@ -31,8 +27,7 @@ func _on_descansar_pressed():
 
 func _on_repasar_pressed():
 	# 1. Aumentamos la estadística (Vida máxima +5 y le curamos esos 5 puntos extra)
-	GameState.vida_maxima += 5
-	GameState.vida_actual += 5 
+	GameState.increase_max_hp(5, true)
 	
 	# LOG DE VERIFICACIÓN: Verás el cambio reflejado inmediatamente
 	print("📚 RECREO: ¡Repasaste! Vida Máxima en GameState ahora es: ", GameState.vida_actual, "/", GameState.vida_maxima)

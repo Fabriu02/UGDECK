@@ -92,5 +92,5 @@ func _aplicar_efecto_inmediato(efecto: String, valor: int):
 				print(" EFECTO INMEDIATO: Tu energía máxima aumentó a ", GameState.energia_maxima)
 		"vida_max":
 			if "vida_maxima" in GameState:
-				GameState.vida_maxima += valor
+				GameState.increase_max_hp(valor, false)
 				print(" EFECTO INMEDIATO: Tu vida máxima aumentó a ", GameState.vida_maxima)

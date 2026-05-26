@@ -169,8 +169,11 @@ func start_battle() -> void:
 	multi_enemy_names.clear()
 	temporary_card_cost_modifiers.clear()
 	_configure_enemy_for_current_node()
-	player.reset_for_new_battle()
+	player.load_hp_from_run_state()
+	player.reset_for_new_combat()
 	enemy.reset_for_new_battle()
+	print("[COMBAT START] HP cargada desde RunState:", GameState.vida_actual, "/", GameState.vida_maxima)
+	print("[NEXT COMBAT] HP cargada:", player.current_hp, "/", player.max_hp)
 	
 	# --- AGREGADO: REVISAMOS LA MOCHILA AL EMPEZAR ---
 	_aplicar_artilugios_inicio_combate()
@@ -805,6 +808,7 @@ func _get_multi_enemy_status_text() -> String:
 func check_combat_end() -> void:
 	if _is_current_encounter_defeated():
 		battle_has_ended = true
+		_save_player_hp_at_combat_end()
 		if GameState.get_current_combat_kind() == "miniboss":
 			print("Minijefe derrotado")
 		enemy_intent_label.text = "Victoria: aprobaste este combate."
@@ -813,6 +817,7 @@ func check_combat_end() -> void:
 		_show_card_reward()
 	elif player.is_dead():
 		battle_has_ended = true
+		_save_player_hp_at_combat_end()
 		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
@@ -837,6 +842,7 @@ func _get_current_encounter_hp() -> int:
 
 
 func complete_first_battle_and_return_to_map() -> void:
+	_save_player_hp_at_combat_end()
 	GameState.completar_nodo_actual()
 	_return_to_map()
 
@@ -880,7 +886,13 @@ func _on_reward_card_selected(card_data: CardData, _card_ui: CardUI) -> void:
 
 func abandon_combat() -> void:
 	battle_has_ended = true
+	_save_player_hp_at_combat_end()
 	_return_to_map()
+
+
+func _save_player_hp_at_combat_end() -> void:
+	player.sync_hp_to_run_state()
+	print("[COMBAT END] Guardando HP:", player.current_hp, "/", player.max_hp)
 
 
 func _return_to_map() -> void:
@@ -1285,7 +1297,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 
 func _play_machetearse() -> void:
 	if randf() < 0.35:
-		player.current_hp = 0
+		player.set_current_hp(0)
 		return
 
 	var damage := int(ceil(_get_current_encounter_hp() * 0.8))

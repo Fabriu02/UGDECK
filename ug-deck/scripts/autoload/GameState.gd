@@ -10,6 +10,7 @@ var dinero: int = 150
 var artilugios: Array[String] = []
 var vida_actual: int = 50
 var vida_maxima: int = 50
+var run_started: bool = false
 var zona_actual: int = 1
 var rareza_recompensa_actual: String = "Ingresante"
 var jefe_zona_actual: String = "Tom Apostol"
@@ -53,6 +54,7 @@ func reset_run_progress() -> void:
 	artilugios.clear()
 	vida_maxima = 50
 	vida_actual = vida_maxima
+	run_started = false
 	zona_actual = 1
 	rareza_recompensa_actual = "Ingresante"
 	jefe_zona_actual = "Tom Apostol"
@@ -60,6 +62,31 @@ func reset_run_progress() -> void:
 	run_deck.clear()
 	run_deck_initialized = false
 	shop_removal_count = 0
+
+func start_new_run() -> void:
+	reset_run_progress()
+	run_started = true
+	print("[RUN] Nueva run iniciada HP:", vida_actual, "/", vida_maxima)
+
+func set_player_hp(value: int) -> void:
+	vida_actual = clamp(value, 0, vida_maxima)
+
+func sync_player_hp(current_hp: int, max_hp: int) -> void:
+	vida_maxima = max(max_hp, 1)
+	set_player_hp(current_hp)
+
+func damage_player(amount: int) -> void:
+	set_player_hp(vida_actual - max(amount, 0))
+
+func heal_player(amount: int) -> void:
+	set_player_hp(vida_actual + max(amount, 0))
+
+func increase_max_hp(amount: int, heal_too: bool = false) -> void:
+	vida_maxima = max(vida_maxima + amount, 1)
+	if heal_too:
+		heal_player(amount)
+	else:
+		set_player_hp(vida_actual)
 
 func ensure_run_deck_initialized() -> void:
 	if run_deck_initialized:

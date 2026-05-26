@@ -19,7 +19,7 @@ func _ready() -> void:
 
 
 func _on_jugar_pressed() -> void:
-	GameState.reset_run_progress()
+	GameState.start_new_run()
 	await get_tree().create_timer(0.08).timeout
 	get_tree().change_scene_to_file(MAP_SCENE_PATH)
 
