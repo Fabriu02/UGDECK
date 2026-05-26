@@ -24,10 +24,13 @@ var extra_energy_next_turn: int = 0
 var estados: Array = []
 
 func _ready() -> void:
-	reset_for_new_battle()
+	load_hp_from_run_state()
+	reset_for_new_combat()
 
 func reset_for_new_battle() -> void:
-	current_hp = max_hp
+	reset_for_new_combat()
+
+func reset_for_new_combat() -> void:
 	current_energy = max_energy
 	block = 0
 	attack_bonus = 0
@@ -43,6 +46,24 @@ func reset_for_new_battle() -> void:
 	extra_energy_next_turn = 0
 	# AGREGADO: Limpiamos los estados al iniciar una batalla
 	estados.clear()
+
+func reset_for_new_run() -> void:
+	max_hp = 50
+	current_hp = max_hp
+	sync_hp_to_run_state()
+	reset_for_new_combat()
+
+func load_hp_from_run_state() -> void:
+	max_hp = GameState.vida_maxima
+	current_hp = clamp(GameState.vida_actual, 0, max_hp)
+	sync_hp_to_run_state()
+
+func sync_hp_to_run_state() -> void:
+	GameState.sync_player_hp(current_hp, max_hp)
+
+func set_current_hp(value: int) -> void:
+	current_hp = clamp(value, 0, max_hp)
+	sync_hp_to_run_state()
 
 func reset_for_new_turn() -> void:
 	block = 0
@@ -155,14 +176,18 @@ func curar(cantidad: int) -> void:
 		curacion_final *= 0.75
 		
 	current_hp = min(current_hp + int(curacion_final), max_hp)
+	sync_hp_to_run_state()
 
 func lose_hp(amount: int) -> void:
+	var old_hp := current_hp
 	current_hp = max(current_hp - amount, 0)
 	_apply_approved_with_4_if_needed()
+	_log_damage_and_sync(old_hp, amount)
 
 func increase_max_hp(amount: int) -> void:
 	max_hp += amount
 	current_hp = min(current_hp + amount, max_hp)
+	sync_hp_to_run_state()
 
 # AGREGADO: Nueva lógica para aumentar la energía máxima
 func increase_max_energy(amount: int) -> void:
@@ -175,6 +200,7 @@ func take_damage(amount: int) -> void:
 		immune_to_enemy_attack_turns -= 1
 		return
 
+	var old_hp := current_hp
 	var remaining_damage := amount
 
 	# Si tiene el estado estres, recibe 25% más de daño
@@ -193,12 +219,15 @@ func take_damage(amount: int) -> void:
 		current_hp = max(current_hp - remaining_damage, 0)
 		_apply_approved_with_4_if_needed()
 
+	_log_damage_and_sync(old_hp, amount)
+
 
 func take_damage_ignoring_block(amount: int, ignored_block_ratio: float) -> void:
 	if immune_to_enemy_attack_turns > 0:
 		immune_to_enemy_attack_turns -= 1
 		return
 
+	var old_hp := current_hp
 	var remaining_damage := amount
 
 	if tiene_estado("estres"):
@@ -218,10 +247,17 @@ func take_damage_ignoring_block(amount: int, ignored_block_ratio: float) -> void
 		current_hp = max(current_hp - remaining_damage, 0)
 		_apply_approved_with_4_if_needed()
 
+	_log_damage_and_sync(old_hp, amount)
+
 func _apply_approved_with_4_if_needed() -> void:
 	if current_hp <= 0 and approved_with_4_turns > 0:
 		current_hp = 4
 		approved_with_4_turns = 0
+
+func _log_damage_and_sync(old_hp: int, damage: int) -> void:
+	sync_hp_to_run_state()
+	print("[DAMAGE] HP antes:", old_hp, "Daño:", damage, "HP después:", current_hp)
+	print("[DAMAGE] RunState HP:", GameState.vida_actual, "/", GameState.vida_maxima)
 
 func is_dead() -> bool:
 	return current_hp <= 0
