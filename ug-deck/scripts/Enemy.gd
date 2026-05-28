@@ -156,19 +156,19 @@ func get_playable_card_for_turn(player: Player, player_hand_size: int, player_ca
 	return null
 
 # MODIFICADO: Texto para la interfaz (ahora muestra el daño reducido si está débil)
-func get_intent_text(player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> String:
+func get_intent_text(player: Player, player_hand_size: int, player_cards_played_last_turn: int, player_played_skill_last_turn: bool = false) -> String:
 	if planned_card == null:
 		return "Intencion: Esperar | Escudo 3"
 
-	var preview := _get_card_preview(planned_card, player, player_hand_size, player_cards_played_last_turn)
+	var preview := _get_card_preview(planned_card, player, player_hand_size, player_cards_played_last_turn, player_played_skill_last_turn)
 	return "Intencion: %s - %s | %s" % [next_intent_type, planned_card.card_name, preview]
 
 
-func get_intent_tooltip(player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> String:
+func get_intent_tooltip(player: Player, player_hand_size: int, player_cards_played_last_turn: int, player_played_skill_last_turn: bool = false) -> String:
 	if planned_card == null:
 		return "El enemigo esperara y ganara 3 de escudo."
 
-	var preview := _get_card_preview(planned_card, player, player_hand_size, player_cards_played_last_turn)
+	var preview := _get_card_preview(planned_card, player, player_hand_size, player_cards_played_last_turn, player_played_skill_last_turn)
 	var state_preview := _get_effect_state_preview(planned_card)
 	var state_description := _get_effect_state_description(planned_card)
 
@@ -992,7 +992,7 @@ func _get_cards_with_cost_at_most(max_cost: int) -> Array[CardData]:
 	return candidates
 
 
-func _get_card_preview(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int) -> String:
+func _get_card_preview(card: CardData, player: Player, player_hand_size: int, player_cards_played_last_turn: int, player_played_skill_last_turn: bool = false) -> String:
 	match card.effect_id:
 		"pregunta_al_azar":
 			var damage := 8
@@ -1052,7 +1052,10 @@ func _get_card_preview(card: CardData, player: Player, player_hand_size: int, pl
 		"silencio_incomodo":
 			return "Estres 1 y descarte si tenes 4+ cartas"
 		"pregunta_de_repaso":
-			return "Ataque %d" % calcular_dano_enemigo(7)
+			var damage := 7
+			if player_played_skill_last_turn:
+				damage += 5
+			return "Ataque %d" % calcular_dano_enemigo(damage)
 		"quien_quiere_pasar":
 			return "Panico: proxima primera carta +1"
 		"lista_incompleta":
