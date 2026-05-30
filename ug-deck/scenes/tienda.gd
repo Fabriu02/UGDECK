@@ -18,13 +18,17 @@ var remove_cost_label: Label
 var reroll_button: Button
 var items_column: VBoxContainer
 var cards_column: VBoxContainer
+var services_column: VBoxContainer
+var remove_button: Button
+var remove_panel: Panel
+var panel_cards_container: GridContainer
 var shop_cards: Array[CardData] = []
 
 # Lista de lo que vendemos (Nombre, Precio)
 var inventario = [
-	{"nombre": "Café", "precio": 30},
-	{"nombre": "Apunte", "precio": 80},
-	{"nombre": "Resumen VIP", "precio": 200}
+	{"nombre": "Termo de Mate Supremo", "precio": 120},
+	{"nombre": "Apuntes de Años Anteriores", "precio": 150},
+	{"nombre": "Calculadora Científica", "precio": 200}
 ]
 
 func _ready():
@@ -42,6 +46,21 @@ func _ready():
 
 
 func _preparar_layout_tienda() -> void:
+	# Expandir el fondo para que haya más espacio y nada quede encimado
+	var bg_rect = get_node("Fondo/NinePatchRect")
+	if bg_rect:
+		bg_rect.offset_top = -310
+		bg_rect.offset_bottom = 350
+		bg_rect.offset_left = -500
+		bg_rect.offset_right = 500
+		
+	var margin_c = get_node("Fondo/NinePatchRect/MarginContainer")
+	if margin_c:
+		margin_c.add_theme_constant_override("margin_top", 170) # Aumentado para que "Cartas en venta" no se vaya tan arriba
+		margin_c.add_theme_constant_override("margin_bottom", 20)
+		margin_c.add_theme_constant_override("margin_left", 30)
+		margin_c.add_theme_constant_override("margin_right", 30)
+
 	var root_container := estante_items.get_parent()
 
 	for child in root_container.get_children():
@@ -52,75 +71,120 @@ func _preparar_layout_tienda() -> void:
 	root_container.remove_child(plata_ui)
 	root_container.remove_child(botonvolver)
 
-	plata_ui.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	root_container.add_child(plata_ui)
+	# --- TOP BAR GLOBAL (AFUERA DEL CUADRO) ---
+	var margin_top = MarginContainer.new()
+	margin_top.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	margin_top.add_theme_constant_override("margin_left", 40)
+	margin_top.add_theme_constant_override("margin_top", 25)
+	margin_top.add_theme_constant_override("margin_right", 40)
+	self.add_child(margin_top)
+	
+	var global_top_bar = HBoxContainer.new()
+	margin_top.add_child(global_top_bar)
+	
+	plata_ui.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	plata_ui.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plata_ui.add_theme_font_size_override("font_size", 32)
+	plata_ui.add_theme_color_override("font_color", Color.WHITE)
+	plata_ui.add_theme_color_override("font_outline_color", Color.BLACK)
+	plata_ui.add_theme_constant_override("outline_size", 8)
+	global_top_bar.add_child(plata_ui)
+	
+	botonvolver.custom_minimum_size = Vector2(160, 50)
+	botonvolver.size_flags_horizontal = Control.SIZE_SHRINK_END
+	global_top_bar.add_child(botonvolver)
 
-	var columns := HBoxContainer.new()
-	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 28)
-	root_container.add_child(columns)
+	# --- CARDS ROW (MIDDLE) ---
+	cards_column = VBoxContainer.new()
+	cards_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cards_column.add_theme_constant_override("separation", 10)
+	root_container.add_child(cards_column)
+	
+	var sep2 = HSeparator.new()
+	sep2.add_theme_constant_override("separation", 15)
+	root_container.add_child(sep2)
+
+	# --- BOTTOM ROW (ITEMS AND SERVICES) ---
+	var bottom_row = HBoxContainer.new()
+	bottom_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bottom_row.add_theme_constant_override("separation", 30)
+	bottom_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	root_container.add_child(bottom_row)
 
 	items_column = VBoxContainer.new()
-	items_column.custom_minimum_size = Vector2(220, 0)
 	items_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	items_column.add_theme_constant_override("separation", 8)
-	columns.add_child(items_column)
+	items_column.add_theme_constant_override("separation", 5)
+	bottom_row.add_child(items_column)
 
 	var items_title := Label.new()
 	items_title.text = "Items"
 	items_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	items_title.add_theme_color_override("font_color", Color.BLACK)
 	items_column.add_child(items_title)
 
-	estante_items.columns = 1
+	estante_items.columns = 3 # 3 items en horizontal
 	items_column.add_child(estante_items)
 
-	var separator := VSeparator.new()
-	columns.add_child(separator)
+	var bottom_sep = VSeparator.new()
+	bottom_row.add_child(bottom_sep)
 
-	cards_column = VBoxContainer.new()
-	cards_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cards_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	cards_column.add_theme_constant_override("separation", 6)
-	columns.add_child(cards_column)
-
-	botonvolver.custom_minimum_size = Vector2(160, 36)
-	botonvolver.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	root_container.add_child(botonvolver)
+	services_column = VBoxContainer.new()
+	services_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	services_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	services_column.add_theme_constant_override("separation", 5)
+	bottom_row.add_child(services_column)
 
 func _actualizar_plata():
 	# ¡Cambiamos dinero_label por plata_ui!
 	plata_ui.text = "Tu Plata: $" + str(GameState.dinero)
 	if reroll_button != null:
 		reroll_button.disabled = GameState.dinero < SHOP_REROLL_COST
-	if remove_cost_label != null:
-		remove_cost_label.text = "Costo de eliminacion: $%d" % _get_remove_card_cost()
+	_refresh_remove_button()
 
 func _generar_items():
-	# ¡Cambiamos contenedor_items por estante_items!
 	for hijo in estante_items.get_children():
 		hijo.queue_free()
 		
-	# Creamos un botón por cada ítem
+	# Creamos un botón e imagen por cada ítem
 	for item in inventario:
-		var nuevo_boton = Button.new()
-		nuevo_boton.text = item.nombre + "\n$" + str(item.precio)
-		nuevo_boton.custom_minimum_size = Vector2(170, 54)
+		var item_box = VBoxContainer.new()
+		item_box.alignment = BoxContainer.ALIGNMENT_CENTER
+		item_box.add_theme_constant_override("separation", 2)
 		
-		# Programamos qué pasa al comprar
-		nuevo_boton.pressed.connect(func(): _comprar(item, nuevo_boton))
+		var tex_rect = TextureRect.new()
+		var icon_path = "res://icon.svg"
+		if GameState.INFO_ARTILUGIOS.has(item.nombre) and GameState.INFO_ARTILUGIOS[item.nombre].has("icono"):
+			icon_path = GameState.INFO_ARTILUGIOS[item.nombre]["icono"]
+			
+		tex_rect.texture = load(icon_path)
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.custom_minimum_size = Vector2(50, 50)
+		item_box.add_child(tex_rect)
 		
-		# ¡Cambiamos contenedor_items por estante_items!
-		estante_items.add_child(nuevo_boton)
+		var btn = Button.new()
+		btn.text = "%s\n$%d" % [item.nombre, item.precio]
+		btn.custom_minimum_size = Vector2(130, 60)
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD
+		btn.add_theme_font_size_override("font_size", 11)
+		
+		btn.pressed.connect(func(): _comprar(item, btn, tex_rect))
+		item_box.add_child(btn)
+		
+		estante_items.add_child(item_box)
 
-func _comprar(item, boton):
+func _comprar(item, boton, tex_rect):
 	if GameState.dinero >= item.precio:
 		GameState.dinero -= item.precio
+		GameState.artilugios.append(item.nombre)
 		_actualizar_plata()
-		_refresh_remove_cards()
+		_refresh_remove_button()
 		_refresh_shop_cards()
 		boton.disabled = true
 		boton.text = "COMPRADO"
+		tex_rect.modulate = Color(0.5, 0.5, 0.5)
 		print("Compraste ", item.nombre)
 	else:
 		print("No te alcanza la plata, buscate una beca.")
@@ -133,42 +197,109 @@ func _generar_tienda_cartas() -> void:
 	var title := Label.new()
 	title.text = "Cartas en venta"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color.BLACK)
 	root_container.add_child(title)
 
 	shop_cards_container = HBoxContainer.new()
 	shop_cards_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	shop_cards_container.add_theme_constant_override("separation", 6)
+	shop_cards_container.add_theme_constant_override("separation", 15)
 	root_container.add_child(shop_cards_container)
 
+	# --- SERVICIOS ---
+	var services_title := Label.new()
+	services_title.text = "Servicios"
+	services_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	services_title.add_theme_color_override("font_color", Color.BLACK)
+	services_column.add_child(services_title)
+
+	var services_hbox = HBoxContainer.new()
+	services_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	services_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	services_hbox.add_theme_constant_override("separation", 20)
+	services_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	services_column.add_child(services_hbox)
+
+	var remove_col = VBoxContainer.new()
+	remove_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	remove_col.add_theme_constant_override("separation", 5)
+	remove_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	services_hbox.add_child(remove_col)
+
+	remove_button = Button.new()
+	remove_button.custom_minimum_size = Vector2(120, 45)
+	remove_button.pressed.connect(_show_remove_panel)
+	remove_col.add_child(remove_button)
+
 	reroll_button = Button.new()
-	reroll_button.text = "Reroll tienda ($%d)" % SHOP_REROLL_COST
-	reroll_button.custom_minimum_size = Vector2(180, 38)
+	reroll_button.text = "Reroll\n($%d)" % SHOP_REROLL_COST
+	reroll_button.custom_minimum_size = Vector2(100, 50)
+	reroll_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	services_hbox.add_child(reroll_button)
+
 	reroll_button.pressed.connect(_on_reroll_pressed)
-	root_container.add_child(reroll_button)
 
-	var remove_title := Label.new()
-	remove_title.text = "Eliminar carta del mazo"
-	remove_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	remove_title.add_theme_color_override("font_color", Color.BLACK)
-	root_container.add_child(remove_title)
-
-	remove_cost_label = Label.new()
-	remove_cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	remove_cost_label.add_theme_color_override("font_color", Color.BLACK)
-	root_container.add_child(remove_cost_label)
-
-	var remove_scroll := ScrollContainer.new()
-	remove_scroll.custom_minimum_size = Vector2(0, 86)
-	remove_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_container.add_child(remove_scroll)
-
-	remove_cards_container = GridContainer.new()
-	remove_cards_container.columns = 2
-	remove_scroll.add_child(remove_cards_container)
-
+	_build_remove_panel()
 	_roll_shop_cards(false)
-	_refresh_remove_cards()
+	_refresh_remove_button()
 	_actualizar_plata()
+
+func _build_remove_panel():
+	remove_panel = Panel.new()
+	remove_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.85)
+	remove_panel.add_theme_stylebox_override("panel", style)
+	remove_panel.visible = false
+	self.add_child(remove_panel)
+	
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 25)
+	remove_panel.add_child(vbox)
+	
+	var label = Label.new()
+	label.text = "Selecciona la carta que quieres eliminar"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 26)
+	vbox.add_child(label)
+	
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(900, 400)
+	scroll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(scroll)
+	
+	panel_cards_container = GridContainer.new()
+	panel_cards_container.columns = 6
+	panel_cards_container.add_theme_constant_override("h_separation", 15)
+	panel_cards_container.add_theme_constant_override("v_separation", 15)
+	scroll.add_child(panel_cards_container)
+	
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancelar"
+	cancel_btn.custom_minimum_size = Vector2(200, 50)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.pressed.connect(func(): remove_panel.visible = false)
+	vbox.add_child(cancel_btn)
+
+func _show_remove_panel():
+	var cost := _get_remove_card_cost()
+	if GameState.dinero < cost:
+		return
+		
+	for child in panel_cards_container.get_children():
+		child.queue_free()
+		
+	var deck_cards := GameState.get_run_deck_copies()
+	for card_data in deck_cards:
+		var card_ui: CardUI = CARD_SCENE.instantiate()
+		card_ui.custom_minimum_size = Vector2(120, 168)
+		panel_cards_container.add_child(card_ui)
+		card_ui.setup(card_data)
+		card_ui.size = Vector2(120, 168)
+		card_ui.card_clicked.connect(func(c_data, c_ui): _on_remove_card_selected(c_data))
+		
+	remove_panel.visible = true
 
 
 func _roll_shop_cards(charge_cost: bool) -> void:
@@ -191,35 +322,25 @@ func _refresh_shop_cards() -> void:
 
 	for card_data in shop_cards:
 		var card_ui: CardUI = CARD_SCENE.instantiate()
-		card_ui.custom_minimum_size = Vector2(108, 156)
+		card_ui.custom_minimum_size = Vector2(100, 140)
 		shop_cards_container.add_child(card_ui)
 		card_ui.setup(card_data)
-		card_ui.size = Vector2(108, 156)
+		card_ui.size = Vector2(100, 140)
 		card_ui.name_label.add_theme_font_size_override("font_size", 9)
 		card_ui.cost_label.add_theme_font_size_override("font_size", 8)
 		card_ui.description_label.add_theme_font_size_override("font_size", 7)
-		card_ui.get_node("MarginContainer/VBoxContainer/ArtFrame").custom_minimum_size = Vector2(0, 30)
+		card_ui.get_node("MarginContainer/VBoxContainer/ArtFrame").custom_minimum_size = Vector2(0, 25)
 		var price := _get_card_price(card_data)
 		card_ui.name_label.text = "%s\n$%d" % [card_data.card_name, price]
 		card_ui.disabled = GameState.dinero < price
 		card_ui.card_clicked.connect(_on_shop_card_selected)
 
 
-func _refresh_remove_cards() -> void:
-	for child in remove_cards_container.get_children():
-		child.queue_free()
-
-	var unique_cards := GameState.get_unique_run_deck_cards()
-	var copy_counts := GameState.get_run_deck_copy_counts()
-	for card_data in unique_cards:
-		var card_key := GameState.get_card_key(card_data)
-		var button := Button.new()
-		button.text = "%s x%d" % [card_data.card_name, int(copy_counts.get(card_key, 1))]
-		button.custom_minimum_size = Vector2(150, 32)
-		button.disabled = GameState.dinero < _get_remove_card_cost()
-		button.pressed.connect(func(): _on_remove_card_selected(card_key))
-		remove_cards_container.add_child(button)
-
+func _refresh_remove_button() -> void:
+	if remove_button != null:
+		var cost = _get_remove_card_cost()
+		remove_button.text = "Eliminar Carta\n($%d)" % cost
+		remove_button.disabled = GameState.dinero < cost
 
 func _on_shop_card_selected(card_data: CardData, card_ui: CardUI) -> void:
 	var price := _get_card_price(card_data)
@@ -232,22 +353,27 @@ func _on_shop_card_selected(card_data: CardData, card_ui: CardUI) -> void:
 	shop_cards.erase(card_data)
 	print("Carta comprada en tienda: %s por $%d" % [card_data.card_name, price])
 	card_ui.queue_free()
-	_refresh_remove_cards()
+	_refresh_remove_button()
 	_refresh_shop_cards()
 	_actualizar_plata()
 
 
-func _on_remove_card_selected(card_key: String) -> void:
+func _on_remove_card_selected(card_data: CardData) -> void:
 	var cost := _get_remove_card_cost()
 	if GameState.dinero < cost:
 		print("No alcanza para eliminar carta.")
 		return
 
+	var card_key = GameState.get_card_key(card_data)
 	if GameState.remove_card_from_run_deck(card_key):
 		GameState.dinero -= cost
 		GameState.shop_removal_count += 1
 		print("Eliminacion de carta: -$%d" % cost)
-	_refresh_remove_cards()
+		
+	if remove_panel != null:
+		remove_panel.visible = false
+		
+	_refresh_remove_button()
 	_refresh_shop_cards()
 	_actualizar_plata()
 
