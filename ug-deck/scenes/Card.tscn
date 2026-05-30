@@ -29,16 +29,17 @@ text = "Nombre"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="ArtFrame" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ArtFrame" type="PanelContainer" parent="MarginContainer/VBoxContainer" unique_id=144310848]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 
-[node name="CardImage" type="TextureRect" parent="MarginContainer/VBoxContainer/ArtFrame"]
+[node name="CardImage" type="TextureRect" parent="MarginContainer/VBoxContainer/ArtFrame" unique_id=226960238]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 expand_mode = 1
 stretch_mode = 5
+
 [node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1728606774]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12

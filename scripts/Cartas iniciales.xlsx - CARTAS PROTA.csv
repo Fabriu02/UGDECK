@@ -46,3 +46,4 @@ Resumen ajeno,Robo,2,Robas 2 cartas. La primera carta robada cuesta 1 menos este
 Estudio apresurado,Buff propio,2,Ganas +5 de ataque este turno. Al próximo turno robas 1 carta menos.,"Poder inmediato, deuda emocional.",Recursante
 Parcial recuperatorio,Curación,3,"Recuperas 12 de vida. Si tienes 20 o menos de vida, recuperas 8 adicionales.","Segunda oportunidad, mismo sufrimiento.",Recursante
 Cambio de aula,Descarte/control de mano,2,Descarta tu mano y roba la misma cantidad de cartas. La primera carta robada cuesta 1 menos este turno.,El verdadero jefe era encontrar el salón.,Recursante
+Usar IA,Ataque,3,Inflige 9 de daño,Jarvis necesito un trabajo humanizado,Ingresante
