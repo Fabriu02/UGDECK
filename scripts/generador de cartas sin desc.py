@@ -36,13 +36,11 @@ PLANTILLA_DEFAULT = TEMPLATES_DIR / "carta_vacia.png"
 
 FUENTE_ENERGIA   = BASE_DIR / "FONTS" / "AGENCYR.TTF"   # Fuente para el numero de energia
 FUENTE_TEXTOS    = "C:/Windows/Fonts/segoeuib.ttf"       # Segoe UI Bold - soporta acentos
-FUENTE_TEXTOS_IT = "C:/Windows/Fonts/segoeuii.ttf"       # Segoe UI Italic - para descripcion flavor
 
 # Tamanos de fuente (en pixeles) - ajusta estos valores si el texto queda muy grande o chico
 TAMANO_ENERGIA     = 22    # Numero de energia (circulo arriba a la izquierda)
 TAMANO_NOMBRE      = 12    # Nombre de la carta (banner de arriba)
-TAMANO_EFECTO      = 8     # Texto del efecto mecanico
-TAMANO_DESCRIPCION = 8    # Texto de flavor/descripcion (en italica)
+TAMANO_EFECTO      = 8.6    # Texto del efecto mecanico
 
 # --- POSICIONES (coordenadas en pixeles) ---
 # Ajusta estos valores si el texto queda corrido en tu plantilla.
@@ -50,20 +48,18 @@ TAMANO_DESCRIPCION = 8    # Texto de flavor/descripcion (en italica)
 # "y" controla la altura: mas bajo = numero mas grande.
 
 POS_ENERGIA = (125, 85)    # Centro del circulo de energia
-Y_NOMBRE    = 100          # Altura del nombre en el banner
-Y_EFECTO    = 210         # Altura donde empieza el efecto
-Y_DESCRIPCION = 244        # Altura donde empieza la descripcion
+Y_NOMBRE    = 99          # Altura del nombre en el banner
+Y_EFECTO    = 215         # Altura donde empieza el efecto
+
 
 # --- TEXTO ---
-MAX_CARACTERES_EFECTO      = 27   # Caracteres por linea del efecto antes de hacer wrap
-MAX_CARACTERES_DESCRIPCION = 30   # Caracteres por linea de la descripcion
-ESPACIO_LINEA_EFECTO       = 12   # Pixeles entre lineas del efecto
-ESPACIO_LINEA_DESCRIPCION  = 11   # Pixeles entre lineas de la descripcion
+MAX_CARACTERES_EFECTO      = 25   # Caracteres por linea del efecto antes de hacer wrap
+ESPACIO_LINEA_EFECTO       = 11.8   # Pixeles entre lineas del efecto
 
 # --- COLORES (R, G, B) ---
 COLOR_TEXTO_NOMBRE  = (20, 20, 30)     # Nombre y efecto
 COLOR_TEXTO_EFECTO  = (20, 20, 30)     # Efecto mecanico
-COLOR_DESCRIPCION   = (160, 30, 45)    # Descripcion/flavor text
+
 COLOR_ENERGIA       = (20, 20, 30)     # Numero de energia
 
 # --- MOSTRAR/OCULTAR ELEMENTOS ---
@@ -97,7 +93,7 @@ def cargar_fuente(ruta, tamano):
 fuente_energia     = cargar_fuente(FUENTE_ENERGIA, TAMANO_ENERGIA)
 fuente_nombre      = cargar_fuente(FUENTE_TEXTOS, TAMANO_NOMBRE)
 fuente_efecto      = cargar_fuente(FUENTE_TEXTOS, TAMANO_EFECTO)
-fuente_descripcion = cargar_fuente(FUENTE_TEXTOS_IT, TAMANO_DESCRIPCION)
+
 
 
 # =========================
@@ -164,7 +160,6 @@ def generar_carta(fila):
     nombre = fila["Nombre de la carta"]
     coste = fila["Coste energ\u00eda"]
     efecto = fila["Efecto"]
-    descripcion = fila["Descripci\u00f3n"]
     rareza = fila["Rareza"]
 
     # Seleccionar la plantilla correcta segun la rareza
@@ -208,7 +203,7 @@ def generar_carta(fila):
     texto_multilinea_centrado(
         draw=draw,
         texto=efecto,
-        x_centro=x_centro,
+        x_centro=x_centro - 4,
         y=Y_EFECTO,
         fuente=fuente_efecto,
         color=COLOR_TEXTO_EFECTO,
@@ -216,29 +211,7 @@ def generar_carta(fila):
         espacio_linea=ESPACIO_LINEA_EFECTO
     )
 
-    # --- DESCRIPCION (flavor text en italica) ---
-    texto_multilinea_centrado(
-        draw=draw,
-        texto=descripcion,
-        x_centro=x_centro,
-        y=Y_DESCRIPCION,
-        fuente=fuente_descripcion,
-        color=COLOR_DESCRIPCION,
-        max_caracteres=MAX_CARACTERES_DESCRIPCION,
-        espacio_linea=ESPACIO_LINEA_DESCRIPCION
-    )
-
-    # --- RAREZA (opcional) ---
-    if MOSTRAR_RAREZA:
-        y_rareza = alto - 40
-        texto_centrado(
-            draw=draw,
-            texto=str(rareza),
-            y=y_rareza,
-            fuente=fuente_descripcion,
-            ancho_imagen=ancho,
-            color=(100, 100, 110)
-        )
+ 
 
     # --- GUARDAR ---
     nombre_archivo = limpiar_nombre_archivo(nombre)
@@ -282,7 +255,6 @@ def main():
     print("  Fuentes:")
     print(f"    Energia:     {Path(FUENTE_ENERGIA).name} ({TAMANO_ENERGIA}px)")
     print(f"    Textos:      {Path(FUENTE_TEXTOS).name} ({TAMANO_NOMBRE}px nombre, {TAMANO_EFECTO}px efecto)")
-    print(f"    Descripcion: {Path(FUENTE_TEXTOS_IT).name} ({TAMANO_DESCRIPCION}px)")
     print()
 
     # Verificar plantillas
