@@ -25,7 +25,7 @@ Grupo silenciado,Descarte/control de mano,1,Descarta hasta 2 cartas. Ganas 4 de 
 Estudiar en x2,Buff propio,2,Ganas +2 de ataque durante 2 turnos y robas 1 carta.,"No aprendiste más, pero aprendiste rápido.",Ingresante
 Releer la consigna,Descarte/control de mano,1,Recuperas 1 carta del descarte y la agregas a tu mano. Esa carta cuesta 1 más este turno.,"Ah, decía “justifique”. Hermoso.",Ingresante
 Resumen,Ataque,2,Inflige 13 de daño.,Tiene lágrimas y mate encima.,Ingresante
-Mate salvador,Buff propio,2,Ganas +3 de ataque durante los próximos 2 turnos.,"Oro verde, dame un par y sobrevivo el cuatrimestre.",Ingresante
+Mate compañero,Buff propio,2,Ganas +3 de ataque durante los próximos 2 turnos.,"Oro verde, dame un par y sobrevivo el cuatrimestre.",Ingresante
 Sentarse en el fondo,Defensa,2,"Ganas 12 de escudo. Si conservas esta carta al final del turno, ganas 4 de escudo extra.",Lo viejo funciona. 🚬,Ingresante
 Agua del dispenser,Curación,1,Recuperas 5 de vida y elimina “Estrés” si lo tienes.,"Sabor a plástico, efecto milagroso.",Ingresante
 Sentarse adelante,Buff propio,2,Ganas +2 de ataque durante 2 turnos y 6 de escudo.,"Riesgo alto, recompensa dudosa.",Ingresante
