@@ -4,6 +4,8 @@
 
 [node name="Card" type="Button" unique_id=1570146756]
 custom_minimum_size = Vector2(170, 245)
+offset_right = 180.0
+offset_bottom = 245.0
 script = ExtResource("1_efgiu")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1371157410]
