@@ -1,11 +1,11 @@
 class_name generador_mapa
 extends Node
 
-const GENERATED_ZONE_COUNT := 3
+const GENERATED_ZONE_COUNT := 4
 const COLUMNS_PER_ZONE := 5
 const BRANCH_COUNT := 3
 const BRANCH_LENGTH := 3
-const MAP_VERSION := 5
+const MAP_VERSION := 6
 
 var num_columns: int = GENERATED_ZONE_COUNT * COLUMNS_PER_ZONE
 var total_nodes: int = GENERATED_ZONE_COUNT * (2 + BRANCH_COUNT * BRANCH_LENGTH)
@@ -30,6 +30,14 @@ const ZONE_3_ENCOUNTERS := [
 	{"id": "torres_media_grande", "name": "Torre media / Torre grande"},
 	{"id": "pingu_torre_chica", "name": "Pingü Linux / Torre chica"},
 	{"id": "robot_torre_media", "name": "Robot no promocionar / Torre media"},
+]
+const ZONE_4_ENCOUNTERS := [
+	{"id": "cigarro", "name": "Cigarro"},
+	{"id": "dfd_diabolico", "name": "DFD Diabólico"},
+	{"id": "pautas", "name": "Pautas"},
+	{"id": "cigarro_cigarro", "name": "Cigarro / Cigarro"},
+	{"id": "cigarro_cigarro_cigarro", "name": "Cigarro / Cigarro / Cigarro"},
+	{"id": "dfd_diabolico_cigarro", "name": "DFD Diabólico / Cigarro"},
 ]
 const INTERMEDIATE_RESOURCES := [
 	"res://scripts/map/clase_interactiva.tres",
@@ -153,6 +161,8 @@ func _get_enemy_pool_for_zone(zone_index: int) -> Array:
 			return ZONE_2_ENEMIES
 		3:
 			return ZONE_3_ENCOUNTERS
+		4:
+			return ZONE_4_ENCOUNTERS
 		_:
 			return MINIBOSSES
 
@@ -163,6 +173,8 @@ func _get_boss_name_for_zone(zone_index: int) -> String:
 			return "Pepo"
 		3:
 			return "Tomás Khum"
+		4:
+			return "El Oni"
 		_:
 			return "Tom Apostol"
 

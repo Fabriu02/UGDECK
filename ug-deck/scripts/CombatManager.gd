@@ -20,15 +20,26 @@ const TORRE_CHICA_IMAGE_PATH := "res://assets/characters/mini_torrecita_1_transp
 const TORRE_MEDIA_IMAGE_PATH := "res://assets/characters/mini_torrecita_2_transparente.png"
 const TORRE_GRANDE_IMAGE_PATH := "res://assets/characters/mini_torrecita_3_transparente.png"
 const TOMAS_KHUM_IMAGE_PATH := "res://assets/characters/tomas_khum.png"
+const CIGARRO_IMAGE_PATH := "res://assets/characters/cigarro_1.png"
+const CIGARRO_ALT_2_IMAGE_PATH := "res://assets/characters/cigarro_2.png"
+const CIGARRO_ALT_3_IMAGE_PATH := "res://assets/characters/cigarro_3.png"
+const DFD_DIABOLICO_IMAGE_PATH := "res://assets/characters/dfd diabolico.png"
+const PAUTAS_IMAGE_PATH := "res://assets/characters/pautas.png"
+const EL_ONI_PHASE_1_IMAGE_PATH := "res://assets/characters/el_oni_fase_1.png"
+const EL_ONI_PHASE_2_IMAGE_PATH := "res://assets/characters/el_oni_fase_2.png"
+const EL_ONI_PHASE_3_IMAGE_PATH := "res://assets/characters/el_oni_fase_3.png"
 const FIRST_ENEMY_MAX_HP := 50
 const FIRST_ENEMY_BASE_BLOCK := 0
 const SECOND_ENEMY_MAX_HP := 250
 const SECOND_ENEMY_BASE_BLOCK := 15
 const THIRD_ENEMY_MAX_HP := 320
 const THIRD_ENEMY_BASE_BLOCK := 15
+const FOURTH_ENEMY_MAX_HP := 420
+const FOURTH_ENEMY_BASE_BLOCK := 20
 const FIRST_ENEMY_NAME := "Tom Apostol"
 const SECOND_ENEMY_NAME := "Pepo"
 const THIRD_ENEMY_NAME := "Tomás Khum"
+const FOURTH_ENEMY_NAME := "El Oni"
 const MINIBOSS_INTEGRAL_TRIPLE := "integral_triple"
 const MINIBOSS_CALCULUS := "calculus"
 const MINIBOSS_CALCULADORA_VIEJA := "calculadora_vieja"
@@ -41,6 +52,13 @@ const ENCOUNTER_TORRES_CHICA_MEDIA_CHICA := "torres_chica_media_chica"
 const ENCOUNTER_TORRES_MEDIA_GRANDE := "torres_media_grande"
 const ENCOUNTER_PINGU_TORRE_CHICA := "pingu_torre_chica"
 const ENCOUNTER_ROBOT_TORRE_MEDIA := "robot_torre_media"
+const ENEMY_CIGARRO := "cigarro"
+const ENEMY_DFD_DIABOLICO := "dfd_diabolico"
+const ENEMY_PAUTAS := "pautas"
+const ENCOUNTER_CIGARRO_CIGARRO := "cigarro_cigarro"
+const ENCOUNTER_CIGARRO_CIGARRO_CIGARRO := "cigarro_cigarro_cigarro"
+const ENCOUNTER_DFD_DIABOLICO_CIGARRO := "dfd_diabolico_cigarro"
+const BOSS_EL_ONI := "el_oni"
 const ARCHETYPE_ENJAMBRE := "Enjambre"
 const ARCHETYPE_DUELISTA_BASICO := "Duelista básico"
 const ARCHETYPE_FRAGIL_MOLESTO := "Frágil molesto"
@@ -59,6 +77,10 @@ const TORRE_CHICA_SCALE := Vector2(0.12, 0.12)
 const TORRE_MEDIA_SCALE := Vector2(0.13, 0.13)
 const TORRE_GRANDE_SCALE := Vector2(0.14, 0.14)
 const TOMAS_KHUM_SCALE := Vector2(0.34, 0.34)
+const CIGARRO_SCALE := Vector2(0.14, 0.14)
+const DFD_DIABOLICO_SCALE := Vector2(0.22, 0.22)
+const PAUTAS_SCALE := Vector2(0.26, 0.26)
+const EL_ONI_SCALE := Vector2(0.38, 0.38)
 
 @export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
 
@@ -117,6 +139,7 @@ var multi_enemy_hps: Array = []
 var multi_enemy_max_hps: Array = []
 var multi_enemy_names: Array = []
 var multi_enemy_active := false
+var current_oni_visual_phase := 0
 
 # AGREGADO: Variable para el artilugio "Calculadora Científica"
 var primera_carta_combate_gratis := false
@@ -167,6 +190,7 @@ func start_battle() -> void:
 	multi_enemy_hps.clear()
 	multi_enemy_max_hps.clear()
 	multi_enemy_names.clear()
+	current_oni_visual_phase = 0
 	temporary_card_cost_modifiers.clear()
 	_configure_enemy_for_current_node()
 	player.load_hp_from_run_state()
@@ -247,6 +271,14 @@ func _configure_zone_boss() -> void:
 			battle_visuals.set_enemy_image(TOMAS_KHUM_IMAGE_PATH, TOMAS_KHUM_SCALE)
 			battle_visuals.set_enemy_display_name(THIRD_ENEMY_NAME)
 			current_enemy_name = THIRD_ENEMY_NAME
+		FOURTH_ENEMY_NAME:
+			enemy.max_hp = FOURTH_ENEMY_MAX_HP
+			enemy.base_block = FOURTH_ENEMY_BASE_BLOCK
+			enemy.max_energy = 6
+			_set_oni_boss_deck()
+			battle_visuals.set_enemy_display_name(FOURTH_ENEMY_NAME)
+			current_enemy_name = FOURTH_ENEMY_NAME
+			_update_oni_phase_visual(true)
 		_:
 			enemy.max_hp = FIRST_ENEMY_MAX_HP
 			enemy.base_block = FIRST_ENEMY_BASE_BLOCK
@@ -372,6 +404,60 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				4,
 				10
 			)
+		ENEMY_CIGARRO:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 120
+			enemy.max_energy = 4
+			enemy.base_block = 0
+			current_enemy_name = "Cigarro"
+			battle_visuals.set_enemy_image(CIGARRO_IMAGE_PATH, CIGARRO_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_DFD_DIABOLICO:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 155
+			enemy.max_energy = 4
+			enemy.base_block = 5
+			current_enemy_name = "DFD Diabólico"
+			battle_visuals.set_enemy_image(DFD_DIABOLICO_IMAGE_PATH, DFD_DIABOLICO_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENEMY_PAUTAS:
+			battle_visuals.clear_multi_enemy_visuals()
+			enemy.max_hp = 225
+			enemy.max_energy = 5
+			enemy.base_block = 12
+			current_enemy_name = "Pautas"
+			battle_visuals.set_enemy_image(PAUTAS_IMAGE_PATH, PAUTAS_SCALE)
+			battle_visuals.set_enemy_display_name(current_enemy_name)
+		ENCOUNTER_CIGARRO_CIGARRO:
+			_configure_multi_enemy_encounter(
+				"Cigarro / Cigarro",
+				["Cigarro", "Cigarro"],
+				[120, 120],
+				[CIGARRO_IMAGE_PATH, CIGARRO_ALT_2_IMAGE_PATH],
+				[CIGARRO_SCALE, CIGARRO_SCALE],
+				4,
+				0
+			)
+		ENCOUNTER_CIGARRO_CIGARRO_CIGARRO:
+			_configure_multi_enemy_encounter(
+				"Cigarro / Cigarro / Cigarro",
+				["Cigarro", "Cigarro", "Cigarro"],
+				[120, 120, 120],
+				[CIGARRO_IMAGE_PATH, CIGARRO_ALT_2_IMAGE_PATH, CIGARRO_ALT_3_IMAGE_PATH],
+				[CIGARRO_SCALE, CIGARRO_SCALE, CIGARRO_SCALE],
+				4,
+				0
+			)
+		ENCOUNTER_DFD_DIABOLICO_CIGARRO:
+			_configure_multi_enemy_encounter(
+				"DFD Diabólico / Cigarro",
+				["DFD Diabólico", "Cigarro"],
+				[155, 120],
+				[DFD_DIABOLICO_IMAGE_PATH, CIGARRO_IMAGE_PATH],
+				[DFD_DIABOLICO_SCALE, CIGARRO_SCALE],
+				4,
+				5
+			)
 		_:
 			battle_visuals.clear_multi_enemy_visuals()
 			enemy.max_hp = 40
@@ -409,7 +495,7 @@ func _set_enemy_deck_for_current_zone(enemy_archetypes: Array = [], debug_name: 
 	var zone_index := _get_current_zone_index()
 	var rarities := _get_enemy_rarities_for_encounter(encounter_id, zone_index)
 	var cards := _load_current_zone_enemy_deck(enemy_archetypes, rarities)
-	enemy.set_professor_deck(cards, enemy_archetypes, debug_name, zone_index, rarities)
+	enemy.set_professor_deck(cards, enemy_archetypes, debug_name, zone_index, rarities, encounter_id)
 
 
 func _set_zone_3_boss_deck() -> void:
@@ -434,6 +520,13 @@ func _set_zone_3_boss_deck() -> void:
 
 	print("DEBUG CombatManager: Tomás Khum usa fallback de arquetipos jefe zona 3: %d/%d cartas" % [fallback_cards.size(), base_cards.size()])
 	enemy.set_professor_deck(fallback_cards, fallback_archetypes, THIRD_ENEMY_NAME, zone_index, rarities)
+
+
+func _set_oni_boss_deck() -> void:
+	var zone_index := 4
+	var rarities := _get_enemy_rarities_for_zone(zone_index)
+	var cards := EnemyCardLoader.load_professor_cards_by_rarities_and_archetype(rarities, ARCHETYPE_JEFE_TANQUE)
+	enemy.set_professor_deck(cards, [ARCHETYPE_JEFE_TANQUE], FOURTH_ENEMY_NAME, zone_index, rarities, BOSS_EL_ONI)
 
 
 func _load_current_zone_enemy_deck(enemy_archetypes: Array = [], forced_rarities: Array = []) -> Array[CardData]:
@@ -461,8 +554,10 @@ func _get_enemy_rarities_for_zone(zone_index: int) -> Array:
 			return ["Desertor", "Ingresante"]
 		3:
 			return ["Desertor", "Ingresante", "Recursante"]
+		4:
+			return ["Desertor", "Ingresante", "Recursante", "Ayudante de cátedra"]
 		_:
-			return ["Desertor", "Ingresante", "Recursante", "Ayudante de cátedra", "Ingeniero"]
+			return ["Desertor", "Ingresante", "Recursante", "Ayudante de cátedra"]
 
 
 func _get_zone_boss_archetypes(zone_index: int) -> Array[String]:
@@ -518,6 +613,14 @@ func _get_enemy_archetypes(enemy_id: String) -> Array:
 			return [ARCHETYPE_MOLESTO_TECNICO, ARCHETYPE_ENJAMBRE]
 		ENCOUNTER_ROBOT_TORRE_MEDIA:
 			return [ARCHETYPE_TANQUE_MEDIO, ARCHETYPE_ENJAMBRE]
+		ENEMY_CIGARRO, ENCOUNTER_CIGARRO_CIGARRO, ENCOUNTER_CIGARRO_CIGARRO_CIGARRO:
+			return [ARCHETYPE_ENJAMBRE]
+		ENEMY_DFD_DIABOLICO:
+			return [ARCHETYPE_MOLESTO_TECNICO]
+		ENEMY_PAUTAS:
+			return [ARCHETYPE_ELITE_PESADO]
+		ENCOUNTER_DFD_DIABOLICO_CIGARRO:
+			return [ARCHETYPE_MOLESTO_TECNICO, ARCHETYPE_ENJAMBRE]
 		_:
 			return []
 
@@ -680,6 +783,7 @@ func _finish_enemy_turn() -> void:
 
 
 func update_ui() -> void:
+	_update_oni_phase_visual()
 	player_stats_label.text = "Jugador - Vida: %d/%d | Escudo: %d" % [
 		player.current_hp,
 		player.max_hp,
@@ -704,6 +808,38 @@ func update_ui() -> void:
 	if not waiting_for_discard:
 		enemy_intent_label.text = enemy.get_intent_text(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
 		enemy_intent_label.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
+
+
+func _update_oni_phase_visual(force: bool = false) -> void:
+	if current_enemy_name != FOURTH_ENEMY_NAME or multi_enemy_active:
+		return
+
+	var phase := _get_oni_visual_phase()
+	if not force and phase == current_oni_visual_phase:
+		return
+
+	current_oni_visual_phase = phase
+	battle_visuals.set_enemy_image(_get_oni_phase_image_path(phase), EL_ONI_SCALE)
+	battle_visuals.set_enemy_display_name(FOURTH_ENEMY_NAME)
+	print("[DEBUG] El Oni cambia a fase visual %d." % phase)
+
+
+func _get_oni_visual_phase() -> int:
+	if enemy.current_hp <= 140:
+		return 3
+	if enemy.current_hp <= 280:
+		return 2
+	return 1
+
+
+func _get_oni_phase_image_path(phase: int) -> String:
+	match phase:
+		2:
+			return EL_ONI_PHASE_2_IMAGE_PATH
+		3:
+			return EL_ONI_PHASE_3_IMAGE_PATH
+		_:
+			return EL_ONI_PHASE_1_IMAGE_PATH
 
 
 func _update_deck_zone_ui() -> void:

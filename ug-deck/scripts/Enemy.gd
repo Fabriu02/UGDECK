@@ -5,6 +5,7 @@ const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
 const LETHAL_PRIORITY_BONUS := 9999
 const FINISHER_LOW_HP_BONUS := 60
 const FINISHER_VULNERABLE_BONUS := 25
+const ENEMY_ID_EL_ONI := "el_oni"
 
 @export var max_hp: int = 50
 @export var max_energy: int = 5
@@ -30,6 +31,7 @@ var last_intent_was_strong_attack := false
 var last_intent_was_control_or_debuff := false
 var allowed_enemy_archetypes: Array[String] = []
 var enemy_debug_name: String = ""
+var enemy_debug_id: String = ""
 var enemy_debug_archetypes: Array[String] = []
 var enemy_debug_zone_index: int = 1
 var enemy_debug_rarities: Array[String] = []
@@ -66,10 +68,12 @@ func set_professor_deck(
 	enemy_archetypes: Array = [],
 	debug_name: String = "",
 	zone_index: int = 1,
-	allowed_rarities: Array = []
+	allowed_rarities: Array = [],
+	enemy_id: String = ""
 ) -> void:
 	professor_deck = cards.duplicate()
 	enemy_debug_name = debug_name
+	enemy_debug_id = enemy_id
 	enemy_debug_zone_index = zone_index
 	allowed_enemy_archetypes.clear()
 	enemy_debug_archetypes.clear()
@@ -493,6 +497,7 @@ func _evaluate_card(
 				score += 5
 
 	score = _apply_archetype_score_modifiers(score, card, hp_ratio, current_is_strong_attack)
+	score = _apply_enemy_specific_score_modifiers(score, card, player, current_is_strong_attack)
 
 	if is_lethal:
 		score += LETHAL_PRIORITY_BONUS
@@ -512,6 +517,69 @@ func _evaluate_card(
 		score -= 30
 
 	return score
+
+
+func _apply_enemy_specific_score_modifiers(score: int, card: CardData, player: Player, current_is_strong_attack: bool) -> int:
+	if enemy_debug_id != ENEMY_ID_EL_ONI:
+		return score
+
+	match _get_oni_phase():
+		"mascara_intacta":
+			match card.card_type:
+				"defensa":
+					score += 18
+				"buff propio":
+					score += 12
+				"debuff enemigo", "estados negativos":
+					score += 10
+				"descarte_control de mano":
+					score += 4
+				"ataque":
+					if current_is_strong_attack:
+						score -= 8
+		"mascara_quebrada":
+			match card.card_type:
+				"ataque":
+					score += 18
+					if current_is_strong_attack:
+						score += 8
+					if player.has_negative_state():
+						score += 12
+				"defensa":
+					score -= 10
+				"buff propio", "debuff enemigo", "estados negativos":
+					score += 5
+		"ira_del_oni":
+			match card.card_type:
+				"ataque":
+					score += 35
+					if current_is_strong_attack:
+						score += 15
+				"defensa":
+					score -= 25
+				"buff propio":
+					score += 5
+				"debuff enemigo", "estados negativos", "descarte_control de mano":
+					score -= 5
+			if _is_high_impact_oni_card(card, current_is_strong_attack):
+				score += 10
+
+	return score
+
+
+func _get_oni_phase() -> String:
+	if current_hp <= 140:
+		return "ira_del_oni"
+	if current_hp <= 280:
+		return "mascara_quebrada"
+	return "mascara_intacta"
+
+
+func _is_high_impact_oni_card(card: CardData, current_is_strong_attack: bool) -> bool:
+	if current_is_strong_attack:
+		return true
+	var effect_text := EnemyCardLoader._normalize_text(card.raw_effect_text)
+	return card.cost >= 3 or effect_text.contains("ignora") or effect_text.contains("permanente") or effect_text.contains("descarta toda")
 
 
 func _get_card_type_base_score(card_type: String) -> int:
