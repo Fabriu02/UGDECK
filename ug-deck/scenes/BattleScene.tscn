@@ -122,7 +122,7 @@ _data = {
 [node name="BattleScene" type="Node2D" unique_id=1021736000]
 
 [node name="Background" type="Sprite2D" parent="." unique_id=1067355142]
-scale = Vector2(0.404, 0.404)
+scale = Vector2(0.3636364, 0.48214287)
 texture = ExtResource("5_m7sfx")
 centered = false
 
@@ -200,7 +200,7 @@ offset_right = 1080.0
 offset_bottom = 88.0
 text = "Intencion"
 
-[node name="HandTitleLabel" type="Label" parent="UI"]
+[node name="HandTitleLabel" type="Label" parent="UI" unique_id=1814040682]
 offset_left = 190.0
 offset_top = 364.0
 offset_right = 960.0
@@ -213,8 +213,8 @@ offset_left = 190.0
 offset_top = 396.0
 offset_right = 960.0
 offset_bottom = 640.0
-alignment = 1
 theme_override_constants/separation = 10
+alignment = 1
 
 [node name="EndTurnButton" type="Button" parent="UI" unique_id=1007204836]
 offset_left = 947.0
@@ -230,14 +230,15 @@ offset_right = 1127.0
 offset_bottom = 388.0
 text = "Abandonar combate"
 
-[node name="DrawPileArea" type="Control" parent="UI"]
+[node name="DrawPileArea" type="Control" parent="UI" unique_id=864584979]
+layout_mode = 3
+anchors_preset = 0
 offset_left = 24.0
 offset_top = 394.0
 offset_right = 164.0
 offset_bottom = 620.0
-mouse_filter = 0
 
-[node name="TitleLabel" type="Label" parent="UI/DrawPileArea"]
+[node name="TitleLabel" type="Label" parent="UI/DrawPileArea" unique_id=1973577243]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -246,7 +247,7 @@ grow_horizontal = 2
 text = "Mazo"
 horizontal_alignment = 1
 
-[node name="PilePanel" type="Panel" parent="UI/DrawPileArea"]
+[node name="PilePanel" type="Panel" parent="UI/DrawPileArea" unique_id=1578336446]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -260,7 +261,7 @@ offset_bottom = 70.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BackLabel" type="Label" parent="UI/DrawPileArea/PilePanel"]
+[node name="BackLabel" type="Label" parent="UI/DrawPileArea/PilePanel" unique_id=416656867]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -271,7 +272,7 @@ text = "UG"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CountLabel" type="Label" parent="UI/DrawPileArea"]
+[node name="CountLabel" type="Label" parent="UI/DrawPileArea" unique_id=934379129]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -283,14 +284,16 @@ grow_vertical = 0
 text = "0 cartas"
 horizontal_alignment = 1
 
-[node name="DiscardPileArea" type="Control" parent="UI"]
+[node name="DiscardPileArea" type="Control" parent="UI" unique_id=21670762]
+layout_mode = 3
+anchors_preset = 0
 offset_left = 988.0
 offset_top = 394.0
 offset_right = 1128.0
 offset_bottom = 620.0
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="UI/DiscardPileArea"]
+[node name="TitleLabel" type="Label" parent="UI/DiscardPileArea" unique_id=739393970]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -299,7 +302,7 @@ grow_horizontal = 2
 text = "Descarte"
 horizontal_alignment = 1
 
-[node name="PilePanel" type="Panel" parent="UI/DiscardPileArea"]
+[node name="PilePanel" type="Panel" parent="UI/DiscardPileArea" unique_id=1879497935]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -313,7 +316,7 @@ offset_bottom = 70.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BackLabel" type="Label" parent="UI/DiscardPileArea/PilePanel"]
+[node name="BackLabel" type="Label" parent="UI/DiscardPileArea/PilePanel" unique_id=1992145884]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -324,7 +327,7 @@ text = "DESC"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CountLabel" type="Label" parent="UI/DiscardPileArea"]
+[node name="CountLabel" type="Label" parent="UI/DiscardPileArea" unique_id=394028283]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -336,26 +339,24 @@ grow_vertical = 0
 text = "0 cartas"
 horizontal_alignment = 1
 
-[node name="CardAnimationLayer" type="Control" parent="UI"]
+[node name="CardAnimationLayer" type="Control" parent="UI" unique_id=1413216969]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="DeckViewerPanel" type="Panel" parent="UI"]
+[node name="DeckViewerPanel" type="Panel" parent="UI" unique_id=740326124]
 visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 
-[node name="ViewerVBox" type="VBoxContainer" parent="UI/DeckViewerPanel"]
+[node name="ViewerVBox" type="VBoxContainer" parent="UI/DeckViewerPanel" unique_id=61247145]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -370,37 +371,36 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 14
 
-[node name="HeaderBox" type="HBoxContainer" parent="UI/DeckViewerPanel/ViewerVBox"]
+[node name="HeaderBox" type="HBoxContainer" parent="UI/DeckViewerPanel/ViewerVBox" unique_id=1103893877]
 layout_mode = 2
 
-[node name="DeckViewerTitleLabel" type="Label" parent="UI/DeckViewerPanel/ViewerVBox/HeaderBox"]
+[node name="DeckViewerTitleLabel" type="Label" parent="UI/DeckViewerPanel/ViewerVBox/HeaderBox" unique_id=153184536]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Mazo desbloqueado"
 horizontal_alignment = 1
 
-[node name="CloseDeckViewerButton" type="Button" parent="UI/DeckViewerPanel/ViewerVBox/HeaderBox"]
+[node name="CloseDeckViewerButton" type="Button" parent="UI/DeckViewerPanel/ViewerVBox/HeaderBox" unique_id=1523544069]
 layout_mode = 2
 text = "Cerrar"
 
-[node name="DeckViewerScroll" type="ScrollContainer" parent="UI/DeckViewerPanel/ViewerVBox"]
+[node name="DeckViewerScroll" type="ScrollContainer" parent="UI/DeckViewerPanel/ViewerVBox" unique_id=1302444408]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="DeckViewerCardsContainer" type="GridContainer" parent="UI/DeckViewerPanel/ViewerVBox/DeckViewerScroll"]
+[node name="DeckViewerCardsContainer" type="GridContainer" parent="UI/DeckViewerPanel/ViewerVBox/DeckViewerScroll" unique_id=524329322]
 layout_mode = 2
 columns = 4
 
-[node name="RewardPanel" type="Panel" parent="UI"]
+[node name="RewardPanel" type="Panel" parent="UI" unique_id=1473173653]
 visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 
-[node name="RewardVBox" type="VBoxContainer" parent="UI/RewardPanel"]
+[node name="RewardVBox" type="VBoxContainer" parent="UI/RewardPanel" unique_id=2049147465]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -415,28 +415,27 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 18
 
-[node name="RewardTitleLabel" type="Label" parent="UI/RewardPanel/RewardVBox"]
+[node name="RewardTitleLabel" type="Label" parent="UI/RewardPanel/RewardVBox" unique_id=197052841]
 layout_mode = 2
 text = "Elegi una carta para agregar a tu mazo"
 horizontal_alignment = 1
 
-[node name="RewardCardsContainer" type="HBoxContainer" parent="UI/RewardPanel/RewardVBox"]
+[node name="RewardCardsContainer" type="HBoxContainer" parent="UI/RewardPanel/RewardVBox" unique_id=1519063590]
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 18
+alignment = 1
 
-[node name="StartFightBanner" type="Control" parent="UI"]
+[node name="StartFightBanner" type="Control" parent="UI" unique_id=2083923919]
 visible = false
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Panel" type="Panel" parent="UI/StartFightBanner"]
+[node name="Panel" type="Panel" parent="UI/StartFightBanner" unique_id=1856397183]
 custom_minimum_size = Vector2(420, 96)
 layout_mode = 1
 anchors_preset = 8
@@ -451,7 +450,7 @@ offset_bottom = 48.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="UI/StartFightBanner/Panel"]
+[node name="Label" type="Label" parent="UI/StartFightBanner/Panel" unique_id=942153169]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

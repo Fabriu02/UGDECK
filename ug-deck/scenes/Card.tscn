@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dvg03b7tdroov" path="res://scripts/CardUI.gd" id="1_efgiu"]
 
 [node name="Card" type="Button" unique_id=1570146756]
-custom_minimum_size = Vector2(170, 245)
+custom_minimum_size = Vector2(180, 255)
 offset_right = 180.0
 offset_bottom = 245.0
 script = ExtResource("1_efgiu")
