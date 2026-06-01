@@ -167,7 +167,6 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 	var description := _get_cell(row, headers, "descripcion")
 	var rareza := _get_cell(row, headers, "rareza")
 	var enemy_archetypes := _parse_enemy_archetypes(_get_cell(row, headers, "arquetipo enemigo"))
-	var image_path := _get_card_image_path(row, headers)
 	var cost := _parse_int(_get_cell(row, headers, "coste energia"), 0)
 	var normalized_type := _normalize_card_type(card_type)
 
@@ -183,16 +182,42 @@ static func _parse_row(row: PackedStringArray, headers: Dictionary) -> CardData:
 		_build_effect_id(card_name),
 		rareza,
 		effect_text,
-		image_path,
+		_get_card_image_path(row, headers, card_name),
 		enemy_archetypes
 	)
 
 
-static func _get_card_image_path(row: PackedStringArray, headers: Dictionary) -> String:
+static func _get_card_image_path(row: PackedStringArray, headers: Dictionary, card_name: String = "") -> String:
 	var image_path := _get_cell(row, headers, "imagen")
 	if image_path.is_empty():
 		image_path = _get_cell(row, headers, "sprite")
+	# Auto-resolver desde el nombre de la carta si no hay columna de imagen
+	if image_path.is_empty() and not card_name.is_empty():
+		image_path = _build_card_image_path(card_name)
 	return image_path
+
+
+static func _build_card_image_path(card_name: String) -> String:
+	var normalized := _normalize_text(card_name)
+	var result := ""
+	for ch in normalized:
+		var code := ch.unicode_at(0)
+		if (code >= 97 and code <= 122) or (code >= 48 and code <= 57):
+			result += ch
+		else:
+			result += "_"
+	# Limpiar guiones bajos dobles y de los extremos
+	while "__" in result:
+		result = result.replace("__", "_")
+	result = result.strip_edges()
+	while result.begins_with("_"):
+		result = result.substr(1)
+	while result.ends_with("_"):
+		result = result.substr(0, result.length() - 1)
+	var path := "res://assets/cards/%s.png" % result
+	if ResourceLoader.exists(path):
+		return path
+	return ""
 
 
 static func _get_cell(row: PackedStringArray, headers: Dictionary, header_name: String) -> String:

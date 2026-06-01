@@ -3,7 +3,7 @@ import re
 import textwrap
 from pathlib import Path
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -18,6 +18,12 @@ BASE_DIR = Path(__file__).resolve().parent
 CSV_CARTAS = BASE_DIR / "Cartas iniciales.xlsx - CARTAS PROTA.csv"
 GODOT_PROJECT_DIR = BASE_DIR.parent / "ug-deck"
 CARPETA_SALIDA = GODOT_PROJECT_DIR / "assets" / "cards"
+CARPETA_ARTE = BASE_DIR / "card_art"
+
+# --- CALIDAD / RESOLUCION ---
+FACTOR_ESCALA = 2          # 1 = original (400x400), 2 = doble resolucion (800x800), 3 = triple (1200x1200), etc.
+                           # Aumentar este valor mejora drasticamente la nitidez de la ilustracion y las letras.
+FILTRO_ARTE = "LANCZOS"    # "NEAREST" (pixel art puro/mosaico), "BILINEAR" o "LANCZOS" (suave/antialiasing de alta calidad)
 
 # --- PLANTILLAS POR RAREZA ---
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -41,7 +47,7 @@ FUENTE_TEXTOS_IT = "C:/Windows/Fonts/segoeuii.ttf"       # Segoe UI Italic - par
 # Tamanos de fuente (en pixeles) - ajusta estos valores si el texto queda muy grande o chico
 TAMANO_ENERGIA     = 22    # Numero de energia (circulo arriba a la izquierda)
 TAMANO_NOMBRE      = 12    # Nombre de la carta (banner de arriba)
-TAMANO_EFECTO      = 8     # Texto del efecto mecanico
+TAMANO_EFECTO      = 8.6   # Texto del efecto mecanico
 TAMANO_DESCRIPCION = 8    # Texto de flavor/descripcion (en italica)
 
 # --- POSICIONES (coordenadas en pixeles) ---
@@ -50,15 +56,20 @@ TAMANO_DESCRIPCION = 8    # Texto de flavor/descripcion (en italica)
 # "y" controla la altura: mas bajo = numero mas grande.
 
 POS_ENERGIA = (125, 85)    # Centro del circulo de energia
-Y_NOMBRE    = 100          # Altura del nombre en el banner
-Y_EFECTO    = 210         # Altura donde empieza el efecto
+Y_NOMBRE    = 99          # Altura del nombre en el banner
+Y_EFECTO    = 215         # Altura donde empieza el efecto
 Y_DESCRIPCION = 244        # Altura donde empieza la descripcion
 
 # --- TEXTO ---
-MAX_CARACTERES_EFECTO      = 27   # Caracteres por linea del efecto antes de hacer wrap
+MAX_CARACTERES_EFECTO      = 25   # Caracteres por linea del efecto antes de hacer wrap
 MAX_CARACTERES_DESCRIPCION = 30   # Caracteres por linea de la descripcion
-ESPACIO_LINEA_EFECTO       = 12   # Pixeles entre lineas del efecto
+ESPACIO_LINEA_EFECTO       = 11.8   # Pixeles entre lineas del efecto
 ESPACIO_LINEA_DESCRIPCION  = 11   # Pixeles entre lineas de la descripcion
+
+# --- ARTE DE ILUSTRACION ---
+ANCHO_ARTE = 200
+ALTO_ARTE = 78
+POS_ARTE = (96, 122)
 
 # --- COLORES (R, G, B) ---
 COLOR_TEXTO_NOMBRE  = (20, 20, 30)     # Nombre y efecto
@@ -67,7 +78,8 @@ COLOR_DESCRIPCION   = (160, 30, 45)    # Descripcion/flavor text
 COLOR_ENERGIA       = (20, 20, 30)     # Numero de energia
 
 # --- MOSTRAR/OCULTAR ELEMENTOS ---
-MOSTRAR_RAREZA = False     # True = muestra la rareza abajo, False = la oculta
+MOSTRAR_RAREZA = False         # True = muestra la rareza abajo, False = la oculta
+MOSTRAR_DESCRIPCION = False    # True = muestra la descripcion/flavor text, False = la oculta
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -75,6 +87,7 @@ MOSTRAR_RAREZA = False     # True = muestra la rareza abajo, False = la oculta
 # ╚══════════════════════════════════════════════════════════════╝
 
 os.makedirs(CARPETA_SALIDA, exist_ok=True)
+os.makedirs(CARPETA_ARTE, exist_ok=True)
 
 
 # =========================
@@ -94,10 +107,10 @@ def cargar_fuente(ruta, tamano):
             return ImageFont.load_default()
 
 
-fuente_energia     = cargar_fuente(FUENTE_ENERGIA, TAMANO_ENERGIA)
-fuente_nombre      = cargar_fuente(FUENTE_TEXTOS, TAMANO_NOMBRE)
-fuente_efecto      = cargar_fuente(FUENTE_TEXTOS, TAMANO_EFECTO)
-fuente_descripcion = cargar_fuente(FUENTE_TEXTOS_IT, TAMANO_DESCRIPCION)
+fuente_energia     = cargar_fuente(FUENTE_ENERGIA, int(TAMANO_ENERGIA * FACTOR_ESCALA))
+fuente_nombre      = cargar_fuente(FUENTE_TEXTOS, int(TAMANO_NOMBRE * FACTOR_ESCALA))
+fuente_efecto      = cargar_fuente(FUENTE_TEXTOS, int(TAMANO_EFECTO * FACTOR_ESCALA))
+fuente_descripcion = cargar_fuente(FUENTE_TEXTOS_IT, int(TAMANO_DESCRIPCION * FACTOR_ESCALA))
 
 
 # =========================
@@ -174,10 +187,83 @@ def generar_carta(fila):
         print(f"  [AVISO] Plantilla no encontrada para rareza '{rareza}': {plantilla.name}")
         plantilla = PLANTILLA_DEFAULT
 
-    carta = Image.open(plantilla).convert("RGBA")
+    nombre_archivo = limpiar_nombre_archivo(nombre)
+    
+    # Intentar buscar la imagen de arte en la carpeta de arte
+    ruta_arte = None
+    formatos = [".png", ".jpg", ".jpeg", ".webp"]
+    for fmt in formatos:
+        p1 = CARPETA_ARTE / f"{nombre_archivo}{fmt}"
+        if p1.exists():
+            ruta_arte = p1
+            break
+        p2 = CARPETA_ARTE / f"{nombre}{fmt}"
+        if p2.exists():
+            ruta_arte = p2
+            break
+
+    # Cargar plantilla y redimensionar si hay factor de escala
+    base_template = Image.open(plantilla).convert("RGBA")
+    
+    # Escalar plantilla con NEAREST para que no pierda el estilo pixel art retro
+    if FACTOR_ESCALA != 1:
+        resample_template = Image.Resampling.NEAREST if hasattr(Image, "Resampling") else Image.NEAREST
+        base_template = base_template.resize(
+            (base_template.width * FACTOR_ESCALA, base_template.height * FACTOR_ESCALA),
+            resample_template
+        )
+
+    ancho, alto = base_template.size
+    base_canvas = Image.new("RGBA", (ancho, alto), (0, 0, 0, 0))
+
+    if ruta_arte:
+        try:
+            arte = Image.open(ruta_arte).convert("RGBA")
+            
+            # Seleccionar filtro de redimensionamiento configurado para la reduccion
+            if FILTRO_ARTE == "NEAREST":
+                down_filter = Image.Resampling.NEAREST if hasattr(Image, "Resampling") else Image.NEAREST
+            elif FILTRO_ARTE == "BILINEAR":
+                down_filter = Image.Resampling.BILINEAR if hasattr(Image, "Resampling") else Image.BILINEAR
+            else:
+                down_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+
+            # Dimensiones del arte a escala
+            ancho_arte_esc = int(ANCHO_ARTE * FACTOR_ESCALA)
+            alto_arte_esc = int(ALTO_ARTE * FACTOR_ESCALA)
+            pos_arte_esc = (int(POS_ARTE[0] * FACTOR_ESCALA), int(POS_ARTE[1] * FACTOR_ESCALA))
+
+            # --- ALINEACIÓN DE PÍXELES (Evitar "Mixels" / inconsistencia de resolución) ---
+            # 1. Primero encogemos la imagen de la IA al tamaño original de la ventana (200x78)
+            #    usando un filtro de alta calidad para fusionar los detalles sin aliasing.
+            arte_lowres = arte.resize((ANCHO_ARTE, ALTO_ARTE), down_filter)
+            
+            # 2. Luego la agrandamos al tamaño escalado (ej. 400x156) usando NEAREST.
+            #    Esto hace que los píxeles del dibujo sean bloques limpios del mismo tamaño
+            #    que los píxeles del marco de la carta, logrando una densidad homogénea.
+            up_filter = Image.Resampling.NEAREST if hasattr(Image, "Resampling") else Image.NEAREST
+            arte_redimensionado = arte_lowres.resize((ancho_arte_esc, alto_arte_esc), up_filter)
+            
+            # Generar mascara para la ventana interna usando floodfill
+            # La mascara tendra 255 (blanco) solo en la ventana transparente central
+            alpha = base_template.getchannel('A')
+            outside_mask = alpha.copy()
+            ImageDraw.floodfill(outside_mask, (0, 0), 255)
+            mask = ImageOps.invert(outside_mask)
+            
+            # Crear lienzo temporal con el arte y pegarlo usando la mascara
+            temp_canvas = Image.new("RGBA", (ancho, alto), (0, 0, 0, 0))
+            temp_canvas.paste(arte_redimensionado, pos_arte_esc)
+            base_canvas.paste(temp_canvas, (0, 0), mask)
+            
+            print(f"  [ARTE] Integrando imagen de arte: {ruta_arte.name} para '{nombre}'")
+        except Exception as e:
+            print(f"  [AVISO] Error cargando arte {ruta_arte.name}: {e}")
+
+    # Superponer la plantilla de la carta sobre el lienzo
+    carta = Image.alpha_composite(base_canvas, base_template)
     draw = ImageDraw.Draw(carta)
 
-    ancho, alto = carta.size
     x_centro = ancho // 2
 
     # --- ENERGIA (circulo arriba a la izquierda) ---
@@ -187,8 +273,8 @@ def generar_carta(fila):
     ancho_coste = bbox[2] - bbox[0]
     alto_coste = bbox[3] - bbox[1]
 
-    x_coste = POS_ENERGIA[0] - ancho_coste // 2
-    y_coste = POS_ENERGIA[1] - alto_coste // 2
+    x_coste = int(POS_ENERGIA[0] * FACTOR_ESCALA) - ancho_coste // 2
+    y_coste = int(POS_ENERGIA[1] * FACTOR_ESCALA) - alto_coste // 2
 
     draw.text((x_coste, y_coste), coste_texto, font=fuente_energia, fill=COLOR_ENERGIA)
 
@@ -196,41 +282,40 @@ def generar_carta(fila):
     texto_centrado(
         draw=draw,
         texto=nombre,
-        y=Y_NOMBRE,
+        y=int(Y_NOMBRE * FACTOR_ESCALA),
         fuente=fuente_nombre,
         ancho_imagen=ancho,
         color=COLOR_TEXTO_NOMBRE
     )
 
-   
-
     # --- EFECTO (texto mecanico) ---
     texto_multilinea_centrado(
         draw=draw,
         texto=efecto,
-        x_centro=x_centro,
-        y=Y_EFECTO,
+        x_centro=x_centro - int(4 * FACTOR_ESCALA),
+        y=int(Y_EFECTO * FACTOR_ESCALA),
         fuente=fuente_efecto,
         color=COLOR_TEXTO_EFECTO,
         max_caracteres=MAX_CARACTERES_EFECTO,
-        espacio_linea=ESPACIO_LINEA_EFECTO
+        espacio_linea=int(ESPACIO_LINEA_EFECTO * FACTOR_ESCALA)
     )
 
     # --- DESCRIPCION (flavor text en italica) ---
-    texto_multilinea_centrado(
-        draw=draw,
-        texto=descripcion,
-        x_centro=x_centro,
-        y=Y_DESCRIPCION,
-        fuente=fuente_descripcion,
-        color=COLOR_DESCRIPCION,
-        max_caracteres=MAX_CARACTERES_DESCRIPCION,
-        espacio_linea=ESPACIO_LINEA_DESCRIPCION
-    )
+    if MOSTRAR_DESCRIPCION:
+        texto_multilinea_centrado(
+            draw=draw,
+            texto=descripcion,
+            x_centro=x_centro,
+            y=int(Y_DESCRIPCION * FACTOR_ESCALA),
+            fuente=fuente_descripcion,
+            color=COLOR_DESCRIPCION,
+            max_caracteres=MAX_CARACTERES_DESCRIPCION,
+            espacio_linea=int(ESPACIO_LINEA_DESCRIPCION * FACTOR_ESCALA)
+        )
 
     # --- RAREZA (opcional) ---
     if MOSTRAR_RAREZA:
-        y_rareza = alto - 40
+        y_rareza = alto - int(40 * FACTOR_ESCALA)
         texto_centrado(
             draw=draw,
             texto=str(rareza),
