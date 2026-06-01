@@ -179,6 +179,12 @@ func _comprar(item, boton, tex_rect):
 	if GameState.dinero >= item.precio:
 		GameState.dinero -= item.precio
 		GameState.artilugios.append(item.nombre)
+		
+		if GameState.INFO_ARTILUGIOS.has(item.nombre):
+			var info_item = GameState.INFO_ARTILUGIOS[item.nombre]
+			if info_item.tipo == "inmediato":
+				_aplicar_efecto_inmediato(info_item.efecto, info_item.valor)
+				
 		_actualizar_plata()
 		_refresh_remove_button()
 		_refresh_shop_cards()
@@ -188,6 +194,17 @@ func _comprar(item, boton, tex_rect):
 		print("Compraste ", item.nombre)
 	else:
 		print("No te alcanza la plata, buscate una beca.")
+
+func _aplicar_efecto_inmediato(efecto: String, valor: int):
+	match efecto:
+		"energia_max":
+			if "energia_maxima" in GameState:
+				GameState.energia_maxima += valor
+				print("EFECTO INMEDIATO: Tu energía máxima aumentó a ", GameState.energia_maxima)
+		"vida_max":
+			if "vida_maxima" in GameState:
+				GameState.increase_max_hp(valor, false)
+				print("EFECTO INMEDIATO: Tu vida máxima aumentó a ", GameState.vida_maxima)
 
 func _generar_tienda_cartas() -> void:
 	GameState.ensure_run_deck_initialized()
