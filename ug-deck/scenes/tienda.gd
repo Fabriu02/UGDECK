@@ -192,6 +192,7 @@ func _comprar(item, boton, tex_rect):
 		boton.text = "COMPRADO"
 		tex_rect.modulate = Color(0.5, 0.5, 0.5)
 		print("Compraste ", item.nombre)
+		GameState.save_game()
 	else:
 		print("No te alcanza la plata, buscate una beca.")
 
@@ -393,6 +394,7 @@ func _on_shop_card_selected(card_data: CardData, card_ui: CardUI) -> void:
 	_refresh_remove_button()
 	_refresh_shop_cards()
 	_actualizar_plata()
+	GameState.save_game()
 
 
 func _on_remove_card_selected(card_data: CardData) -> void:
@@ -413,6 +415,7 @@ func _on_remove_card_selected(card_data: CardData) -> void:
 	_refresh_remove_button()
 	_refresh_shop_cards()
 	_actualizar_plata()
+	GameState.save_game()
 
 
 func _on_reroll_pressed() -> void:

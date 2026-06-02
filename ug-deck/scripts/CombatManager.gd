@@ -955,7 +955,7 @@ func check_combat_end() -> void:
 		_show_card_reward()
 	elif player.is_dead():
 		battle_has_ended = true
-		_save_player_hp_at_combat_end()
+		GameState.delete_saved_game()
 		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
