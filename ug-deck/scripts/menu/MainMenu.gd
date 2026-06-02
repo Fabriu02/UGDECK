@@ -2,6 +2,7 @@ extends Control
 
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 
+@onready var continuar_button: Button = %ContinuarButton
 @onready var jugar_button: Button = %JugarButton
 @onready var opciones_button: Button = %OpcionesButton
 @onready var salir_button: Button = %SalirButton
@@ -11,14 +12,29 @@ var _feedback_tween: Tween
 
 
 func _ready() -> void:
+	continuar_button.pressed.connect(_on_continuar_pressed)
 	jugar_button.pressed.connect(_on_jugar_pressed)
 	opciones_button.pressed.connect(_on_opciones_pressed)
 	salir_button.pressed.connect(_on_salir_pressed)
 
 	feedback_label.modulate.a = 0.0
+	
+	if GameState.has_saved_game():
+		continuar_button.show()
+	else:
+		continuar_button.hide()
+
+
+func _on_continuar_pressed() -> void:
+	if GameState.load_game():
+		await get_tree().create_timer(0.08).timeout
+		get_tree().change_scene_to_file(MAP_SCENE_PATH)
+	else:
+		_show_feedback("Error cargando partida")
 
 
 func _on_jugar_pressed() -> void:
+	GameState.delete_saved_game()
 	GameState.start_new_run()
 	await get_tree().create_timer(0.08).timeout
 	get_tree().change_scene_to_file(MAP_SCENE_PATH)

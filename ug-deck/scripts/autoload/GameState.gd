@@ -1,5 +1,8 @@
 extends Node
 
+
+const SAVE_FILE_PATH := "user://savegame.save"
+
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
 
 # --- DATOS DEL MAPA PROCEDURAL ---
@@ -66,7 +69,9 @@ func reset_run_progress() -> void:
 func start_new_run() -> void:
 	reset_run_progress()
 	run_started = true
+	ensure_run_deck_initialized()
 	print("[RUN] Nueva run iniciada HP:", vida_actual, "/", vida_maxima)
+	save_game()
 
 func set_player_hp(value: int) -> void:
 	vida_actual = clamp(value, 0, vida_maxima)
@@ -168,6 +173,8 @@ func completar_nodo_actual() -> void:
 
 	if not nodos_completados.has(nodo_actual_id):
 		nodos_completados.append(nodo_actual_id)
+		
+	save_game()
 
 func get_current_node_data() -> Dictionary:
 	return get_node_data(nodo_actual_id)
@@ -275,3 +282,107 @@ func _input(event):
 			
 			# 2. Volvemos al mapa
 			get_tree().change_scene_to_file("res://scenes/map/vista_mapa.tscn")
+
+# --- LÓGICA DE GUARDADO ---
+func save_game() -> void:
+	if not run_started:
+		return
+
+	var saved_deck := []
+	for card in run_deck:
+		saved_deck.append(card.card_name)
+
+	var data := {
+		"map_data": map_data,
+		"nodo_actual_id": nodo_actual_id,
+		"nodos_completados": nodos_completados,
+		"dinero": dinero,
+		"artilugios": artilugios,
+		"vida_actual": vida_actual,
+		"vida_maxima": vida_maxima,
+		"run_started": run_started,
+		"zona_actual": zona_actual,
+		"rareza_recompensa_actual": rareza_recompensa_actual,
+		"jefe_zona_actual": jefe_zona_actual,
+		"shop_removal_count": shop_removal_count,
+		"run_deck": saved_deck
+	}
+
+	var save_string := var_to_str(data)
+	var file := FileAccess.open(SAVE_FILE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(save_string)
+		file.close()
+		print("[SAVE] Partida guardada con éxito.")
+	else:
+		push_warning("[SAVE] No se pudo abrir el archivo para guardar.")
+
+
+func load_game() -> bool:
+	if not has_saved_game():
+		return false
+
+	var file := FileAccess.open(SAVE_FILE_PATH, FileAccess.READ)
+	if not file:
+		return false
+	
+	var save_string := file.get_as_text()
+	file.close()
+
+	var data = str_to_var(save_string)
+	if typeof(data) != TYPE_DICTIONARY:
+		return false
+
+	map_data = data.get("map_data", {})
+	nodo_actual_id = int(data.get("nodo_actual_id", -1))
+	
+	# Convertir a Array[int]
+	nodos_completados.clear()
+	var saved_nodes = data.get("nodos_completados", [])
+	for n in saved_nodes:
+		nodos_completados.append(int(n))
+
+	dinero = int(data.get("dinero", 0))
+	
+	# Convertir a Array[String]
+	artilugios.clear()
+	var saved_artilugios = data.get("artilugios", [])
+	for a in saved_artilugios:
+		artilugios.append(String(a))
+
+	vida_actual = int(data.get("vida_actual", 50))
+	vida_maxima = int(data.get("vida_maxima", 50))
+	run_started = bool(data.get("run_started", false))
+	zona_actual = int(data.get("zona_actual", 1))
+	rareza_recompensa_actual = String(data.get("rareza_recompensa_actual", "Ingresante"))
+	jefe_zona_actual = String(data.get("jefe_zona_actual", ""))
+	shop_removal_count = int(data.get("shop_removal_count", 0))
+
+	# Reconstruir el mazo
+	run_deck.clear()
+	var saved_deck_names = data.get("run_deck", [])
+	var all_cards = PlayerCardLoader.load_player_cards()
+	
+	for saved_name in saved_deck_names:
+		for template in all_cards:
+			if template.card_name == saved_name:
+				run_deck.append(_copy_card(template))
+				break
+				
+	run_deck_initialized = true
+
+	print("[SAVE] Partida cargada con éxito. HP:", vida_actual, "/", vida_maxima)
+	return true
+
+
+func has_saved_game() -> bool:
+	return FileAccess.file_exists(SAVE_FILE_PATH)
+
+
+func delete_saved_game() -> void:
+	if has_saved_game():
+		var dir := DirAccess.open("user://")
+		if dir:
+			dir.remove("savegame.save")
+			dir.remove("savegame.json") # Limpiar el archivo viejo por si acaso
+			print("[SAVE] Archivo de guardado eliminado.")

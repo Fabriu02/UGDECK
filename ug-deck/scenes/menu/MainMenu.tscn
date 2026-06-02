@@ -56,12 +56,20 @@ theme_override_font_sizes/font_size = 64
 text = "UG-DECK"
 horizontal_alignment = 1
 
+[node name="ContinuarButton" type="Button" parent="UI/CenterContainer/MenuContent" unique_id=999999999]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 68)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "CONTINUAR"
+script = ExtResource("3_x3wfi")
+
 [node name="JugarButton" type="Button" parent="UI/CenterContainer/MenuContent" unique_id=742972246]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(380, 68)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "JUGAR"
+text = "NUEVA PARTIDA"
 script = ExtResource("3_x3wfi")
 
 [node name="OpcionesButton" type="Button" parent="UI/CenterContainer/MenuContent" unique_id=1900588975]
