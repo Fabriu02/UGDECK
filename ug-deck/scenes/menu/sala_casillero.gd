@@ -53,6 +53,7 @@ func _secuencia_apertura():
 	tween.tween_callback(_mostrar_premio)
 
 func _mostrar_premio():
+	AudioManager.play_sfx("abrir_casillero")
 	# Usamos los datos de botin_elegido para llenar el cartel
 	label_nombre_item.text = botin_elegido.nombre + "\n+$" + str(botin_elegido.plata)
 	icono_item.texture = botin_elegido.icono

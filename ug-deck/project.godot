@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="ugDeck"
-run/main_scene="uid://dm23u806ecudu"
+run/main_scene="uid://cmt2loelpjyie"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameState="*res://scripts/autoload/GameState.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
 
 [display]
 

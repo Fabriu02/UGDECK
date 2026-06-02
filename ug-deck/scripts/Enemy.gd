@@ -123,6 +123,8 @@ func take_damage(amount: int) -> void:
 		var blocked_damage = min(block, remaining_damage)
 		block -= blocked_damage
 		remaining_damage -= blocked_damage
+		if block == 0 and blocked_damage > 0:
+			AudioManager.play_sfx("romper_escudo")
 
 	if remaining_damage > 0:
 		current_hp = max(current_hp - remaining_damage, 0)
@@ -211,6 +213,8 @@ func is_dead() -> bool:
 
 
 func gain_block(amount: int) -> void:
+	if amount > 0:
+		AudioManager.play_sfx("ganar_escudo")
 	block += amount
 
 

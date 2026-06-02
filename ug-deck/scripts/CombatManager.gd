@@ -214,6 +214,9 @@ func start_battle() -> void:
 	print("[COMBAT START] HP cargada desde RunState:", GameState.vida_actual, "/", GameState.vida_maxima)
 	print("[NEXT COMBAT] HP cargada:", player.current_hp, "/", player.max_hp)
 	
+	# Poner música de combate
+	AudioManager.play_music("pencils_down", -8.0)
+	
 	# --- AGREGADO: REVISAMOS LA MOCHILA AL EMPEZAR ---
 	_aplicar_artilugios_inicio_combate()
 	# -------------------------------------------------
@@ -1113,6 +1116,7 @@ func _return_to_map() -> void:
 		return
 
 	returning_to_map = true
+	AudioManager.stop_music()
 	call_deferred("_deferred_return_to_map")
 
 

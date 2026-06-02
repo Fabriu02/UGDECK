@@ -461,6 +461,4 @@ text = "COMIENZA EL COMBATE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=549467919]
-stream = ExtResource("7_bsu3s")
-autoplay = true
+

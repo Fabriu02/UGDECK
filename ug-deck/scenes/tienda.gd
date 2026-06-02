@@ -177,6 +177,7 @@ func _generar_items():
 
 func _comprar(item, boton, tex_rect):
 	if GameState.dinero >= item.precio:
+		AudioManager.play_sfx("comprar_item")
 		GameState.dinero -= item.precio
 		GameState.artilugios.append(item.nombre)
 		
@@ -325,6 +326,7 @@ func _roll_shop_cards(charge_cost: bool) -> void:
 		if GameState.dinero < SHOP_REROLL_COST:
 			print("No alcanza para rerollear la tienda.")
 			return
+		AudioManager.play_sfx("comprar_item")
 		GameState.dinero -= SHOP_REROLL_COST
 		print("Reroll tienda: -$%d" % SHOP_REROLL_COST)
 
@@ -386,6 +388,7 @@ func _on_shop_card_selected(card_data: CardData, card_ui: CardUI) -> void:
 		print("No alcanza para comprar carta: %s" % card_data.card_name)
 		return
 
+	AudioManager.play_sfx("comprar_item")
 	GameState.dinero -= price
 	GameState.add_card_to_run_deck(card_data)
 	shop_cards.erase(card_data)
@@ -405,6 +408,7 @@ func _on_remove_card_selected(card_data: CardData) -> void:
 
 	var card_key = GameState.get_card_key(card_data)
 	if GameState.remove_card_from_run_deck(card_key):
+		AudioManager.play_sfx("comprar_item")
 		GameState.dinero -= cost
 		GameState.shop_removal_count += 1
 		print("Eliminacion de carta: -$%d" % cost)
