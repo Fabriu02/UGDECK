@@ -4,6 +4,7 @@ class_name CombatManager
 
 const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
+const CombatAnimationController := preload("res://scripts/CombatAnimationController.gd")
 const PLAYER_COMBAT_HUD_SCRIPT := preload("res://scripts/ui/PlayerCombatHUD.gd")
 const STATUS_EFFECT_INFO_SCRIPT := preload("res://scripts/ui/StatusEffectInfo.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
@@ -143,6 +144,8 @@ var temporary_card_cost_modifiers: Dictionary = {}
 var current_enemy_name := FIRST_ENEMY_NAME
 var returning_to_map := false
 var player_combat_hud: PlayerCombatHUD
+var combat_animation_controller: CombatAnimationController
+var combat_input_locked := false
 var multi_enemy_hps: Array = []
 var multi_enemy_max_hps: Array = []
 var multi_enemy_names: Array = []
@@ -156,6 +159,7 @@ var primera_carta_combate_gratis := false
 func _ready() -> void:
 	randomize()
 	_setup_combat_status_ui()
+	_setup_combat_animation_controller()
 	deck_manager.deck_counts_changed.connect(_update_deck_zone_ui)
 	draw_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
 	discard_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -185,6 +189,31 @@ func _setup_combat_status_ui() -> void:
 	ui_layer.add_child(player_combat_hud)
 	ui_layer.move_child(player_combat_hud, 0)
 
+
+func _setup_combat_animation_controller() -> void:
+	combat_animation_controller = CombatAnimationController.new()
+	add_child(combat_animation_controller)
+	combat_animation_controller.setup(
+		battle_visuals,
+		card_animation_layer,
+		draw_pile_area,
+		discard_pile_area,
+		hand_container,
+		card_scene
+	)
+
+
+func _set_combat_input_locked(locked: bool) -> void:
+	combat_input_locked = locked
+	end_turn_button.disabled = locked or waiting_for_discard or battle_has_ended
+	abandon_combat_button.disabled = locked
+	_set_hand_cards_disabled(locked)
+
+
+func _set_hand_cards_disabled(disabled: bool) -> void:
+	for child in hand_container.get_children():
+		if child is BaseButton:
+			(child as BaseButton).disabled = disabled
 
 func _setup_pile_icons() -> void:
 	_setup_pile_icon(draw_pile_panel, draw_pile_back_label, DRAW_PILE_ICON_PATH)
@@ -728,15 +757,15 @@ func start_player_turn() -> void:
 
 
 func play_card(card_data: CardData, card_ui: CardUI) -> void:
-	if battle_has_ended:
+	if battle_has_ended or combat_input_locked:
 		return
 
 	if not deck_manager.hand.has(card_data):
 		return
 
-	# AGREGADO: Lógica de interceptación. Si estamos esperando, descartamos en vez de jugar.
+	# AGREGADO: Logica de interceptacion. Si estamos esperando, descartamos en vez de jugar.
 	if waiting_for_discard:
-		_execute_discard_choice(card_data, card_ui)
+		await _execute_discard_choice(card_data, card_ui)
 		return
 
 	if _is_attack_card(card_data) and player.tiene_estado("apagar_la_camara"):
@@ -751,7 +780,7 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	if primera_carta_combate_gratis:
 		effective_cost = 0
 		primera_carta_combate_gratis = false # Se desactiva para el resto del combate
-		print("⚡ ARTILUGIO: ¡Tu carta costó 0 energía!")
+		print("ARTILUGIO: Tu carta costo 0 energia!")
 	# ---------------------------------------
 
 	if not player.spend_energy(effective_cost):
@@ -759,6 +788,8 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 		update_ui()
 		return
 
+	_set_combat_input_locked(true)
+	var played_card_position := card_ui.global_position
 	deck_manager.hand.erase(card_data)
 	deck_manager.played_cards.append(card_data)
 	deck_manager.print_deck_debug_counts()
@@ -769,13 +800,21 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	elif _is_skill_card(card_data):
 		player_played_skill_this_turn = true
 
+	var before_state := _capture_visual_state()
 	_apply_card_effect(card_data)
+	var visual_events := _build_visual_events_from_state_delta(before_state, _capture_visual_state(), "player", "enemy")
+	visual_events.push_front({
+		"type": "played_card",
+		"card_data": card_data,
+		"from_position": played_card_position,
+	})
 	update_ui()
+	await _play_visual_events(visual_events)
 	check_combat_end()
-
+	_set_combat_input_locked(false)
 
 func end_player_turn() -> void:
-	if battle_has_ended:
+	if battle_has_ended or combat_input_locked:
 		return
 
 	if waiting_for_discard:
@@ -803,7 +842,7 @@ func enemy_turn() -> void:
 		var card_to_play := enemy.get_playable_card_for_turn(player, deck_manager.hand.size(), player_cards_played_last_turn)
 		if card_to_play != null:
 			enemy_turn_finished_by_card = false
-			_execute_enemy_card(card_to_play)
+			await _execute_enemy_card(card_to_play)
 			if waiting_for_discard:
 				return
 			if enemy_turn_finished_by_card:
@@ -1322,6 +1361,138 @@ func _clear_hand_ui() -> void:
 		child.queue_free()
 
 
+func _play_visual_events(events: Array) -> void:
+	if combat_animation_controller == null or events.is_empty():
+		return
+	await combat_animation_controller.play_sequence(events)
+
+
+func _capture_visual_state() -> Dictionary:
+	return {
+		"player_hp": player.current_hp,
+		"player_max_hp": player.max_hp,
+		"player_block": player.block,
+		"player_energy": player.current_energy,
+		"player_states": _copy_state_names(player.estados),
+		"player_attack_bonus": player.attack_bonus,
+		"player_defense_bonus": player.defense_card_bonus,
+		"enemy_hp": enemy.current_hp,
+		"enemy_max_hp": enemy.max_hp,
+		"enemy_block": enemy.block,
+		"enemy_states": _copy_state_names(enemy.estados),
+		"enemy_attack_bonus": enemy.attack_bonus,
+		"enemy_permanent_attack_bonus": enemy.permanent_attack_bonus,
+		"hand_count": deck_manager.hand.size(),
+		"draw_count": deck_manager.draw_pile.size(),
+		"discard_count": deck_manager.discard_pile.size(),
+	}
+
+
+func _copy_state_names(states: Array) -> Array[String]:
+	var result: Array[String] = []
+	for state in states:
+		if state is Dictionary and state.has("nombre"):
+			result.append(String(state.nombre))
+	return result
+
+
+func _build_visual_events_from_state_delta(before_state: Dictionary, after_state: Dictionary, source_actor: String, target_actor: String) -> Array[Dictionary]:
+	var events: Array[Dictionary] = []
+	_append_damage_event(events, before_state, after_state, source_actor, target_actor)
+	_append_shield_event(events, before_state, after_state, source_actor)
+	_append_heal_event(events, before_state, after_state, source_actor)
+	_append_card_count_events(events, before_state, after_state)
+	_append_energy_event(events, before_state, after_state, source_actor)
+	_append_status_events(events, before_state, after_state, source_actor, target_actor)
+	_append_buff_events(events, before_state, after_state, source_actor)
+	return events
+
+
+func _append_damage_event(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, source_actor: String, target_actor: String) -> void:
+	var hp_key := "%s_hp" % target_actor
+	var block_key := "%s_block" % target_actor
+	var hp_loss := int(before_state.get(hp_key, 0)) - int(after_state.get(hp_key, 0))
+	var block_loss := int(before_state.get(block_key, 0)) - int(after_state.get(block_key, 0))
+	var total_loss := hp_loss + maxi(block_loss, 0)
+	if total_loss <= 0:
+		return
+	events.append({
+		"type": "damage",
+		"value": total_loss,
+		"source": source_actor,
+		"target": target_actor,
+	})
+
+
+func _append_shield_event(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, actor: String) -> void:
+	var block_key := "%s_block" % actor
+	var gained := int(after_state.get(block_key, 0)) - int(before_state.get(block_key, 0))
+	if gained <= 0:
+		return
+	events.append({"type": "shield", "value": gained, "source": actor, "target": actor})
+
+
+func _append_heal_event(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, actor: String) -> void:
+	var hp_key := "%s_hp" % actor
+	var healed := int(after_state.get(hp_key, 0)) - int(before_state.get(hp_key, 0))
+	if healed <= 0:
+		return
+	events.append({"type": "heal", "value": healed, "source": actor, "target": actor})
+
+
+func _append_card_count_events(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary) -> void:
+	var hand_delta := int(after_state.get("hand_count", 0)) - int(before_state.get("hand_count", 0))
+	var discard_delta := int(after_state.get("discard_count", 0)) - int(before_state.get("discard_count", 0))
+	if discard_delta > 0:
+		events.append({"type": "discard", "value": discard_delta, "source": "player"})
+	if hand_delta > 0:
+		events.append({"type": "draw", "value": hand_delta, "source": "player"})
+
+
+func _append_energy_event(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, actor: String) -> void:
+	if actor != "player":
+		return
+	var gained := int(after_state.get("player_energy", 0)) - int(before_state.get("player_energy", 0))
+	if gained <= 0:
+		return
+	events.append({"type": "energy", "value": gained, "source": "player", "target": "player"})
+
+
+func _append_status_events(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, source_actor: String, target_actor: String) -> void:
+	_append_new_states_for_actor(events, before_state, after_state, source_actor, target_actor)
+	_append_new_states_for_actor(events, before_state, after_state, source_actor, source_actor)
+
+
+func _append_new_states_for_actor(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, source_actor: String, actor: String) -> void:
+	var before_states: Array = before_state.get("%s_states" % actor, [])
+	var after_states: Array = after_state.get("%s_states" % actor, [])
+	for state_name in after_states:
+		if before_states.has(state_name):
+			continue
+		var event_type := "status" if actor != source_actor else "buff"
+		events.append({
+			"type": event_type,
+			"label": _format_status_label(String(state_name)),
+			"source": source_actor,
+			"target": actor,
+		})
+
+
+func _append_buff_events(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, actor: String) -> void:
+	var keys := []
+	if actor == "player":
+		keys = ["player_attack_bonus", "player_defense_bonus"]
+	else:
+		keys = ["enemy_attack_bonus", "enemy_permanent_attack_bonus"]
+	for key in keys:
+		var gained := int(after_state.get(key, 0)) - int(before_state.get(key, 0))
+		if gained > 0:
+			events.append({"type": "buff", "label": "+%d" % gained, "source": actor, "target": actor})
+
+
+func _format_status_label(state_name: String) -> String:
+	return state_name.replace("_", " ").capitalize()
+
 func _apply_card_effect(card_data: CardData) -> void:
 	if card_data.effect_id == "basic_attack":
 		_apply_player_attack(card_data.value)
@@ -1563,7 +1734,20 @@ func _discard_one_card_and_draw() -> void:
 
 # AGREGADO: Nueva función que procesa la carta que el jugador decidió tirar
 func _execute_discard_choice(card_data: CardData, card_ui: CardUI) -> void:
+	if combat_input_locked:
+		return
+
+	_set_combat_input_locked(true)
+	var discard_from_position := card_ui.global_position
+	var visual_events: Array[Dictionary] = [{
+		"type": "discard",
+		"value": 1,
+		"source": "player",
+		"from_position": discard_from_position,
+	}]
+
 	if not deck_manager.discard_specific_card(card_data):
+		_set_combat_input_locked(false)
 		if deck_manager.hand.is_empty():
 			_finish_discard_selection_without_cards()
 		return
@@ -1575,35 +1759,46 @@ func _execute_discard_choice(card_data: CardData, card_ui: CardUI) -> void:
 
 	match discard_selection_mode:
 		"player_replace_one":
-			deck_manager.draw_cards(1)
+			var drawn_cards := deck_manager.draw_cards(1)
+			if not drawn_cards.is_empty():
+				visual_events.append({"type": "draw", "value": drawn_cards.size(), "source": "player"})
 			_reset_discard_selection()
-			end_turn_button.disabled = false
 			_show_hand()
 			update_ui()
+			await _play_visual_events(visual_events)
 		"player_replace_zero":
 			_reset_discard_selection()
-			end_turn_button.disabled = false
 			update_ui()
+			await _play_visual_events(visual_events)
 		"player_optional_block":
 			if discard_selection_remaining <= 0 or deck_manager.hand.is_empty():
+				var before_state := _capture_visual_state()
 				var gained_block := discard_selection_completed * discard_selection_reward_block_per_card
 				_gain_player_block(gained_block)
+				visual_events.append_array(_build_visual_events_from_state_delta(before_state, _capture_visual_state(), "player", "enemy"))
 				_reset_discard_selection()
-				end_turn_button.disabled = false
 				update_ui()
+				await _play_visual_events(visual_events)
 			else:
-				enemy_intent_label.text = "Descarta hasta %d carta(s) más" % discard_selection_remaining
+				enemy_intent_label.text = "Descarta hasta %d carta(s) mas" % discard_selection_remaining
 				update_ui()
+				await _play_visual_events(visual_events)
 		"enemy_forced":
 			if discard_selection_remaining <= 0 or deck_manager.hand.is_empty():
+				await _play_visual_events(visual_events)
+				_set_combat_input_locked(false)
 				_finish_enemy_forced_discard()
+				return
 			else:
-				enemy_intent_label.text = "Descarta %d carta(s) más" % discard_selection_remaining
+				enemy_intent_label.text = "Descarta %d carta(s) mas" % discard_selection_remaining
 				update_ui()
+				await _play_visual_events(visual_events)
 		_:
 			_reset_discard_selection()
 			update_ui()
+			await _play_visual_events(visual_events)
 
+	_set_combat_input_locked(false)
 
 func _execute_enemy_card(card_data: CardData) -> void:
 	var player_hp_before := player.current_hp
@@ -1616,6 +1811,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 		return
 
 	enemy.record_executed_intent(card_data, _get_current_zone_index())
+	var before_visual_state := _capture_visual_state()
 	print("DEBUG Enemy: juega '%s' [%s] | energía antes/después %d/%d | efecto=%s" % [
 		card_data.card_name,
 		card_data.rareza,
@@ -1781,7 +1977,9 @@ func _execute_enemy_card(card_data: CardData) -> void:
 		enemy.block,
 	])
 
+	var visual_events := _build_visual_events_from_state_delta(before_visual_state, _capture_visual_state(), "enemy", "player")
 	update_ui()
+	await _play_visual_events(visual_events)
 	check_combat_end()
 
 

@@ -10,6 +10,7 @@ var primary_label: Label
 var secondary_label: Label
 var status_row: HBoxContainer
 var popup: StatusEffectPopup
+var bar_tween: Tween
 
 var current_hp := 0
 var max_hp := 1
@@ -43,15 +44,21 @@ func update_values(display_name: String, hp: int, maximum_hp: int, block: int, s
 
 	if has_block:
 		bar.max_value = maxf(maxf(float(max_hp), float(current_block)), 1.0)
-		bar.value = current_block
+		_set_bar_value_smooth(current_block)
 		_set_bar_fill_color(Color(0.12, 0.45, 0.95, 1.0))
 	else:
 		bar.max_value = max_hp
-		bar.value = clamp(current_hp, 0, max_hp)
+		_set_bar_value_smooth(clamp(current_hp, 0, max_hp))
 		_set_bar_fill_color(Color(0.82, 0.12, 0.12, 1.0))
 
 	_refresh_status_chips()
 
+
+func _set_bar_value_smooth(target_value: float) -> void:
+	if bar_tween != null:
+		bar_tween.kill()
+	bar_tween = create_tween()
+	bar_tween.tween_property(bar, "value", target_value, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _build() -> void:
 	if bar != null:
