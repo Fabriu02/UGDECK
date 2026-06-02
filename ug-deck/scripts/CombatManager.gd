@@ -8,6 +8,8 @@ const PLAYER_COMBAT_HUD_SCRIPT := preload("res://scripts/ui/PlayerCombatHUD.gd")
 const STATUS_EFFECT_INFO_SCRIPT := preload("res://scripts/ui/StatusEffectInfo.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const PLAYER_DRAW_PER_TURN := 3
+const DRAW_PILE_ICON_PATH := "res://assets/iconos/card-draw.png"
+const DISCARD_PILE_ICON_PATH := "res://assets/iconos/card-burn.png"
 const FIRST_ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
 const SECOND_ENEMY_IMAGE_PATH := "res://assets/characters/pepo enemigo 2.png"
 const INTEGRAL_MINIBOSS_IMAGE_PATH := "res://assets/characters/integral_maldita.png"
@@ -99,8 +101,10 @@ const EL_ONI_SCALE := Vector2(0.38, 0.38)
 @onready var card_animation_layer: Control = $"../UI/CardAnimationLayer"
 @onready var draw_pile_area: Control = $"../UI/DrawPileArea"
 @onready var draw_pile_panel: Panel = $"../UI/DrawPileArea/PilePanel"
+@onready var draw_pile_back_label: Label = $"../UI/DrawPileArea/PilePanel/BackLabel"
 @onready var discard_pile_area: Control = $"../UI/DiscardPileArea"
 @onready var discard_pile_panel: Panel = $"../UI/DiscardPileArea/PilePanel"
+@onready var discard_pile_back_label: Label = $"../UI/DiscardPileArea/PilePanel/BackLabel"
 @onready var draw_pile_count_label: Label = $"../UI/DrawPileArea/CountLabel"
 @onready var discard_pile_count_label: Label = $"../UI/DiscardPileArea/CountLabel"
 @onready var deck_viewer_panel: Panel = $"../UI/DeckViewerPanel"
@@ -157,6 +161,7 @@ func _ready() -> void:
 	discard_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
 	draw_pile_area.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	discard_pile_area.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_setup_pile_icons()
 	_ignore_mouse_on_children(draw_pile_area)
 	_ignore_mouse_on_children(discard_pile_area)
 	draw_pile_area.gui_input.connect(_on_draw_pile_area_gui_input)
@@ -179,6 +184,33 @@ func _setup_combat_status_ui() -> void:
 	player_combat_hud = PLAYER_COMBAT_HUD_SCRIPT.new()
 	ui_layer.add_child(player_combat_hud)
 	ui_layer.move_child(player_combat_hud, 0)
+
+
+func _setup_pile_icons() -> void:
+	_setup_pile_icon(draw_pile_panel, draw_pile_back_label, DRAW_PILE_ICON_PATH)
+	_setup_pile_icon(discard_pile_panel, discard_pile_back_label, DISCARD_PILE_ICON_PATH)
+
+
+func _setup_pile_icon(panel: Panel, old_label: Label, icon_path: String) -> void:
+	old_label.visible = false
+
+	var icon_texture: Texture2D = load(icon_path) as Texture2D
+	if icon_texture == null:
+		old_label.visible = true
+		return
+
+	var icon_rect := TextureRect.new()
+	icon_rect.texture = icon_texture
+	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	icon_rect.offset_left = 8
+	icon_rect.offset_top = 8
+	icon_rect.offset_right = -8
+	icon_rect.offset_bottom = -8
+	panel.add_child(icon_rect)
 
 
 func _ignore_mouse_on_children(control: Control) -> void:
