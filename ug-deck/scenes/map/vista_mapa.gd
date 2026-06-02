@@ -54,6 +54,7 @@ func _ready():
 		GameState.map_data = generator.generate_map()
 		GameState.nodo_actual_id = -1
 		GameState.nodos_completados.clear()
+		GameState.save_game()
 
 	# Descargamos los datos guardados
 	map_data = GameState.map_data
@@ -87,6 +88,7 @@ func _on_salir_menu_pressed() -> void:
 
 
 func _on_exit_run_confirmed() -> void:
+	GameState.delete_saved_game()
 	GameState.reset_run_progress()
 	await get_tree().create_timer(0.08).timeout
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
@@ -254,6 +256,7 @@ func _on_node_clicked(node_data):
 
 		# Guardamos en el Autoload que visitamos este nodo
 		GameState.visitar_nodo(node_data.id)
+		GameState.save_game()
 
 		# Actualizamos nuestra variable local
 		nodo_actual_id = GameState.nodo_actual_id

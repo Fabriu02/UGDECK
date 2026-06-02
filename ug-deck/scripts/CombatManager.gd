@@ -4,6 +4,8 @@ class_name CombatManager
 
 const EnemyCardLoader := preload("res://scripts/EnemyCardLoader.gd")
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
+const PLAYER_COMBAT_HUD_SCRIPT := preload("res://scripts/ui/PlayerCombatHUD.gd")
+const STATUS_EFFECT_INFO_SCRIPT := preload("res://scripts/ui/StatusEffectInfo.gd")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const PLAYER_DRAW_PER_TURN := 3
 const FIRST_ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
@@ -92,6 +94,7 @@ const EL_ONI_SCALE := Vector2(0.38, 0.38)
 @onready var enemy_stats_label: Label = $"../UI/EnemyStatsLabel"
 @onready var energy_label: Label = $"../UI/EnergyLabel"
 @onready var enemy_intent_label: Label = $"../UI/EnemyIntentLabel"
+@onready var ui_layer: CanvasLayer = $"../UI"
 @onready var hand_container: HBoxContainer = $"../UI/HandContainer"
 @onready var card_animation_layer: Control = $"../UI/CardAnimationLayer"
 @onready var draw_pile_area: Control = $"../UI/DrawPileArea"
@@ -135,6 +138,7 @@ var player_attacked_this_turn := false
 var temporary_card_cost_modifiers: Dictionary = {}
 var current_enemy_name := FIRST_ENEMY_NAME
 var returning_to_map := false
+var player_combat_hud: PlayerCombatHUD
 var multi_enemy_hps: Array = []
 var multi_enemy_max_hps: Array = []
 var multi_enemy_names: Array = []
@@ -147,6 +151,7 @@ var primera_carta_combate_gratis := false
 
 func _ready() -> void:
 	randomize()
+	_setup_combat_status_ui()
 	deck_manager.deck_counts_changed.connect(_update_deck_zone_ui)
 	draw_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
 	discard_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -164,6 +169,16 @@ func _ready() -> void:
 	end_turn_button.pressed.connect(end_player_turn)
 	abandon_combat_button.pressed.connect(abandon_combat)
 	await start_battle()
+
+
+func _setup_combat_status_ui() -> void:
+	player_stats_label.visible = false
+	enemy_stats_label.visible = false
+	energy_label.visible = false
+
+	player_combat_hud = PLAYER_COMBAT_HUD_SCRIPT.new()
+	ui_layer.add_child(player_combat_hud)
+	ui_layer.move_child(player_combat_hud, 0)
 
 
 func _ignore_mouse_on_children(control: Control) -> void:
@@ -705,6 +720,7 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	# ---------------------------------------
 
 	if not player.spend_energy(effective_cost):
+		battle_visuals.show_player_speech("no tengo suficiente ENERGIA")
 		update_ui()
 		return
 
@@ -784,6 +800,9 @@ func _finish_enemy_turn() -> void:
 
 func update_ui() -> void:
 	_update_oni_phase_visual()
+	var player_states := _get_player_statuses_for_ui()
+	var enemy_states := _get_enemy_statuses_for_ui()
+
 	player_stats_label.text = "Jugador - Vida: %d/%d | Escudo: %d" % [
 		player.current_hp,
 		player.max_hp,
@@ -803,11 +822,67 @@ func update_ui() -> void:
 		]
 	energy_label.text = "Energia: %d/%d" % [player.current_energy, player.max_energy]
 	_update_deck_zone_ui()
+	_update_combat_status_ui(player_states, enemy_states)
 	
 	# AGREGADO: Solo actualizamos el texto de intención si NO estamos en modo descarte
 	if not waiting_for_discard:
 		enemy_intent_label.text = enemy.get_intent_text(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
 		enemy_intent_label.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
+
+
+func _update_combat_status_ui(player_states: Array, enemy_states: Array) -> void:
+	if player_combat_hud != null:
+		player_combat_hud.update_values(
+			player.current_hp,
+			player.max_hp,
+			player.current_energy,
+			player.max_energy,
+			player.block,
+			GameState.dinero,
+			player_states
+		)
+
+	battle_visuals.update_player_status_bar(player.current_hp, player.max_hp, player.block, player_states)
+
+	if multi_enemy_active:
+		battle_visuals.update_multi_enemy_status_bars(
+			multi_enemy_names,
+			multi_enemy_hps,
+			multi_enemy_max_hps,
+			enemy.block,
+			enemy_states,
+			_get_first_alive_multi_enemy_index()
+		)
+	else:
+		battle_visuals.update_enemy_status_bar(current_enemy_name, enemy.current_hp, enemy.max_hp, enemy.block, enemy_states)
+
+
+func _get_player_statuses_for_ui() -> Array:
+	var states: Array = []
+	states.append_array(player.estados)
+
+	if player.attack_bonus != 0 and player.attack_bonus_turns > 0:
+		states.append(STATUS_EFFECT_INFO_SCRIPT.make_state("ataque_bonus", player.attack_bonus, player.attack_bonus_turns))
+	if player.defense_card_bonus != 0 and player.defense_card_bonus_turns > 0:
+		states.append(STATUS_EFFECT_INFO_SCRIPT.make_state("defensa_bonus", player.defense_card_bonus, player.defense_card_bonus_turns))
+	if player.approved_with_4_turns > 0:
+		states.append(STATUS_EFFECT_INFO_SCRIPT.make_state("aprobado_con_4", 0, player.approved_with_4_turns))
+	if player.immune_to_enemy_attack_turns > 0:
+		states.append(STATUS_EFFECT_INFO_SCRIPT.make_state("inmunidad", 0, player.immune_to_enemy_attack_turns))
+
+	return states
+
+
+func _get_enemy_statuses_for_ui() -> Array:
+	var states: Array = []
+	states.append_array(enemy.estados)
+
+	if enemy.attack_bonus != 0 and enemy.attack_bonus_turns > 0:
+		states.append(STATUS_EFFECT_INFO_SCRIPT.make_state("ataque_bonus", enemy.attack_bonus, enemy.attack_bonus_turns))
+	if enemy.permanent_attack_bonus != 0:
+		states.append(STATUS_EFFECT_INFO_SCRIPT.make_state("ataque_permanente", enemy.permanent_attack_bonus, 0))
+
+	return states
 
 
 func _update_oni_phase_visual(force: bool = false) -> void:
