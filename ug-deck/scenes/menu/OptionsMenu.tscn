@@ -1,0 +1,99 @@
+[gd_scene format=3 uid="uid://b5nj2gyicv1kp"]
+
+[ext_resource type="Script" uid="uid://028sy7se80f1" path="res://scenes/menu/OptionsMenu.gd" id="1_n0wad"]
+[ext_resource type="Texture2D" uid="uid://bnnxvcjvi3bci" path="res://assets/backgrounds/menu.png" id="2_w03au"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_8idqq"]
+load_path = "res://.godot/imported/Fondo blanco.png-891866fc5926e05a0ae2fe84e5d31eb3.ctex"
+
+[node name="OptionsMenu" type="Control" unique_id=915996579]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_n0wad")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=2036955221]
+layout_mode = 0
+offset_right = 1155.0
+offset_bottom = 647.0
+texture = ExtResource("2_w03au")
+expand_mode = 1
+
+[node name="OpcionesLabel" type="Label" parent="." unique_id=871181764]
+layout_mode = 0
+offset_left = 437.0
+offset_top = 47.0
+offset_right = 680.0
+offset_bottom = 108.0
+theme_override_font_sizes/font_size = 44
+text = "OPCIONES"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VolverButton" type="Button" parent="." unique_id=46904085]
+layout_mode = 0
+offset_left = 439.0
+offset_top = 573.0
+offset_right = 682.0
+offset_bottom = 630.0
+theme_override_font_sizes/font_size = 35
+text = "Volver"
+
+[node name="TextureRect2" type="TextureRect" parent="." unique_id=1117855317]
+layout_mode = 0
+offset_left = 351.0
+offset_top = 157.0
+offset_right = 771.0
+offset_bottom = 558.0
+texture = SubResource("CompressedTexture2D_8idqq")
+expand_mode = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="TextureRect2" unique_id=1497865292]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 23.0
+offset_right = 340.0
+offset_bottom = 350.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TextureRect2/CenterContainer" unique_id=33518612]
+layout_mode = 2
+theme_override_constants/separation = 55
+alignment = 1
+
+[node name="PantallaButton" type="CheckButton" parent="TextureRect2/CenterContainer/VBoxContainer" unique_id=1661109858]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 1)
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.4)
+theme_override_constants/icon_max_width = -60
+theme_override_font_sizes/font_size = 22
+theme_override_colors/button_checked_color = Color(1, 1, 1, 1)
+theme_override_colors/button_unchecked_color = Color(1.8247963, 1.8247963, 1.8247963, 1)
+text = "Pantalla Completa"
+
+[node name="VolumenLabel" type="Label" parent="TextureRect2/CenterContainer/VBoxContainer" unique_id=948671382]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 22
+text = "Volumen General"
+
+[node name="VolumenSlider" type="HSlider" parent="TextureRect2/CenterContainer/VBoxContainer/VolumenLabel" unique_id=1694889042]
+layout_mode = 0
+offset_top = 40.0
+offset_right = 243.0
+offset_bottom = 56.0
+min_value = 0.001
+max_value = 1.0
+step = 0.01
+value = 1.0

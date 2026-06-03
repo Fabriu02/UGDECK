@@ -1,6 +1,9 @@
 extends Control
 
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
+# AGREGADO: Constante con la ruta a tu nueva escena de opciones.
+# IMPORTANTE: Asegurate de que esta ruta sea exactamente donde guardaste tu OptionsMenu.tscn
+const OPTIONS_SCENE_PATH := "res://scenes/menu/OptionsMenu.tscn"
 
 @onready var continuar_button: Button = %ContinuarButton
 @onready var jugar_button: Button = %JugarButton
@@ -41,8 +44,9 @@ func _on_jugar_pressed() -> void:
 
 
 func _on_opciones_pressed() -> void:
-	print_debug("Opciones proximamente.")
-	_show_feedback("Opciones proximamente")
+	# MODIFICADO: Quitamos los prints y el feedback, y agregamos el cambio de escena
+	await get_tree().create_timer(0.08).timeout
+	get_tree().change_scene_to_file(OPTIONS_SCENE_PATH)
 
 
 func _on_salir_pressed() -> void:
