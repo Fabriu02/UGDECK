@@ -42,6 +42,8 @@ func _play_event(event: Dictionary) -> void:
 	match String(event.get("type", "")):
 		"played_card":
 			await _animate_played_card(event)
+		"death":
+			await _animate_death(event)
 		"damage":
 			await _animate_damage(event)
 		"shield":
@@ -92,10 +94,22 @@ func _animate_played_card(event: Dictionary) -> void:
 
 
 func _animate_damage(event: Dictionary) -> void:
-	var source := _get_actor_sprite(String(event.get("source", "player")))
-	var target := _get_actor_sprite(String(event.get("target", "enemy")))
+	var source_actor := String(event.get("source", "player"))
+	var target_actor := String(event.get("target", "enemy"))
+	var source_index := int(event.get("source_index", -1))
+	var target_index := int(event.get("target_index", -1))
+	var source := _get_actor_sprite(source_actor, source_index)
+	var target := _get_actor_sprite(target_actor, target_index)
 	if source == null or target == null:
 		return
+
+	if source_actor == target_actor:
+		battle_visuals.play_character_animation(target_actor, "hurt", target_index)
+		await _flash_and_shake(target, Color(1.0, 0.18, 0.18, 1.0))
+		await _show_float_text(target.global_position + Vector2(-12, -70), "-%d" % int(event.get("value", 0)), Color(1.0, 0.18, 0.18, 1.0))
+		return
+
+	battle_visuals.play_character_animation(source_actor, "attack", source_index)
 
 	var source_origin := source.position
 	var direction := (target.global_position - source.global_position).normalized()
@@ -107,14 +121,27 @@ func _animate_damage(event: Dictionary) -> void:
 	await lunge.finished
 
 	await _animate_projectile(source.global_position, target.global_position, Color(1.0, 0.22, 0.16, 1.0))
+	battle_visuals.play_character_animation(target_actor, "hurt", target_index)
 	await _flash_and_shake(target, Color(1.0, 0.18, 0.18, 1.0))
 	await _show_float_text(target.global_position + Vector2(-12, -70), "-%d" % int(event.get("value", 0)), Color(1.0, 0.18, 0.18, 1.0))
 
 
 func _animate_aura(event: Dictionary, color: Color, text: String) -> void:
-	var target := _get_actor_sprite(String(event.get("target", "player")))
+	var source_actor := String(event.get("source", "player"))
+	var target_actor := String(event.get("target", "player"))
+	var source_index := int(event.get("source_index", -1))
+	var target_index := int(event.get("target_index", -1))
+	var target := _get_actor_sprite(target_actor, target_index)
 	if target == null:
 		return
+
+	match String(event.get("type", "")):
+		"shield":
+			battle_visuals.play_character_animation(target_actor, "defend", target_index)
+		"buff":
+			battle_visuals.play_character_animation(target_actor, "buff", target_index)
+		"debuff", "status":
+			battle_visuals.play_character_animation(source_actor, "debuff", source_index)
 
 	var ring := ColorRect.new()
 	ring.color = color
@@ -134,6 +161,16 @@ func _animate_aura(event: Dictionary, color: Color, text: String) -> void:
 	ring.queue_free()
 
 	await _show_float_text(target.global_position + Vector2(-16, -76), text, color)
+
+
+func _animate_death(event: Dictionary) -> void:
+	var target_actor := String(event.get("target", "enemy"))
+	var target_index := int(event.get("target_index", -1))
+	var target := _get_actor_sprite(target_actor, target_index)
+	if target == null:
+		return
+
+	await battle_visuals.play_character_death(target_actor, target_index)
 
 
 func _animate_projectile(start_position: Vector2, end_position: Vector2, color: Color) -> void:
@@ -202,14 +239,10 @@ func _show_float_text(position: Vector2, text: String, color: Color) -> void:
 	label.queue_free()
 
 
-func _get_actor_sprite(actor: String) -> Node2D:
+func _get_actor_sprite(actor: String, index: int = -1) -> Node2D:
 	if battle_visuals == null:
 		return null
-	if actor == "enemy":
-		if not battle_visuals.multi_enemy_sprites.is_empty():
-			return battle_visuals.multi_enemy_sprites[0]
-		return battle_visuals.enemy_sprite
-	return battle_visuals.player_sprite
+	return battle_visuals.get_actor_visual_node(actor, index)
 
 
 func _get_control_center(control: Control) -> Vector2:

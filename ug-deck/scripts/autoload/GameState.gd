@@ -21,6 +21,8 @@ var debug_forced_miniboss_id: String = ""
 var run_deck: Array[CardData] = []
 var run_deck_initialized := false
 var shop_removal_count := 0
+var temporary_energy_battles_remaining := 0
+var clear_mind_pending := false
 
 
 const INFO_ARTILUGIOS = {
@@ -65,6 +67,8 @@ func reset_run_progress() -> void:
 	run_deck.clear()
 	run_deck_initialized = false
 	shop_removal_count = 0
+	temporary_energy_battles_remaining = 0
+	clear_mind_pending = false
 
 func start_new_run() -> void:
 	reset_run_progress()
@@ -92,6 +96,30 @@ func increase_max_hp(amount: int, heal_too: bool = false) -> void:
 		heal_player(amount)
 	else:
 		set_player_hp(vida_actual)
+
+func add_temporary_energy_battles(amount: int) -> void:
+	temporary_energy_battles_remaining += maxi(amount, 0)
+	save_game()
+
+func consume_temporary_energy_bonus_for_combat() -> bool:
+	if temporary_energy_battles_remaining <= 0:
+		return false
+
+	temporary_energy_battles_remaining -= 1
+	save_game()
+	return true
+
+func activate_clear_mind_next_combat() -> void:
+	clear_mind_pending = true
+	save_game()
+
+func consume_clear_mind_for_combat() -> bool:
+	if not clear_mind_pending:
+		return false
+
+	clear_mind_pending = false
+	save_game()
+	return true
 
 func ensure_run_deck_initialized() -> void:
 	if run_deck_initialized:
@@ -305,6 +333,8 @@ func save_game() -> void:
 		"rareza_recompensa_actual": rareza_recompensa_actual,
 		"jefe_zona_actual": jefe_zona_actual,
 		"shop_removal_count": shop_removal_count,
+		"temporary_energy_battles_remaining": temporary_energy_battles_remaining,
+		"clear_mind_pending": clear_mind_pending,
 		"run_deck": saved_deck
 	}
 
@@ -357,6 +387,8 @@ func load_game() -> bool:
 	rareza_recompensa_actual = String(data.get("rareza_recompensa_actual", "Ingresante"))
 	jefe_zona_actual = String(data.get("jefe_zona_actual", ""))
 	shop_removal_count = int(data.get("shop_removal_count", 0))
+	temporary_energy_battles_remaining = int(data.get("temporary_energy_battles_remaining", 0))
+	clear_mind_pending = bool(data.get("clear_mind_pending", false))
 
 	# Reconstruir el mazo
 	run_deck.clear()

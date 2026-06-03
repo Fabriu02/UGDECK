@@ -33,6 +33,12 @@ var zoom_actual: float = 1.0
 var map_base_size: Vector2
 
 func _ready():
+	if not GameState.run_started or GameState.vida_actual <= 0:
+		GameState.delete_saved_game()
+		GameState.reset_run_progress()
+		call_deferred("_return_to_main_menu")
+		return
+
 	# --- EL TRUCO MAGICO ---
 	
 	$ScrollContainer/contenidomapa.draw.connect(_on_contenidomapa_draw)
@@ -91,6 +97,10 @@ func _on_exit_run_confirmed() -> void:
 	GameState.delete_saved_game()
 	GameState.reset_run_progress()
 	await get_tree().create_timer(0.08).timeout
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
+
+
+func _return_to_main_menu() -> void:
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
 
 

@@ -7,7 +7,17 @@ const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
 const CombatAnimationController := preload("res://scripts/CombatAnimationController.gd")
 const PLAYER_COMBAT_HUD_SCRIPT := preload("res://scripts/ui/PlayerCombatHUD.gd")
 const STATUS_EFFECT_INFO_SCRIPT := preload("res://scripts/ui/StatusEffectInfo.gd")
+const COMBAT_ANNOUNCEMENT_OVERLAY_SCENE := preload("res://scenes/ui/CombatAnnouncementOverlay.tscn")
+const ZONE_BOSS_REWARD_SCREEN_SCENE := preload("res://scenes/ui/ZoneBossRewardScreen.tscn")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
+const MAIN_MENU_SCENE_PATH := "res://scenes/menu/MainMenu.tscn"
+const EXTRA_RARE_REWARD_RARITIES: Array[String] = ["Ingeniero"]
+const BOSS_REWARD_ICON_BED := "res://assets/iconos/bed.png"
+const BOSS_REWARD_ICON_LUNGS := "res://assets/iconos/lungs.png"
+const BOSS_REWARD_ICON_COFFEE_POT := "res://assets/iconos/coffee-pot.png"
+const BOSS_REWARD_ICON_COFFEE_CUP := "res://assets/iconos/coffee-cup.png"
+const BOSS_REWARD_ICON_MEDITATION := "res://assets/iconos/meditation.png"
+const BOSS_REWARD_ICON_CONFIRMED := "res://assets/iconos/confirmed.png"
 const PLAYER_DRAW_PER_TURN := 3
 const DRAW_PILE_ICON_PATH := "res://assets/iconos/card-draw.png"
 const DISCARD_PILE_ICON_PATH := "res://assets/iconos/card-burn.png"
@@ -33,6 +43,28 @@ const PAUTAS_IMAGE_PATH := "res://assets/characters/pautas.png"
 const EL_ONI_PHASE_1_IMAGE_PATH := "res://assets/characters/el_oni_fase_1.png"
 const EL_ONI_PHASE_2_IMAGE_PATH := "res://assets/characters/el_oni_fase_2.png"
 const EL_ONI_PHASE_3_IMAGE_PATH := "res://assets/characters/el_oni_fase_3.png"
+const VISUAL_ID_TOM_APOSTOL := "tom_apostol"
+const VISUAL_ID_PEPO := "pepo"
+const VISUAL_ID_THOMAS_KUHN := "thomas_kuhn"
+const VISUAL_ID_INTEGRAL := "integral"
+const VISUAL_ID_CALCULUS := "calculus"
+const VISUAL_ID_CALCULADORA := "calculadora"
+const VISUAL_ID_GOBLIN_VOLTIMETRO := "goblin_voltimetro"
+const VISUAL_ID_GOBLIN_FISICA_2 := "goblin_fisica_2"
+const VISUAL_ID_GOBLIN_CLASE_VIRTUAL := "goblin_clase_virtual"
+const VISUAL_ID_ROBOT_PROMOCION := "robot_promocion"
+const VISUAL_ID_PINGUINO_LINUX := "pinguino_linux"
+const VISUAL_ID_TORRE_HANOI_1 := "torre_de_hanoi_1"
+const VISUAL_ID_TORRE_HANOI_2 := "torre_de_hanoi_2"
+const VISUAL_ID_TORRE_HANOI_3 := "torre_de_hanoi_3"
+const VISUAL_ID_CIGARRO_1 := "cigarro_1"
+const VISUAL_ID_CIGARRO_2 := "cigarro_2"
+const VISUAL_ID_CIGARRO_3 := "cigarro_3"
+const VISUAL_ID_DFD := "dfd"
+const VISUAL_ID_PAUTAS := "pautas"
+const VISUAL_ID_ONI_PHASE_1 := "el_oni_fase_1"
+const VISUAL_ID_ONI_PHASE_2 := "el_oni_fase_2"
+const VISUAL_ID_ONI_PHASE_3 := "el_oni_fase_3"
 const FIRST_ENEMY_MAX_HP := 50
 const FIRST_ENEMY_BASE_BLOCK := 0
 const SECOND_ENEMY_MAX_HP := 250
@@ -114,9 +146,6 @@ const EL_ONI_SCALE := Vector2(0.38, 0.38)
 @onready var close_deck_viewer_button: Button = $"../UI/DeckViewerPanel/ViewerVBox/HeaderBox/CloseDeckViewerButton"
 @onready var reward_panel: Panel = $"../UI/RewardPanel"
 @onready var reward_cards_container: HBoxContainer = $"../UI/RewardPanel/RewardVBox/RewardCardsContainer"
-@onready var start_fight_banner: Control = $"../UI/StartFightBanner"
-@onready var start_fight_banner_panel: Panel = $"../UI/StartFightBanner/Panel"
-@onready var start_fight_banner_label: Label = $"../UI/StartFightBanner/Panel/Label"
 @onready var end_turn_button: Button = $"../UI/EndTurnButton"
 @onready var abandon_combat_button: Button = $"../UI/AbandonCombatButton"
 @onready var battle_visuals: BattleVisuals = $"../Visuals"
@@ -145,12 +174,16 @@ var current_enemy_name := FIRST_ENEMY_NAME
 var returning_to_map := false
 var player_combat_hud: PlayerCombatHUD
 var combat_animation_controller: CombatAnimationController
+var announcement_overlay: CombatAnnouncementOverlay
+var zone_boss_reward_screen: ZoneBossRewardScreen
 var combat_input_locked := false
 var multi_enemy_hps: Array = []
 var multi_enemy_max_hps: Array = []
 var multi_enemy_names: Array = []
 var multi_enemy_active := false
 var current_oni_visual_phase := 0
+var combat_turn_number := 0
+var clear_mind_blocks_debuff_this_combat := false
 
 # AGREGADO: Variable para el artilugio "Calculadora Científica"
 var primera_carta_combate_gratis := false
@@ -160,6 +193,8 @@ func _ready() -> void:
 	randomize()
 	_setup_combat_status_ui()
 	_setup_combat_animation_controller()
+	_setup_announcement_overlay()
+	_setup_zone_boss_reward_screen()
 	deck_manager.deck_counts_changed.connect(_update_deck_zone_ui)
 	draw_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
 	discard_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -201,6 +236,17 @@ func _setup_combat_animation_controller() -> void:
 		hand_container,
 		card_scene
 	)
+
+
+func _setup_announcement_overlay() -> void:
+	announcement_overlay = COMBAT_ANNOUNCEMENT_OVERLAY_SCENE.instantiate() as CombatAnnouncementOverlay
+	add_child(announcement_overlay)
+
+
+func _setup_zone_boss_reward_screen() -> void:
+	zone_boss_reward_screen = ZONE_BOSS_REWARD_SCREEN_SCENE.instantiate() as ZoneBossRewardScreen
+	add_child(zone_boss_reward_screen)
+	zone_boss_reward_screen.reward_selected.connect(_on_zone_boss_reward_selected)
 
 
 func _set_combat_input_locked(locked: bool) -> void:
@@ -259,6 +305,8 @@ func start_battle() -> void:
 	player_cards_played_last_turn = 0
 	player_played_skill_this_turn = false
 	player_played_skill_last_turn = false
+	combat_turn_number = 0
+	clear_mind_blocks_debuff_this_combat = false
 	skip_next_player_draw = false
 	preserve_hand_for_next_turn = false
 	player_attacked_this_turn = false
@@ -270,7 +318,12 @@ func start_battle() -> void:
 	temporary_card_cost_modifiers.clear()
 	_configure_enemy_for_current_node()
 	player.load_hp_from_run_state()
+	var has_temporary_energy_bonus: bool = GameState.consume_temporary_energy_bonus_for_combat()
+	if has_temporary_energy_bonus:
+		player.max_energy += 1
 	player.reset_for_new_combat()
+	if has_temporary_energy_bonus:
+		print("[ZONE REWARD] Café antes del final activo. Energía máxima de este combate:", player.max_energy)
 	enemy.reset_for_new_battle()
 	print("[COMBAT START] HP cargada desde RunState:", GameState.vida_actual, "/", GameState.vida_maxima)
 	print("[NEXT COMBAT] HP cargada:", player.current_hp, "/", player.max_hp)
@@ -281,9 +334,11 @@ func start_battle() -> void:
 	# --- AGREGADO: REVISAMOS LA MOCHILA AL EMPEZAR ---
 	_aplicar_artilugios_inicio_combate()
 	# -------------------------------------------------
+	_apply_clear_mind_if_pending()
 	
 	deck_manager.create_starting_deck()
-	await _show_start_fight_banner()
+	_set_combat_input_locked(true)
+	await _play_combat_announcement("COMIENZA EL COMBATE")
 	await start_player_turn()
 
 # --- AGREGADO: LÓGICA DE ARTILUGIOS ---
@@ -308,6 +363,15 @@ func _aplicar_artilugios_inicio_combate() -> void:
 # ---------------------------------------
 
 
+func _apply_clear_mind_if_pending() -> void:
+	if not GameState.consume_clear_mind_for_combat():
+		return
+
+	clear_mind_blocks_debuff_this_combat = true
+	_gain_player_block(12)
+	print("[ZONE REWARD] Mente despejada activa: +12 escudo y bloqueo del primer debuff enemigo.")
+
+
 func _configure_enemy_for_current_node() -> void:
 	var combat_kind := GameState.get_current_combat_kind()
 	if combat_kind == "miniboss":
@@ -323,7 +387,7 @@ func _configure_enemy_for_current_node() -> void:
 		enemy.base_block = FIRST_ENEMY_BASE_BLOCK
 		enemy.max_energy = 5
 		_set_enemy_deck_for_current_zone([], FIRST_ENEMY_NAME)
-		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
+		battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_TOM_APOSTOL)
 		battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
 		current_enemy_name = FIRST_ENEMY_NAME
 
@@ -339,7 +403,7 @@ func _configure_zone_boss() -> void:
 			enemy.max_energy = 5
 			var pepo_archetypes := _get_zone_boss_archetypes(2)
 			_set_enemy_deck_for_current_zone(pepo_archetypes, SECOND_ENEMY_NAME)
-			battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH)
+			battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_PEPO)
 			battle_visuals.set_enemy_display_name(SECOND_ENEMY_NAME)
 			current_enemy_name = SECOND_ENEMY_NAME
 		THIRD_ENEMY_NAME:
@@ -347,7 +411,7 @@ func _configure_zone_boss() -> void:
 			enemy.base_block = THIRD_ENEMY_BASE_BLOCK
 			enemy.max_energy = 5
 			_set_zone_3_boss_deck()
-			battle_visuals.set_enemy_image(TOMAS_KHUM_IMAGE_PATH, TOMAS_KHUM_SCALE)
+			battle_visuals.set_enemy_image(TOMAS_KHUM_IMAGE_PATH, TOMAS_KHUM_SCALE, VISUAL_ID_THOMAS_KUHN)
 			battle_visuals.set_enemy_display_name(THIRD_ENEMY_NAME)
 			current_enemy_name = THIRD_ENEMY_NAME
 		FOURTH_ENEMY_NAME:
@@ -364,7 +428,7 @@ func _configure_zone_boss() -> void:
 			enemy.max_energy = 5
 			var tom_archetypes := _get_zone_boss_archetypes(1)
 			_set_enemy_deck_for_current_zone(tom_archetypes, FIRST_ENEMY_NAME)
-			battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH)
+			battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_TOM_APOSTOL)
 			battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
 			current_enemy_name = FIRST_ENEMY_NAME
 
@@ -384,7 +448,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.current_hp = 45
 			current_enemy_name = "Integral Triple"
 			battle_visuals.set_enemy_display_name(current_enemy_name)
-			battle_visuals.show_multi_enemy_group(INTEGRAL_MINIBOSS_IMAGE_PATH, multi_enemy_names, multi_enemy_hps, multi_enemy_max_hps)
+			battle_visuals.show_multi_enemy_group(INTEGRAL_MINIBOSS_IMAGE_PATH, multi_enemy_names, multi_enemy_hps, multi_enemy_max_hps, [], [VISUAL_ID_INTEGRAL, VISUAL_ID_INTEGRAL, VISUAL_ID_INTEGRAL])
 			for index in range(multi_enemy_hps.size()):
 				print("%s vida: %d" % [multi_enemy_names[index], multi_enemy_hps[index]])
 		MINIBOSS_CALCULUS:
@@ -393,7 +457,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 3
 			enemy.base_block = 0
 			current_enemy_name = "Calculus"
-			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE, VISUAL_ID_CALCULUS)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		MINIBOSS_CALCULADORA_VIEJA:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -401,7 +465,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 3
 			enemy.base_block = 0
 			current_enemy_name = "Calculadora vieja"
-			battle_visuals.set_enemy_image(CALCULADORA_MINIBOSS_IMAGE_PATH, CALCULADORA_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_image(CALCULADORA_MINIBOSS_IMAGE_PATH, CALCULADORA_MINIBOSS_SCALE, VISUAL_ID_CALCULADORA)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_GOBLIN_VOLTIMETRO:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -409,7 +473,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 3
 			enemy.base_block = 0
 			current_enemy_name = "Goblin voltimetro"
-			battle_visuals.set_enemy_image(GOBLIN_VOLTIMETRO_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_image(GOBLIN_VOLTIMETRO_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE, VISUAL_ID_GOBLIN_VOLTIMETRO)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_GOBLIN_FISICA_2:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -417,7 +481,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 3
 			enemy.base_block = 0
 			current_enemy_name = "Goblin fisica 2"
-			battle_visuals.set_enemy_image(GOBLIN_FISICA_2_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_image(GOBLIN_FISICA_2_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE, VISUAL_ID_GOBLIN_FISICA_2)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_GOBLIN_NOTEBOOK_FISICA_3:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -425,7 +489,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 4
 			enemy.base_block = 0
 			current_enemy_name = "Goblin notebook fisica 3"
-			battle_visuals.set_enemy_image(GOBLIN_NOTEBOOK_FISICA_3_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_image(GOBLIN_NOTEBOOK_FISICA_3_IMAGE_PATH, GOBLIN_MINIBOSS_SCALE, VISUAL_ID_GOBLIN_CLASE_VIRTUAL)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_ROBOT_NO_PROMOCIONAR:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -433,7 +497,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 4
 			enemy.base_block = 10
 			current_enemy_name = "Robot no promocionar"
-			battle_visuals.set_enemy_image(ROBOT_NO_PROMOCIONAR_IMAGE_PATH, ROBOT_ZONE_3_SCALE)
+			battle_visuals.set_enemy_image(ROBOT_NO_PROMOCIONAR_IMAGE_PATH, ROBOT_ZONE_3_SCALE, VISUAL_ID_ROBOT_PROMOCION)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_PINGU_LINUX:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -441,7 +505,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 4
 			enemy.base_block = 0
 			current_enemy_name = "Pingü Linux"
-			battle_visuals.set_enemy_image(PINGU_LINUX_IMAGE_PATH, PINGU_ZONE_3_SCALE)
+			battle_visuals.set_enemy_image(PINGU_LINUX_IMAGE_PATH, PINGU_ZONE_3_SCALE, VISUAL_ID_PINGUINO_LINUX)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENCOUNTER_TORRES_CHICA_MEDIA_CHICA:
 			_configure_multi_enemy_encounter(
@@ -450,6 +514,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[35, 45, 35],
 				[TORRE_CHICA_IMAGE_PATH, TORRE_MEDIA_IMAGE_PATH, TORRE_CHICA_IMAGE_PATH],
 				[TORRE_CHICA_SCALE, TORRE_MEDIA_SCALE, TORRE_CHICA_SCALE],
+				[VISUAL_ID_TORRE_HANOI_1, VISUAL_ID_TORRE_HANOI_2, VISUAL_ID_TORRE_HANOI_1],
 				3,
 				0
 			)
@@ -460,6 +525,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[45, 55],
 				[TORRE_MEDIA_IMAGE_PATH, TORRE_GRANDE_IMAGE_PATH],
 				[TORRE_MEDIA_SCALE, TORRE_GRANDE_SCALE],
+				[VISUAL_ID_TORRE_HANOI_2, VISUAL_ID_TORRE_HANOI_3],
 				3,
 				5
 			)
@@ -470,6 +536,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[95, 35],
 				[PINGU_LINUX_IMAGE_PATH, TORRE_CHICA_IMAGE_PATH],
 				[PINGU_ZONE_3_SCALE, TORRE_CHICA_SCALE],
+				[VISUAL_ID_PINGUINO_LINUX, VISUAL_ID_TORRE_HANOI_1],
 				4,
 				0
 			)
@@ -480,6 +547,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[130, 45],
 				[ROBOT_NO_PROMOCIONAR_IMAGE_PATH, TORRE_MEDIA_IMAGE_PATH],
 				[ROBOT_ZONE_3_SCALE, TORRE_MEDIA_SCALE],
+				[VISUAL_ID_ROBOT_PROMOCION, VISUAL_ID_TORRE_HANOI_2],
 				4,
 				10
 			)
@@ -489,7 +557,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 4
 			enemy.base_block = 0
 			current_enemy_name = "Cigarro"
-			battle_visuals.set_enemy_image(CIGARRO_IMAGE_PATH, CIGARRO_SCALE)
+			battle_visuals.set_enemy_image(CIGARRO_IMAGE_PATH, CIGARRO_SCALE, VISUAL_ID_CIGARRO_1)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_DFD_DIABOLICO:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -497,7 +565,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 4
 			enemy.base_block = 5
 			current_enemy_name = "DFD Diabólico"
-			battle_visuals.set_enemy_image(DFD_DIABOLICO_IMAGE_PATH, DFD_DIABOLICO_SCALE)
+			battle_visuals.set_enemy_image(DFD_DIABOLICO_IMAGE_PATH, DFD_DIABOLICO_SCALE, VISUAL_ID_DFD)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENEMY_PAUTAS:
 			battle_visuals.clear_multi_enemy_visuals()
@@ -505,7 +573,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_energy = 5
 			enemy.base_block = 12
 			current_enemy_name = "Pautas"
-			battle_visuals.set_enemy_image(PAUTAS_IMAGE_PATH, PAUTAS_SCALE)
+			battle_visuals.set_enemy_image(PAUTAS_IMAGE_PATH, PAUTAS_SCALE, VISUAL_ID_PAUTAS)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 		ENCOUNTER_CIGARRO_CIGARRO:
 			_configure_multi_enemy_encounter(
@@ -514,6 +582,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[120, 120],
 				[CIGARRO_IMAGE_PATH, CIGARRO_ALT_2_IMAGE_PATH],
 				[CIGARRO_SCALE, CIGARRO_SCALE],
+				[VISUAL_ID_CIGARRO_1, VISUAL_ID_CIGARRO_2],
 				4,
 				0
 			)
@@ -524,6 +593,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[120, 120, 120],
 				[CIGARRO_IMAGE_PATH, CIGARRO_ALT_2_IMAGE_PATH, CIGARRO_ALT_3_IMAGE_PATH],
 				[CIGARRO_SCALE, CIGARRO_SCALE, CIGARRO_SCALE],
+				[VISUAL_ID_CIGARRO_1, VISUAL_ID_CIGARRO_2, VISUAL_ID_CIGARRO_3],
 				4,
 				0
 			)
@@ -534,6 +604,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 				[155, 120],
 				[DFD_DIABOLICO_IMAGE_PATH, CIGARRO_IMAGE_PATH],
 				[DFD_DIABOLICO_SCALE, CIGARRO_SCALE],
+				[VISUAL_ID_DFD, VISUAL_ID_CIGARRO_1],
 				4,
 				5
 			)
@@ -542,7 +613,7 @@ func _configure_miniboss(miniboss_id: String) -> void:
 			enemy.max_hp = 40
 			enemy.max_energy = 3
 			current_enemy_name = "Calculus"
-			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE)
+			battle_visuals.set_enemy_image(CALCULUS_MINIBOSS_IMAGE_PATH, CALCULUS_MINIBOSS_SCALE, VISUAL_ID_CALCULUS)
 			battle_visuals.set_enemy_display_name(current_enemy_name)
 
 	_set_enemy_deck_for_current_zone(enemy_archetypes, current_enemy_name, miniboss_id)
@@ -554,6 +625,7 @@ func _configure_multi_enemy_encounter(
 	hps: Array,
 	image_paths: Array,
 	sprite_scales: Array,
+	visual_ids: Array,
 	max_energy: int,
 	base_block: int
 ) -> void:
@@ -567,7 +639,7 @@ func _configure_multi_enemy_encounter(
 	enemy.base_block = base_block
 	current_enemy_name = display_name
 	battle_visuals.set_enemy_display_name(current_enemy_name)
-	battle_visuals.show_multi_enemy_group(image_paths, multi_enemy_names, multi_enemy_hps, multi_enemy_max_hps, sprite_scales)
+	battle_visuals.show_multi_enemy_group(image_paths, multi_enemy_names, multi_enemy_hps, multi_enemy_max_hps, sprite_scales, visual_ids)
 
 
 func _set_enemy_deck_for_current_zone(enemy_archetypes: Array = [], debug_name: String = "", encounter_id: String = "") -> void:
@@ -726,7 +798,8 @@ func start_player_turn() -> void:
 	if battle_has_ended:
 		return
 
-	end_turn_button.disabled = false
+	_set_combat_input_locked(true)
+	combat_turn_number += 1
 	player.reset_for_new_turn()
 	player_cards_played_this_turn = 0
 	player_attacked_this_turn = false
@@ -739,7 +812,7 @@ func start_player_turn() -> void:
 		player_cards_played_last_turn = 0
 		_prepare_enemy_intent_for_player_turn()
 		update_ui()
-		enemy_turn()
+		await enemy_turn()
 		return
 
 	if skip_next_player_draw:
@@ -754,6 +827,9 @@ func start_player_turn() -> void:
 
 	_prepare_enemy_intent_for_player_turn()
 	update_ui()
+	await _play_combat_announcement("TURNO DEL JUGADOR", _get_turn_subtitle())
+	if not battle_has_ended and not waiting_for_discard:
+		_set_combat_input_locked(false)
 
 
 func play_card(card_data: CardData, card_ui: CardUI) -> void:
@@ -811,7 +887,8 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	update_ui()
 	await _play_visual_events(visual_events)
 	check_combat_end()
-	_set_combat_input_locked(false)
+	if not battle_has_ended:
+		_set_combat_input_locked(false)
 
 func end_player_turn() -> void:
 	if battle_has_ended or combat_input_locked:
@@ -820,6 +897,7 @@ func end_player_turn() -> void:
 	if waiting_for_discard:
 		return
 
+	_set_combat_input_locked(true)
 	for card_data in deck_manager.hand:
 		if card_data.effect_id == "sentarse_fondo":
 			player.gain_block(5)
@@ -829,11 +907,18 @@ func end_player_turn() -> void:
 
 	player_cards_played_last_turn = player_cards_played_this_turn
 	player_played_skill_last_turn = player_played_skill_this_turn
-	end_turn_button.disabled = true
-	enemy_turn()
+	await enemy_turn()
 
 
 func enemy_turn() -> void:
+	if battle_has_ended:
+		return
+
+	_set_combat_input_locked(true)
+	await _play_combat_announcement("TURNO ENEMIGO", _get_turn_subtitle())
+	if battle_has_ended:
+		return
+
 	enemy.start_turn()
 
 	if skip_next_enemy_turn:
@@ -844,6 +929,7 @@ func enemy_turn() -> void:
 			enemy_turn_finished_by_card = false
 			await _execute_enemy_card(card_to_play)
 			if waiting_for_discard:
+				_set_combat_input_locked(false)
 				return
 			if enemy_turn_finished_by_card:
 				return
@@ -869,7 +955,7 @@ func _finish_enemy_turn() -> void:
 	if battle_has_ended:
 		return
 
-	start_player_turn()
+	await start_player_turn()
 
 
 func update_ui() -> void:
@@ -968,7 +1054,7 @@ func _update_oni_phase_visual(force: bool = false) -> void:
 		return
 
 	current_oni_visual_phase = phase
-	battle_visuals.set_enemy_image(_get_oni_phase_image_path(phase), EL_ONI_SCALE)
+	battle_visuals.set_enemy_image(_get_oni_phase_image_path(phase), EL_ONI_SCALE, _get_oni_phase_visual_id(phase))
 	battle_visuals.set_enemy_display_name(FOURTH_ENEMY_NAME)
 	print("[DEBUG] El Oni cambia a fase visual %d." % phase)
 
@@ -989,6 +1075,16 @@ func _get_oni_phase_image_path(phase: int) -> String:
 			return EL_ONI_PHASE_3_IMAGE_PATH
 		_:
 			return EL_ONI_PHASE_1_IMAGE_PATH
+
+
+func _get_oni_phase_visual_id(phase: int) -> String:
+	match phase:
+		2:
+			return VISUAL_ID_ONI_PHASE_2
+		3:
+			return VISUAL_ID_ONI_PHASE_3
+		_:
+			return VISUAL_ID_ONI_PHASE_1
 
 
 func _update_deck_zone_ui() -> void:
@@ -1101,15 +1197,18 @@ func check_combat_end() -> void:
 		enemy_intent_label.text = "Victoria: aprobaste este combate."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
-		_show_card_reward()
+		if _should_show_zone_boss_reward():
+			_show_zone_boss_reward()
+		else:
+			_show_card_reward()
 	elif player.is_dead():
 		battle_has_ended = true
 		GameState.delete_saved_game()
+		GameState.reset_run_progress()
 		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
 		end_turn_button.disabled = true
 		_clear_hand_ui()
-		GameState.volver_al_primer_nodo()
-		_return_to_map()
+		_return_to_main_menu()
 
 
 func _is_current_encounter_defeated() -> bool:
@@ -1134,15 +1233,39 @@ func complete_first_battle_and_return_to_map() -> void:
 	_return_to_map()
 
 
-func _show_card_reward() -> void:
+func _should_show_zone_boss_reward() -> bool:
+	return GameState.get_current_combat_kind() == "boss"
+
+
+func _show_zone_boss_reward() -> void:
+	if zone_boss_reward_screen == null:
+		_show_card_reward()
+		return
+
+	zone_boss_reward_screen.show_rewards(_get_random_zone_boss_rewards())
+
+
+func _show_card_reward(rarities: Array[String] = [], reward_mode: String = "normal") -> void:
 	print("Combate ganado, generando recompensa")
-	var reward_rarities := _get_current_reward_rarities()
+	var reward_rarities: Array[String] = rarities
+	if reward_rarities.is_empty():
+		reward_rarities = _get_current_reward_rarities()
 	print("Rareza de recompensa actual: %s" % ", ".join(reward_rarities))
 
 	for child in reward_cards_container.get_children():
 		child.queue_free()
 
-	var reward_options := PlayerCardLoader.load_reward_options_by_rarities(reward_rarities, 3)
+	var reward_options: Array[CardData] = PlayerCardLoader.load_reward_options_by_rarities(reward_rarities, 3)
+	if reward_options.is_empty():
+		push_warning("CombatManager: no hay cartas disponibles para rarezas '%s'." % ", ".join(reward_rarities))
+		reward_panel.visible = false
+		if reward_mode == "extra_rare":
+			_show_card_reward()
+		else:
+			GameState.completar_nodo_actual()
+			_return_to_map()
+		return
+
 	var option_names: Array[String] = []
 	for card_data in reward_options:
 		option_names.append(card_data.card_name)
@@ -1154,7 +1277,7 @@ func _show_card_reward() -> void:
 		var card_ui: CardUI = card_scene.instantiate()
 		reward_cards_container.add_child(card_ui)
 		card_ui.setup(card_data)
-		card_ui.card_clicked.connect(_on_reward_card_selected)
+		card_ui.card_clicked.connect(_on_reward_card_selected.bind(reward_mode))
 
 
 func _get_current_reward_rarities() -> Array[String]:
@@ -1163,10 +1286,139 @@ func _get_current_reward_rarities() -> Array[String]:
 	return [GameState.rareza_recompensa_actual]
 
 
-func _on_reward_card_selected(card_data: CardData, _card_ui: CardUI) -> void:
+func _get_random_zone_boss_rewards() -> Array[Dictionary]:
+	var pool: Array[Dictionary] = _get_zone_boss_reward_pool()
+	pool.shuffle()
+
+	var selected: Array[Dictionary] = []
+	var option_count: int = mini(3, pool.size())
+	for index in range(option_count):
+		selected.append(_with_zone_reward_preview(pool[index]))
+	return selected
+
+
+func _get_zone_boss_reward_pool() -> Array[Dictionary]:
+	return [
+		{
+			"id": "heal_big",
+			"title": "Dormir todo el fin de semana",
+			"description": "Recuperá el 40% de tu vida máxima.",
+			"icon_path": BOSS_REWARD_ICON_BED,
+		},
+		{
+			"id": "max_hp_big",
+			"title": "Curtirse con el parcial",
+			"description": "Aumentá tu vida máxima en 8 y recuperá 8 HP.",
+			"icon_path": BOSS_REWARD_ICON_COFFEE_POT,
+		},
+		{
+			"id": "max_hp_and_heal",
+			"title": "Tomarse un respiro",
+			"description": "Aumentá tu vida máxima en 4 y recuperá el 20% de tu vida máxima.",
+			"icon_path": BOSS_REWARD_ICON_LUNGS,
+		},
+		{
+			"id": "temporary_energy",
+			"title": "Café antes del final",
+			"description": "Obtené +1 de energía máxima durante los próximos 3 combates.",
+			"icon_path": BOSS_REWARD_ICON_COFFEE_CUP,
+		},
+		{
+			"id": "clear_mind",
+			"title": "Mente despejada",
+			"description": "El próximo combate comienza con 12 de escudo y anulás el primer debuff recibido.",
+			"icon_path": BOSS_REWARD_ICON_MEDITATION,
+		},
+		{
+			"id": "extra_rare_card",
+			"title": "Promoción directa",
+			"description": "Elegí una carta rara adicional.",
+			"icon_path": BOSS_REWARD_ICON_CONFIRMED,
+		},
+	]
+
+
+func _with_zone_reward_preview(reward_data: Dictionary) -> Dictionary:
+	var result: Dictionary = reward_data.duplicate(true)
+	var current_hp: int = GameState.vida_actual
+	var max_hp: int = GameState.vida_maxima
+	var reward_id: String = String(result.get("id", ""))
+
+	match reward_id:
+		"heal_big":
+			var heal_amount: int = int(ceil(float(max_hp) * 0.40))
+			var missing_hp: int = maxi(max_hp - current_hp, 0)
+			var effective_heal: int = mini(heal_amount, missing_hp)
+			result["preview"] = "Recuperarás %d HP" % effective_heal
+		"max_hp_big":
+			var hp_after_increase: int = mini(current_hp + 8, max_hp + 8)
+			result["preview"] = "Vida máxima: %d -> %d | Vida: %d -> %d" % [
+				max_hp,
+				max_hp + 8,
+				current_hp,
+				hp_after_increase,
+			]
+		"max_hp_and_heal":
+			var heal_amount: int = int(ceil(float(max_hp) * 0.20))
+			result["preview"] = "Vida máxima: %d -> %d | Recuperarás %d HP" % [max_hp, max_hp + 4, heal_amount]
+		"temporary_energy":
+			result["preview"] = "+1 energía durante 3 combates"
+		"clear_mind":
+			result["preview"] = "Próximo combate: +12 escudo y 1 bloqueo de debuff"
+		"extra_rare_card":
+			result["preview"] = "1 carta Ingeniero adicional"
+		_:
+			result["preview"] = ""
+
+	return result
+
+
+func _on_zone_boss_reward_selected(reward_data: Dictionary) -> void:
+	if zone_boss_reward_screen != null:
+		zone_boss_reward_screen.hide_rewards()
+
+	_apply_zone_boss_reward(reward_data)
+
+	if String(reward_data.get("id", "")) == "extra_rare_card":
+		_show_card_reward(EXTRA_RARE_REWARD_RARITIES, "extra_rare")
+	else:
+		_show_card_reward()
+
+
+func _apply_zone_boss_reward(reward_data: Dictionary) -> void:
+	var reward_id: String = String(reward_data.get("id", ""))
+	match reward_id:
+		"heal_big":
+			var heal_amount: int = int(ceil(float(GameState.vida_maxima) * 0.40))
+			GameState.heal_player(heal_amount)
+		"max_hp_big":
+			GameState.increase_max_hp(8, true)
+		"max_hp_and_heal":
+			var previous_max_hp: int = GameState.vida_maxima
+			GameState.increase_max_hp(4, false)
+			GameState.heal_player(int(ceil(float(previous_max_hp) * 0.20)))
+		"temporary_energy":
+			GameState.add_temporary_energy_battles(3)
+		"clear_mind":
+			GameState.activate_clear_mind_next_combat()
+		"extra_rare_card":
+			pass
+		_:
+			push_warning("CombatManager: recompensa de jefe desconocida '%s'." % reward_id)
+
+	player.load_hp_from_run_state()
+	update_ui()
+	GameState.save_game()
+
+
+func _on_reward_card_selected(card_data: CardData, _card_ui: CardUI, reward_mode: String = "normal") -> void:
 	print("Carta elegida: %s" % card_data.card_name)
 	GameState.add_card_to_run_deck(card_data)
 	reward_panel.visible = false
+	if reward_mode == "extra_rare":
+		_show_card_reward()
+		return
+
 	GameState.completar_nodo_actual()
 	_return_to_map()
 
@@ -1191,12 +1443,29 @@ func _return_to_map() -> void:
 	call_deferred("_deferred_return_to_map")
 
 
+func _return_to_main_menu() -> void:
+	if returning_to_map:
+		return
+
+	returning_to_map = true
+	AudioManager.stop_music()
+	call_deferred("_deferred_return_to_main_menu")
+
+
 func _deferred_return_to_map() -> void:
 	var tree := get_tree()
 	if tree == null:
 		return
 
 	tree.change_scene_to_file(MAP_SCENE_PATH)
+
+
+func _deferred_return_to_main_menu() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+
+	tree.change_scene_to_file(MAIN_MENU_SCENE_PATH)
 
 
 func _show_hand() -> void:
@@ -1209,44 +1478,15 @@ func _show_hand() -> void:
 		card_ui.card_clicked.connect(play_card)
 
 
-func _show_start_fight_banner() -> void:
-	start_fight_banner_label.text = "COMIENZA EL COMBATE"
-	start_fight_banner.visible = true
-	start_fight_banner.modulate.a = 0.0
-	await get_tree().process_frame
-	start_fight_banner_panel.scale = Vector2(0.82, 0.82)
-	start_fight_banner_panel.pivot_offset = start_fight_banner_panel.size / 2.0
+func _play_combat_announcement(title: String, subtitle: String = "") -> void:
+	if announcement_overlay == null or battle_has_ended or returning_to_map:
+		return
 
-	var tween: Tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(
-		start_fight_banner,
-		"modulate:a",
-		1.0,
-		0.22
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(
-		start_fight_banner_panel,
-		"scale",
-		Vector2.ONE,
-		0.32
-	).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await announcement_overlay.play_announcement(title, subtitle)
 
-	await tween.finished
-	await get_tree().create_timer(0.65).timeout
 
-	var fade_tween: Tween = create_tween()
-	fade_tween.tween_property(
-		start_fight_banner,
-		"modulate:a",
-		0.0,
-		0.28
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-
-	await fade_tween.finished
-	start_fight_banner.visible = false
-	start_fight_banner.modulate.a = 1.0
-	start_fight_banner_panel.scale = Vector2.ONE
+func _get_turn_subtitle() -> String:
+	return "Turno %d" % max(combat_turn_number, 1)
 
 
 func animate_card_draw(card_data: CardData) -> void:
@@ -1382,6 +1622,7 @@ func _capture_visual_state() -> Dictionary:
 		"enemy_states": _copy_state_names(enemy.estados),
 		"enemy_attack_bonus": enemy.attack_bonus,
 		"enemy_permanent_attack_bonus": enemy.permanent_attack_bonus,
+		"multi_enemy_hps": multi_enemy_hps.duplicate(),
 		"hand_count": deck_manager.hand.size(),
 		"draw_count": deck_manager.draw_pile.size(),
 		"discard_count": deck_manager.discard_pile.size(),
@@ -1399,12 +1640,15 @@ func _copy_state_names(states: Array) -> Array[String]:
 func _build_visual_events_from_state_delta(before_state: Dictionary, after_state: Dictionary, source_actor: String, target_actor: String) -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
 	_append_damage_event(events, before_state, after_state, source_actor, target_actor)
+	_append_self_damage_event(events, before_state, after_state, source_actor)
 	_append_shield_event(events, before_state, after_state, source_actor)
 	_append_heal_event(events, before_state, after_state, source_actor)
 	_append_card_count_events(events, before_state, after_state)
 	_append_energy_event(events, before_state, after_state, source_actor)
 	_append_status_events(events, before_state, after_state, source_actor, target_actor)
 	_append_buff_events(events, before_state, after_state, source_actor)
+	_append_death_events(events, before_state, after_state)
+	_apply_multi_enemy_event_indices(events, before_state, after_state)
 	return events
 
 
@@ -1421,6 +1665,19 @@ func _append_damage_event(events: Array[Dictionary], before_state: Dictionary, a
 		"value": total_loss,
 		"source": source_actor,
 		"target": target_actor,
+	})
+
+
+func _append_self_damage_event(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, source_actor: String) -> void:
+	var hp_key := "%s_hp" % source_actor
+	var hp_loss := int(before_state.get(hp_key, 0)) - int(after_state.get(hp_key, 0))
+	if hp_loss <= 0:
+		return
+	events.append({
+		"type": "damage",
+		"value": hp_loss,
+		"source": source_actor,
+		"target": source_actor,
 	})
 
 
@@ -1488,6 +1745,54 @@ func _append_buff_events(events: Array[Dictionary], before_state: Dictionary, af
 		var gained := int(after_state.get(key, 0)) - int(before_state.get(key, 0))
 		if gained > 0:
 			events.append({"type": "buff", "label": "+%d" % gained, "source": actor, "target": actor})
+
+
+func _append_death_events(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary) -> void:
+	var player_hp_before := int(before_state.get("player_hp", 0))
+	var player_hp_after := int(after_state.get("player_hp", 0))
+	if player_hp_before > 0 and player_hp_after <= 0:
+		events.append({"type": "death", "target": "player"})
+
+	if multi_enemy_active:
+		var before_hps: Array = before_state.get("multi_enemy_hps", [])
+		var after_hps: Array = after_state.get("multi_enemy_hps", [])
+		for index in range(min(before_hps.size(), after_hps.size())):
+			if int(before_hps[index]) > 0 and int(after_hps[index]) <= 0:
+				events.append({"type": "death", "target": "enemy", "target_index": index})
+		return
+
+	var enemy_hp_before := int(before_state.get("enemy_hp", 0))
+	var enemy_hp_after := int(after_state.get("enemy_hp", 0))
+	if enemy_hp_before > 0 and enemy_hp_after <= 0:
+		events.append({"type": "death", "target": "enemy"})
+
+
+func _apply_multi_enemy_event_indices(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary) -> void:
+	if not multi_enemy_active:
+		return
+
+	var active_index := _get_first_alive_multi_enemy_index()
+	var damaged_index := _find_multi_enemy_damaged_index(before_state, after_state)
+
+	for event in events:
+		if not event is Dictionary:
+			continue
+		if String(event.get("source", "")) == "enemy" and not event.has("source_index") and active_index >= 0:
+			event["source_index"] = active_index
+		if String(event.get("target", "")) == "enemy" and not event.has("target_index"):
+			if damaged_index >= 0 and String(event.get("type", "")) == "damage":
+				event["target_index"] = damaged_index
+			elif active_index >= 0:
+				event["target_index"] = active_index
+
+
+func _find_multi_enemy_damaged_index(before_state: Dictionary, after_state: Dictionary) -> int:
+	var before_hps: Array = before_state.get("multi_enemy_hps", [])
+	var after_hps: Array = after_state.get("multi_enemy_hps", [])
+	for index in range(min(before_hps.size(), after_hps.size())):
+		if int(after_hps[index]) < int(before_hps[index]):
+			return index
+	return -1
 
 
 func _format_status_label(state_name: String) -> String:
@@ -1827,7 +2132,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 				damage += 4
 			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"mirada_evaluadora":
-			player.aplicar_estado("estres", 0, 1)
+			_apply_enemy_state_to_player("estres", 0, 1)
 		"borrar_el_pizarron":
 			deck_manager.discard_random_cards(1)
 			_show_hand()
@@ -1842,7 +2147,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 				block_gain += 5
 			enemy.gain_block(block_gain)
 		"cambiar_el_tema":
-			player.aplicar_estado("distraccion", 0, 2)
+			_apply_enemy_state_to_player("distraccion", 0, 2)
 		"parcialito_sorpresa":
 			var damage := 14
 			if player.has_negative_state():
@@ -1851,9 +2156,9 @@ func _execute_enemy_card(card_data: CardData) -> void:
 		"criterio_estricto":
 			enemy.gain_attack_bonus(4, 2)
 		"trabajo_practico_obligatorio":
-			player.aplicar_estado("trabajo_practico_obligatorio", 1, 2)
+			_apply_enemy_state_to_player("trabajo_practico_obligatorio", 1, 2)
 		"explicacion_confusa":
-			player.aplicar_estado("confusion", 0, 2)
+			_apply_enemy_state_to_player("confusion", 0, 2)
 		"unidad_acumulativa":
 			enemy.gain_permanent_attack_bonus(2)
 		"parcial_integrador":
@@ -1863,7 +2168,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"correccion_en_rojo":
 			player.take_damage(enemy.calcular_dano_enemigo(12))
-			player.aplicar_estado("estres", 0, 1)
+			_apply_enemy_state_to_player("estres", 0, 1)
 		"recuperatorio_anunciado":
 			enemy.gain_block(15)
 			enemy.remove_one_negative_state()
@@ -1874,7 +2179,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 				enemy_turn_finished_by_card = true
 				return
 		"bibliografia_extra":
-			player.aplicar_estado("bibliografia_extra", 1, 2)
+			_apply_enemy_state_to_player("bibliografia_extra", 1, 2)
 		"oral_individual":
 			player.take_damage_ignoring_block(enemy.calcular_dano_enemigo(24), 0.5)
 		"cambio_de_consigna":
@@ -1888,10 +2193,10 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			enemy.gain_block(10)
 		"final_con_tribunal":
 			player.take_damage(enemy.calcular_dano_enemigo(30))
-			player.aplicar_estado("estres", 0, 1)
-			player.aplicar_estado("distraccion", 0, 1)
+			_apply_enemy_state_to_player("estres", 0, 1)
+			_apply_enemy_state_to_player("distraccion", 0, 1)
 		"silencio_incomodo":
-			player.aplicar_estado("estres", 0, 1)
+			_apply_enemy_state_to_player("estres", 0, 1)
 			if deck_manager.hand.size() >= 4:
 				deck_manager.discard_random_cards(1)
 				_show_hand()
@@ -1901,12 +2206,12 @@ func _execute_enemy_card(card_data: CardData) -> void:
 				damage += 5
 			player.take_damage(enemy.calcular_dano_enemigo(damage))
 		"quien_quiere_pasar":
-			player.aplicar_estado("panico", 0, 1)
+			_apply_enemy_state_to_player("panico", 0, 1)
 		"lista_incompleta":
 			_begin_enemy_forced_discard(1, 6)
 		"dictado_acelerado":
-			player.aplicar_estado("distraccion", 0, 1)
-			player.aplicar_estado("defensa_menos", 0, 1)
+			_apply_enemy_state_to_player("distraccion", 0, 1)
+			_apply_enemy_state_to_player("defensa_menos", 0, 1)
 		"ejemplo_sin_resolver":
 			var damage := 13
 			if player.tiene_estado("confusion"):
@@ -1923,9 +2228,9 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			player.take_damage(enemy.calcular_dano_enemigo(12))
 			player.block = max(player.block - 4, 0)
 		"correccion_oral":
-			player.aplicar_estado("estres", 0, 2)
+			_apply_enemy_state_to_player("estres", 0, 2)
 		"consigna_ambigua":
-			player.aplicar_estado("confusion", 0, 2)
+			_apply_enemy_state_to_player("confusion", 0, 2)
 		"teoria_acumulada":
 			enemy.gain_permanent_attack_bonus(2)
 			enemy.gain_block(6)
@@ -1940,9 +2245,9 @@ func _execute_enemy_card(card_data: CardData) -> void:
 				_show_hand()
 			player.take_damage(enemy.calcular_dano_enemigo(_count_attack_cards_in_hand() * 4))
 		"esto_es_basico":
-			player.aplicar_estado("habilidad_mas", 0, 2)
+			_apply_enemy_state_to_player("habilidad_mas", 0, 2)
 		"bibliografia_obligatoria":
-			player.aplicar_estado("distraccion", 0, 2)
+			_apply_enemy_state_to_player("distraccion", 0, 2)
 		"mesa_examinadora":
 			var damage := enemy.calcular_dano_enemigo(22)
 			if enemy.block > 0:
@@ -2295,25 +2600,36 @@ func _apply_generic_state_effects_to_enemy(effect_text: String) -> void:
 			enemy.aplicar_estado("ataque_menos", amount, duration)
 
 
+func _apply_enemy_state_to_player(state_name: String, value: int, duration: int) -> void:
+	if clear_mind_blocks_debuff_this_combat:
+		clear_mind_blocks_debuff_this_combat = false
+		var state_label: String = state_name.replace("_", " ").capitalize()
+		battle_visuals.show_player_speech("Mente despejada bloqueó %s" % state_label)
+		print("[ZONE REWARD] Mente despejada bloqueó el estado enemigo:", state_name)
+		return
+
+	player.aplicar_estado(state_name, value, duration)
+
+
 func _apply_generic_state_effects_to_player(effect_text: String) -> void:
 	var duration := _extract_duration(effect_text, 1)
 
 	if effect_text.contains("estres"):
-		player.aplicar_estado("estres", 0, duration)
+		_apply_enemy_state_to_player("estres", 0, duration)
 	if effect_text.contains("distraccion"):
-		player.aplicar_estado("distraccion", 0, duration)
+		_apply_enemy_state_to_player("distraccion", 0, duration)
 	if effect_text.contains("confusion"):
-		player.aplicar_estado("confusion", 0, duration)
+		_apply_enemy_state_to_player("confusion", 0, duration)
 	if effect_text.contains("panico"):
-		player.aplicar_estado("panico", 0, duration)
+		_apply_enemy_state_to_player("panico", 0, duration)
 	if effect_text.contains("cansancio"):
-		player.aplicar_estado("cansancio", 0, duration)
+		_apply_enemy_state_to_player("cansancio", 0, duration)
 	if effect_text.contains("defensa") and (effect_text.contains("menos") or effect_text.contains("25% menos")):
-		player.aplicar_estado("defensa_menos", 0, duration)
+		_apply_enemy_state_to_player("defensa_menos", 0, duration)
 	if effect_text.contains("habilidad") and (effect_text.contains("cuestan 1") or effect_text.contains("cuesta 1")):
-		player.aplicar_estado("habilidad_mas", 0, duration)
+		_apply_enemy_state_to_player("habilidad_mas", 0, duration)
 	if effect_text.contains("roba 1 carta menos"):
-		player.aplicar_estado("distraccion", 0, duration)
+		_apply_enemy_state_to_player("distraccion", 0, duration)
 
 
 func _draw_from_effect_text(effect_text: String) -> void:
