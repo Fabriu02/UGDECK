@@ -362,17 +362,12 @@ func start_battle() -> void:
 	# -------------------------------------------------
 	_apply_clear_mind_if_pending()
 	
-<<<<<<< Updated upstream
-	deck_manager.create_starting_deck()
-	
 	if current_enemy_name == FOURTH_ENEMY_NAME:
 		var presentation_scene = load("res://scripts/ui/BossPresentationOverlay.gd").new()
 		add_child(presentation_scene)
 		presentation_scene.play_presentation()
 		await presentation_scene.presentation_finished
 		
-=======
->>>>>>> Stashed changes
 	_set_combat_input_locked(true)
 	await _play_combat_announcement("COMIENZA EL COMBATE")
 	await start_player_turn()
@@ -999,7 +994,12 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	_set_combat_input_locked(true)
 	var played_card_position := card_ui.global_position
 	deck_manager.hand.erase(card_data)
-	deck_manager.played_cards.append(card_data)
+	
+	# AGREGADO: Hacer que pasar_pizarron sea de un solo uso por combate (agotable)
+	if card_data.effect_id == "pasar_pizarron":
+		print("DEBUG CombatManager: %s es agotable y no vuelve al mazo este combate." % card_data.card_name)
+	else:
+		deck_manager.played_cards.append(card_data)
 	deck_manager.print_deck_debug_counts()
 	card_ui.queue_free()
 	player_cards_played_this_turn += 1
