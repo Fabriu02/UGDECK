@@ -90,8 +90,7 @@ static func load_locker_reward(owned_artifacts: Array[String] = []) -> ArtifactD
 
 
 static func _resolve_csv_path() -> String:
-	var project_root: String = ProjectSettings.globalize_path("res://").get_base_dir().get_base_dir()
-	return project_root.path_join("scripts").path_join(CSV_FILE_NAME)
+	return "res://data/".path_join(CSV_FILE_NAME)
 
 
 static func _is_header_row(row: PackedStringArray) -> bool:

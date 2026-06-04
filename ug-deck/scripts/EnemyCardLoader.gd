@@ -133,8 +133,7 @@ static func load_professor_cards_legacy() -> Array[CardData]:
 
 
 static func _resolve_csv_path(csv_file_name: String = CSV_FILE_NAME) -> String:
-	var project_root := ProjectSettings.globalize_path("res://").get_base_dir().get_base_dir()
-	return project_root.path_join("scripts").path_join(csv_file_name)
+	return "res://data/".path_join(csv_file_name)
 
 
 static func _is_header_row(row: PackedStringArray) -> bool:

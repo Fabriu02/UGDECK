@@ -1,0 +1,16 @@
+[remap]
+
+importer="keep"
+type=""
+uid="uid://comlxdybo2p0u"
+
+[deps]
+
+source_file="res://data/Cartas iniciales.xlsx - CARTAS PROTA.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

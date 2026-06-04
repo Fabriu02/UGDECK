@@ -1,0 +1,16 @@
+[remap]
+
+importer="keep"
+type=""
+uid="uid://dngkixf21eec7"
+
+[deps]
+
+source_file="res://data/Cartas iniciales.xlsx - CARTAS PROFES.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

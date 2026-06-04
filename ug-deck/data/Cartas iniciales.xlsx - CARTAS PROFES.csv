@@ -1,0 +1,40 @@
+CARTAS DE LOS PROFESORES,,,,,,
+Nombre de la carta,Tipo,Coste energía,Efecto,Descripción,Rareza,Arquetipo enemigo
+Bibliografía extra,Debuff enemigo,3,"Durante 2 turnos, el jugador roba 1 carta menos y sus cartas de habilidad cuestan 1 más.",También entra este material complementario.,Ayudante de cátedra,Elite pesado / Jefe tanque
+Oral individual,Ataque,4,Inflige 24 de daño. Ignora el 50% del escudo del jugador.,Silencio absoluto. Sudor académico.,Ayudante de cátedra,Jefe tanque
+Cambio de consigna,Descarte/control de mano,3,El jugador descarta toda su mano y roba 3 cartas nuevas.,La consigna evolucionó. Vos no.,Ayudante de cátedra,Elite pesado / Jefe tanque
+Repaso mortal,Buff propio,3,El profesor gana +5 de ataque y 10 de escudo.,"Dijo “repaso”, pero era una emboscada.",Ayudante de cátedra,Elite pesado / Jefe tanque
+Libro obligatorio,Estados negativos,3,Aplica “Distracción” durante 2 turnos: el jugador roba 1 carta menos al inicio del turno.,Eran 3 páginas. Ahora son 80.,Ayudante de cátedra,Molesto técnico / Jefe tanque
+Mesa examinadora,Ataque,4,"Inflige 22 de daño. Si el profesor tiene escudo, ignora 40% del escudo del jugador.",Muchas miradas. Pocas esperanzas.,Ayudante de cátedra,Jefe tanque
+Criterio invisible,Buff propio,3,El profesor gana +4 de ataque durante 2 turnos y elimina 1 debuff propio.,"Nadie sabe cuál es, pero todos lo padecen.",Ayudante de cátedra,Elite pesado / Jefe tanque
+Cambio de fecha,Descarte/control de mano,3,El jugador descarta 2 cartas aleatorias y roba 1 carta.,El calendario también puede ser enemigo.,Ayudante de cátedra,Molesto técnico / Elite pesado / Jefe tanque
+Pregunta al azar,Ataque,1,"Inflige 7 de daño . Si el jugador tiene 4 o más cartas en mano, inflige 3 de daño adicional.",Nadie estaba preparado. Ni el que preguntó.,Desertor,Enjambre / Duelista básico / Jefe inicial
+Mirada evaluadora,Debuff enemigo,1,Aplica “Estrés” al jugador durante 1 turno: sus cartas de Ataque infligen 20% menos daño.,Esa mirada corrige antes que el parcial.,Desertor,Duelista básico / Frágil molesto / Jefe inicial
+“Eso ya lo vimos”,Ataque,1,"Inflige 8 de daño. Si el jugador no tiene escudo, inflige 2 de daño adicional.","Frase corta, daño permanente.",Desertor,Duelista básico / Jefe inicial
+Silencio incómodo,Debuff enemigo,1,"Aplica “Estrés” durante 1 turno. Si el jugador tiene 5 o más cartas en mano, descarta una aleatoria.",Nadie habla. Nadie respira. Todos sufren.,Desertor,Frágil molesto / Jefe inicial
+Pregunta de repaso,Ataque,1,"Inflige 6 de daño.Si el jugador jugó una carta de Habilidad el turno anterior,inflige daño adicional +3.","Era de repaso, pero igual dolió.",Desertor,Enjambre / Duelista básico / Frágil molesto / Jefe inicial
+“¿Quién quiere pasar?”,Estados negativos,1,Aplica “Pánico” durante 1 turno: la próxima carta jugada por el jugador cuesta 1 energía más.,La silla del frente empieza a brillar.,Desertor,Frágil molesto / Jefe inicial
+Lista incompleta,Descarte/control de mano,1,"El jugador descarta 1 carta aleatoria. Si no tiene cartas en mano, recibe 4 de daño.",El problema no es faltar. Es que te nombren.,Desertor,Frágil molesto / Jefe inicial
+Corrección seca,Ataque,1,Inflige 5 de daño. Aplica “Estrés” durante 1 turno.,No gritó. Eso fue peor.,Desertor,Enjambre / Duelista básico / Jefe inicial
+Recreo cancelado,Debuff enemigo,1,El jugador roba 1 carta menos en su próximo turno.,"El timbre sonó, pero nadie se movió.",Desertor,Frágil molesto / Molesto técnico / Jefe inicial
+Tema sorpresa,Ataque,1,Inflige 9 de daño. No puede usarse dos turnos seguidos.,"Nunca estuvo en el programa, pero apareció igual.",Desertor,Duelista básico / Jefe inicial
+Apunte perdido,Descarte/control de mano,1,"El jugador descarta 1 carta. Si descarta una carta de Defensa, recibe 3 de daño.",Estaba en la mochila. La mochila no coopera.,Desertor,Frágil molesto / Molesto técnico / Jefe inicial
+Explicación rápida,Buff propio,1,El enemigo gana 4 de escudo. Su próximo ataque inflige 2 de daño extra.,Lo explicó tan rápido que pareció otro idioma.,Desertor,Duelista básico / Tanque medio / Jefe inicial
+Borrar el pizarrón,Descarte/control de mano,1,El jugador descarta 1 carta aleatoria de su mano.,Justo cuando ibas entendiendo.,Desertor,Molesto técnico / Elite pesado
+Dictado acelerado,Debuff enemigo,2,"Durante 1 turno, el jugador roba 1 carta menos y sus cartas otorgan - 25% de escudo.",Escribir rápido también es una mecánica de supervivencia.,Ingresante,Molesto técnico / Elite pesado
+Ejemplo sin resolver,Ataque,2,"Inflige 13 de daño. Si el jugador tiene “Confusión”, inflige 5 adicional.",Lo explicó… pero dejó justo la parte importante.,Ingresante,Tanque medio / Elite pesado / Jefe tanque
+Carpeta prolija,Defensa,1,"El profesor gana 9 de escudo. Si tiene algún buff activo, gana 4 de escudo adicional.",Orden administrativo: la defensa más temida.,Ingresante,Tanque medio / Elite pesado / Jefe tanque
+Tema asegurado,Buff propio,2,El profesor gana +3 de ataque durante 2 turnos.,"Cuando dice “esto entra”, ya es tarde.",Ingresante,Molesto técnico / Tanque medio / Elite pesado
+Respuesta incompleta,Ataque,2,Inflige 12 de daño y reduce el escudo actual del jugador en 4.,Casi estaba bien. Ese “casi” te destruyó.,Ingresante,Molesto técnico / Elite pesado / Jefe tanque
+Explicación confusa,Estados negativos,2,Aplica “Confusión” al jugador durante 2 turnos: sus cartas de robo hacen robar 1 carta menos.,"Entendiste menos que antes, pero con más palabras.",Recursante,Tanque medio / Elite pesado / Jefe tanque
+Unidad acumulativa,Buff propio,3,El profesor gana +2 de ataque permanente hasta el final del combate.,Todo se relaciona con todo. Lamentablemente.,Recursante,Elite pesado / Jefe tanque
+Parcial integrador,Ataque,3,"Inflige 18 de daño. Si el jugador tiene menos de 3 cartas en mano, inflige 6 adicional.",La palabra “integrador” nunca trae paz.,Recursante,Molesto técnico / Elite pesado / Jefe tanque
+Corrección en rojo,Ataque,2,Inflige 12 de daño y aplica “Estrés” durante 1 turno.,Cada marca roja pega en el alma.,Recursante,Tanque medio / Elite pesado / Jefe tanque
+Recu anunciado,Defensa,2,El profesor gana 15 de escudo y elimina 1 debuff propio.,"Te da esperanza, pero se protege él.",Recursante,Molesto técnico / Elite pesado / Jefe tanque
+Pregunta capciosa,Descarte/control de mano,3,"El jugador elige y descarta 2 cartas de su mano. Si descarta menos de 2, recibe 8 de daño.",No era difícil. Era malvada.,Recursante,Molesto técnico / Elite pesado / Jefe tanque
+Corrección oral,Debuff enemigo,2,Aplica “Estrés” durante 2 turnos: las cartas de ataque del jugador infligen 20% menos daño.,Te corrige antes de que termines la frase.,Recursante,Molesto técnico / Elite pesado
+Consigna ambigua,Estados negativos,2,Aplica “Confusión” durante 2 turnos: la próxima carta de robo del jugador roba 1 carta menos.,La entendiste. Después la leíste de nuevo. Error.,Recursante,Tanque medio / Elite pesado / Jefe tanque
+Teoría acumulada,Buff propio,3,El profesor gana +2 de ataque permanente y 6 de escudo.,Cada unidad anterior vuelve como fantasma académico.,Recursante,Elite pesado / Jefe tanque
+Inciso sorpresa,Ataque,3,"Inflige 17 de daño. Si el jugador tiene menos de 2 cartas en mano, inflige 7 adicional.",El inciso C no estaba en tus planes de vida.,Recursante,Molesto técnico / Elite pesado / Jefe tanque
+Revisión severa,Descarte/control de mano,2,El jugador elige 1 carta y la descarta. Luego recibe 4 de daño por cada carta de ataque en su mano.,No revisa para ayudar. Revisa para encontrar.,Recursante,Elite pesado / Jefe tanque
+“Esto es básico”,Debuff enemigo,3,"Durante 2 turnos, las cartas de habilidad del jugador cuestan 1 energía adicional.",Nada baja más la moral que esa frase.,Recursante,Frágil molesto / Molesto técnico

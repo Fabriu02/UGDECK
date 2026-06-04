@@ -1,0 +1,16 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cc5yvll0y1swj"
+
+[deps]
+
+source_file="res://data/Cartas iniciales.xlsx - CARTAS PROFES (3).csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

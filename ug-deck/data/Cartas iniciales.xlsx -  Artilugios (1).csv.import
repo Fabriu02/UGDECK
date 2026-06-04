@@ -1,0 +1,19 @@
+[remap]
+
+importer="keep"
+type=""
+uid="uid://cmtt2ed1u1j6a"
+
+[deps]
+
+files=["res://data/Cartas iniciales.xlsx -  Artilugios (1).tipo.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).efecto.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).valor.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).descripcion.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).nombre.translation"]
+
+source_file="res://data/Cartas iniciales.xlsx -  Artilugios (1).csv"
+dest_files=["res://data/Cartas iniciales.xlsx -  Artilugios (1).tipo.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).efecto.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).valor.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).descripcion.translation", "res://data/Cartas iniciales.xlsx -  Artilugios (1).nombre.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
