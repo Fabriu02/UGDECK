@@ -131,7 +131,7 @@ script = ExtResource("8_bgzon")
 script = ExtResource("6_dhufe")
 
 [node name="PlayerSprite" type="Sprite2D" parent="Visuals" unique_id=827691270]
-position = Vector2(267.99997, 244)
+position = Vector2(267.99997, 308)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("3_sdfhe")
 hframes = 5
