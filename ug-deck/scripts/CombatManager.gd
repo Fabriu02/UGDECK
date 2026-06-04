@@ -926,6 +926,40 @@ func _get_current_zone_index() -> int:
 
 func _prepare_enemy_intent_for_player_turn() -> void:
 	enemy.choose_next_intent(player, deck_manager.hand.size(), player_cards_played_last_turn, _get_current_zone_index(), _get_enemy_intent_group_context())
+	_refresh_enemy_intent_card()
+
+
+func _refresh_enemy_intent_card() -> void:
+	# Limpiar carta anterior si existe
+	if enemy_intent_card_ui != null:
+		enemy_intent_card_ui.queue_free()
+		enemy_intent_card_ui = null
+
+	if enemy.planned_card == null:
+		return
+
+	enemy_intent_card_ui = card_scene.instantiate()
+	ui_layer.add_child(enemy_intent_card_ui)
+	enemy_intent_card_ui.position = Vector2(952, 85)
+	enemy_intent_card_ui.scale = Vector2(1.10, 1.10)
+	enemy_intent_card_ui.disabled = true
+	enemy_intent_card_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_intent_card_ui.setup(enemy.planned_card)
+	enemy_intent_card_ui.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
+
+
+func _animate_enemy_intent_card_used() -> void:
+	if enemy_intent_card_ui == null:
+		return
+	var card_ref := enemy_intent_card_ui
+	enemy_intent_card_ui = null
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(card_ref, "position:y", card_ref.position.y - 60, 0.4).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(card_ref, "modulate:a", 0.0, 0.4).set_ease(Tween.EASE_IN)
+	tween.tween_property(card_ref, "scale", card_ref.scale * 0.85, 0.4).set_ease(Tween.EASE_IN)
+	await tween.finished
+	card_ref.queue_free()
 
 
 func _get_enemy_intent_group_context() -> Dictionary:
@@ -1154,29 +1188,10 @@ func update_ui() -> void:
 	_update_deck_zone_ui()
 	_update_combat_status_ui(player_states, enemy_states)
 	
-	# AGREGADO: Solo actualizamos el texto de intención si NO estamos en modo descarte
+	# La carta de intención del enemigo se gestiona en _refresh_enemy_intent_card.
+	# Aquí solo ocultamos el label de texto que ya no se usa para intenciones normales.
 	if not waiting_for_discard:
 		enemy_intent_label.visible = false
-		if enemy.planned_card != null:
-			if enemy_intent_card_ui == null:
-				enemy_intent_card_ui = card_scene.instantiate()
-				ui_layer.add_child(enemy_intent_card_ui)
-				enemy_intent_card_ui.position = Vector2(952, 85)
-				enemy_intent_card_ui.scale = Vector2(1.10, 1.10)
-				enemy_intent_card_ui.disabled = true
-			
-			enemy_intent_card_ui.visible = true
-			enemy_intent_card_ui.setup(enemy.planned_card)
-			enemy_intent_card_ui.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
-		else:
-			if enemy_intent_card_ui != null:
-				enemy_intent_card_ui.visible = false
-	else:
-		if enemy_intent_card_ui != null:
-			enemy_intent_card_ui.visible = false
-		enemy_intent_label.visible = true
-		enemy_intent_label.text = enemy.get_intent_text(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
-		enemy_intent_label.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
 
 
 func _update_combat_status_ui(player_states: Array, enemy_states: Array) -> void:
@@ -2407,6 +2422,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 		return
 
 	enemy.record_executed_intent(card_data, _get_current_zone_index())
+	await _animate_enemy_intent_card_used()
 	var before_visual_state := _capture_visual_state()
 	print("DEBUG Enemy: juega '%s' [%s] | energía antes/después %d/%d | efecto=%s" % [
 		card_data.card_name,
@@ -2600,6 +2616,7 @@ func _begin_discard_selection(mode: String, amount: int, penalty_damage: int, re
 	discard_selection_reward_block_per_card = reward_block_per_card
 	end_turn_button.disabled = true
 
+	enemy_intent_label.visible = true
 	if mode == "enemy_forced":
 		enemy_intent_label.text = "Descarta %d carta(s) de tu mano" % amount
 	elif mode == "player_optional_block":
