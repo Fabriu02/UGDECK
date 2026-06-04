@@ -30,6 +30,7 @@ var player_speech_label: Label
 var player_speech_tween: Tween
 var animation_reference_frame_size := Vector2.ZERO
 var animation_reference_render_size := Vector2.ZERO
+var enemy_visual_scale_multiplier := 1.0
 
 
 func _ready() -> void:
@@ -63,10 +64,11 @@ func set_player_visual(visual_id: String, sprite_scale: Vector2 = Vector2(0.11, 
 			player_sprite.visible = true
 
 
-func set_enemy_image(path: String, sprite_scale: Vector2 = DEFAULT_ENEMY_SCALE, visual_id: String = "") -> void:
+func set_enemy_image(path: String, sprite_scale: Vector2 = DEFAULT_ENEMY_SCALE, visual_id: String = "", visual_scale_multiplier: float = 1.0) -> void:
 	clear_multi_enemy_visuals()
 	if enemy_status_bar != null:
 		enemy_status_bar.visible = true
+	enemy_visual_scale_multiplier = maxf(visual_scale_multiplier, 0.1)
 	enemy_sprite.scale = sprite_scale
 	_try_load_texture(path, enemy_sprite, enemy_placeholder)
 	_set_enemy_visual(visual_id)
@@ -316,6 +318,7 @@ func _set_enemy_visual(visual_id: String, sprite_offset: Vector2 = Vector2.ZERO)
 
 	if enemy_animator.configure(visual_id):
 		_apply_tom_apostol_reference_scale(enemy_animator)
+		enemy_animator.scale *= enemy_visual_scale_multiplier
 		enemy_sprite.visible = false
 		enemy_placeholder.visible = false
 	else:

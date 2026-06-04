@@ -9,6 +9,7 @@ var draw_pile: Array[CardData] = []
 var hand: Array[CardData] = []
 var discard_pile: Array[CardData] = []
 var played_cards: Array[CardData] = []
+var discard_locked_effect_ids: Dictionary = {}
 
 
 func create_starting_deck() -> void:
@@ -16,6 +17,7 @@ func create_starting_deck() -> void:
 	hand.clear()
 	discard_pile.clear()
 	played_cards.clear()
+	discard_locked_effect_ids.clear()
 
 	var loaded_cards := GameState.get_run_deck_copies()
 	if loaded_cards.is_empty():
@@ -87,14 +89,50 @@ func discard_specific_card(card: CardData) -> bool:
 	return true
 
 
+func discard_for_rest_of_combat(card: CardData) -> void:
+	discard_pile.append(card)
+	if not card.effect_id.is_empty():
+		discard_locked_effect_ids[card.effect_id] = true
+	AudioManager.play_sfx("descarte")
+	print_deck_debug_counts()
+
+
 func reshuffle_discard_into_draw_pile() -> void:
 	if discard_pile.is_empty():
 		return
 
-	draw_pile.append_array(discard_pile)
-	discard_pile.clear()
+	var recyclable_cards: Array[CardData] = []
+	var locked_cards: Array[CardData] = []
+	for card: CardData in discard_pile:
+		if is_discard_locked_for_combat(card):
+			locked_cards.append(card)
+		else:
+			recyclable_cards.append(card)
+
+	if recyclable_cards.is_empty():
+		return
+
+	draw_pile.append_array(recyclable_cards)
+	discard_pile = locked_cards
 	shuffle_deck()
 	print_deck_debug_counts()
+
+
+func recover_last_discard_card() -> CardData:
+	for index in range(discard_pile.size() - 1, -1, -1):
+		var card: CardData = discard_pile[index]
+		if is_discard_locked_for_combat(card):
+			continue
+
+		discard_pile.remove_at(index)
+		print_deck_debug_counts()
+		return card
+
+	return null
+
+
+func is_discard_locked_for_combat(card: CardData) -> bool:
+	return card != null and not card.effect_id.is_empty() and discard_locked_effect_ids.has(card.effect_id)
 
 # AGREGADO: Función para descartar cartas de forma aleatoria
 func discard_random_cards(amount: int) -> void:

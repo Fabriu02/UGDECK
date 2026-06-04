@@ -119,6 +119,7 @@ const CIGARRO_SCALE := Vector2(0.09, 0.09)
 const DFD_DIABOLICO_SCALE := Vector2(0.14, 0.14)
 const PAUTAS_SCALE := Vector2(0.16, 0.16)
 const EL_ONI_SCALE := Vector2(0.24, 0.24)
+const ZONE_BOSS_VISUAL_SCALE_MULTIPLIER := 1.28
 
 @export var card_scene: PackedScene = preload("res://scenes/Card.tscn")
 
@@ -187,6 +188,7 @@ var current_oni_visual_phase := 0
 var combat_turn_number := 0
 var clear_mind_blocks_debuff_this_combat := false
 var game_over_in_progress := false
+var single_use_effects_used_this_combat: Dictionary = {}
 
 # AGREGADO: Variable para el artilugio "Calculadora Científica"
 var primera_carta_combate_gratis := false
@@ -195,7 +197,7 @@ var artifact_draw_on_block := false
 var artifact_first_turn_extra_draw := 0
 var artifact_first_turn_extra_energy := 0
 var artifact_first_turn_damage := 0
-var artifact_immunity_states: Array[String] = []
+var artifact_immunity_states: Dictionary = {}
 var artifact_debuff_cleanse_interval := 0
 var artifact_heal_after_combat := 0
 var artifact_gold_bonus_after_combat := 0
@@ -339,6 +341,7 @@ func start_battle() -> void:
 	multi_enemy_names.clear()
 	current_oni_visual_phase = 0
 	temporary_card_cost_modifiers.clear()
+	single_use_effects_used_this_combat.clear()
 	_reset_artifact_combat_effects()
 	_configure_enemy_for_current_node()
 	player.load_hp_from_run_state()
@@ -433,7 +436,7 @@ func _apply_artifact_start_effect(effect_id: String, value: int) -> void:
 		"escudo_inicial":
 			_gain_player_block(value)
 		"inmunidad_cansancio":
-			_add_artifact_immunity("cansancio")
+			_add_artifact_immunity("cansancio", maxi(value, 1))
 		"aplicar_buff":
 			player.aplicar_estado("nervios_de_acero", 0, 2)
 			player.aplicar_estado("panico", 0, 2)
@@ -474,9 +477,32 @@ func _apply_artifact_end_setup(effect_id: String, value: int) -> void:
 			artifact_gold_bonus_after_combat += value
 
 
-func _add_artifact_immunity(state_name: String) -> void:
-	if not artifact_immunity_states.has(state_name):
-		artifact_immunity_states.append(state_name)
+func _add_artifact_immunity(state_name: String, duration_turns: int = -1) -> void:
+	if duration_turns < 0:
+		artifact_immunity_states[state_name] = -1
+		return
+
+	var current_duration: int = int(artifact_immunity_states.get(state_name, 0))
+	if current_duration == -1:
+		return
+	artifact_immunity_states[state_name] = maxi(current_duration, duration_turns)
+
+
+func _advance_artifact_immunities() -> void:
+	var expired_states: Array[String] = []
+	for state_name_variant in artifact_immunity_states.keys():
+		var state_name: String = String(state_name_variant)
+		var remaining_turns: int = int(artifact_immunity_states[state_name])
+		if remaining_turns < 0:
+			continue
+		remaining_turns -= 1
+		if remaining_turns <= 0:
+			expired_states.append(state_name)
+		else:
+			artifact_immunity_states[state_name] = remaining_turns
+
+	for state_name: String in expired_states:
+		artifact_immunity_states.erase(state_name)
 
 
 func _apply_clear_mind_if_pending() -> void:
@@ -519,7 +545,7 @@ func _configure_zone_boss() -> void:
 			enemy.max_energy = 5
 			var pepo_archetypes := _get_zone_boss_archetypes(2)
 			_set_enemy_deck_for_current_zone(pepo_archetypes, SECOND_ENEMY_NAME)
-			battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_PEPO)
+			battle_visuals.set_enemy_image(SECOND_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_PEPO, ZONE_BOSS_VISUAL_SCALE_MULTIPLIER)
 			battle_visuals.set_enemy_display_name(SECOND_ENEMY_NAME)
 			current_enemy_name = SECOND_ENEMY_NAME
 		THIRD_ENEMY_NAME:
@@ -527,7 +553,7 @@ func _configure_zone_boss() -> void:
 			enemy.base_block = THIRD_ENEMY_BASE_BLOCK
 			enemy.max_energy = 5
 			_set_zone_3_boss_deck()
-			battle_visuals.set_enemy_image(TOMAS_KHUM_IMAGE_PATH, TOMAS_KHUM_SCALE, VISUAL_ID_THOMAS_KUHN)
+			battle_visuals.set_enemy_image(TOMAS_KHUM_IMAGE_PATH, TOMAS_KHUM_SCALE, VISUAL_ID_THOMAS_KUHN, ZONE_BOSS_VISUAL_SCALE_MULTIPLIER)
 			battle_visuals.set_enemy_display_name(THIRD_ENEMY_NAME)
 			current_enemy_name = THIRD_ENEMY_NAME
 		FOURTH_ENEMY_NAME:
@@ -544,7 +570,7 @@ func _configure_zone_boss() -> void:
 			enemy.max_energy = 5
 			var tom_archetypes := _get_zone_boss_archetypes(1)
 			_set_enemy_deck_for_current_zone(tom_archetypes, FIRST_ENEMY_NAME)
-			battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_TOM_APOSTOL)
+			battle_visuals.set_enemy_image(FIRST_ENEMY_IMAGE_PATH, BattleVisuals.DEFAULT_ENEMY_SCALE, VISUAL_ID_TOM_APOSTOL, ZONE_BOSS_VISUAL_SCALE_MULTIPLIER)
 			battle_visuals.set_enemy_display_name(FIRST_ENEMY_NAME)
 			current_enemy_name = FIRST_ENEMY_NAME
 
@@ -946,8 +972,7 @@ func start_player_turn() -> void:
 		var draw_amount := player.get_draw_amount(PLAYER_DRAW_PER_TURN)
 		if combat_turn_number == 1:
 			draw_amount += artifact_first_turn_extra_draw
-		var drawn_cards := deck_manager.draw_cards(draw_amount)
-		_apply_artifact_draw_bonus(drawn_cards.size())
+		var drawn_cards := _draw_cards_with_artifact_bonus(draw_amount)
 		if combat_turn_number == 1:
 			_apply_artifact_copy_card_once()
 		await _animate_drawn_cards(drawn_cards)
@@ -975,6 +1000,11 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 		update_ui()
 		return
 
+	if _is_single_use_per_combat_card(card_data) and _was_single_use_card_used(card_data):
+		battle_visuals.show_player_speech("Ya la use en este combate")
+		update_ui()
+		return
+
 	var effective_cost := player.get_effective_card_cost(card_data, player_cards_played_this_turn)
 	effective_cost += _get_temporary_cost_modifier(card_data)
 	effective_cost = max(effective_cost, 0)
@@ -995,9 +1025,10 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 	var played_card_position := card_ui.global_position
 	deck_manager.hand.erase(card_data)
 	
-	# AGREGADO: Hacer que pasar_pizarron sea de un solo uso por combate (agotable)
-	if card_data.effect_id == "pasar_pizarron":
-		print("DEBUG CombatManager: %s es agotable y no vuelve al mazo este combate." % card_data.card_name)
+	if _is_single_use_per_combat_card(card_data):
+		_mark_single_use_card_used(card_data)
+		deck_manager.discard_for_rest_of_combat(card_data)
+		print("DEBUG CombatManager: %s queda en descarte por el resto del combate." % card_data.card_name)
 	else:
 		deck_manager.played_cards.append(card_data)
 	deck_manager.print_deck_debug_counts()
@@ -1032,10 +1063,11 @@ func end_player_turn() -> void:
 	_set_combat_input_locked(true)
 	for card_data in deck_manager.hand:
 		if card_data.effect_id == "sentarse_fondo":
-			player.gain_block(5)
+			_gain_player_block(5)
 
 	# AGREGADO: Reducimos la duración de los estados del jugador al terminar su turno
 	player.reducir_duracion_estados()
+	_advance_artifact_immunities()
 
 	player_cards_played_last_turn = player_cards_played_this_turn
 	player_played_skill_last_turn = player_played_skill_this_turn
@@ -1191,7 +1223,7 @@ func _update_oni_phase_visual(force: bool = false) -> void:
 		return
 
 	current_oni_visual_phase = phase
-	battle_visuals.set_enemy_image(_get_oni_phase_image_path(phase), EL_ONI_SCALE, _get_oni_phase_visual_id(phase))
+	battle_visuals.set_enemy_image(_get_oni_phase_image_path(phase), EL_ONI_SCALE, _get_oni_phase_visual_id(phase), ZONE_BOSS_VISUAL_SCALE_MULTIPLIER)
 	battle_visuals.set_enemy_display_name(FOURTH_ENEMY_NAME)
 	print("[DEBUG] El Oni cambia a fase visual %d." % phase)
 
@@ -2013,6 +2045,19 @@ func _find_multi_enemy_damaged_index(before_state: Dictionary, after_state: Dict
 func _format_status_label(state_name: String) -> String:
 	return state_name.replace("_", " ").capitalize()
 
+
+func _is_single_use_per_combat_card(card_data: CardData) -> bool:
+	return card_data.effect_id == "pasar_pizarron"
+
+
+func _was_single_use_card_used(card_data: CardData) -> bool:
+	return single_use_effects_used_this_combat.has(card_data.effect_id)
+
+
+func _mark_single_use_card_used(card_data: CardData) -> void:
+	single_use_effects_used_this_combat[card_data.effect_id] = true
+
+
 func _apply_card_effect(card_data: CardData) -> void:
 	if card_data.effect_id == "basic_attack":
 		_apply_player_attack(card_data.value)
@@ -2071,7 +2116,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "bonus_defensa_debug":
 		player.bonus_defensa += card_data.value
 	elif card_data.effect_id == "fotocopia_borrosa":
-		var drawn_cards := deck_manager.draw_cards(2)
+		var drawn_cards := _draw_cards_with_artifact_bonus(2)
 		print("DEBUG Player: Fotocopia borrosa robó %d cartas." % drawn_cards.size())
 		_show_hand()
 		if not deck_manager.hand.is_empty():
@@ -2084,7 +2129,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "respuesta_incompleta":
 		_apply_player_attack(8)
 		if enemy.current_hp * 2 < enemy.max_hp:
-			deck_manager.draw_cards(1)
+			_draw_cards_with_artifact_bonus(1)
 			_show_hand()
 	elif card_data.effect_id == "hacer_tiempo":
 		_gain_player_block(6)
@@ -2102,14 +2147,14 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "estudiar_en_x2":
 		player.attack_bonus += 3
 		player.attack_bonus_turns = max(player.attack_bonus_turns, 2)
-		deck_manager.draw_cards(1)
+		_draw_cards_with_artifact_bonus(1)
 		_show_hand()
 	elif card_data.effect_id == "releer_la_consigna":
 		_recover_last_discard_to_hand()
 	elif card_data.effect_id == "chamuyo_academico":
 		enemy.aplicar_estado("ataque_menos", 4, 2)
 	elif card_data.effect_id == "preguntar_al_grupo":
-		var new_cards := deck_manager.draw_cards(3)
+		var new_cards := _draw_cards_with_artifact_bonus(3)
 		_show_hand()
 		for drawn_card in new_cards:
 			if _is_attack_card(drawn_card):
@@ -2129,13 +2174,13 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "crisis_pre_parcial":
 		AudioManager.play_sfx("buff_jugador")
 		player.lose_hp(5)
-		deck_manager.draw_cards(2)
+		_draw_cards_with_artifact_bonus(2)
 		player.attack_bonus += 4
 		player.attack_bonus_turns = max(player.attack_bonus_turns, 1)
 		_show_hand()
 	elif card_data.effect_id == "tutoria_express":
 		player.curar(14)
-		deck_manager.draw_cards(1)
+		_draw_cards_with_artifact_bonus(1)
 		_show_hand()
 	elif card_data.effect_id == "mate_compartido":
 		AudioManager.play_sfx("buff_jugador")
@@ -2155,7 +2200,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "final_promocionado":
 		player.aplicar_estado("final_promocionado", 1, 3)
 	elif card_data.effect_id == "mirar_el_parcial_del_companero":
-		var peek_cards := deck_manager.draw_cards(1)
+		var peek_cards := _draw_cards_with_artifact_bonus(1)
 		_show_hand()
 		if not peek_cards.is_empty() and _is_attack_card(peek_cards[0]):
 			_apply_damage_to_current_enemy(5)
@@ -2170,7 +2215,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 		_gain_player_block(block_amount)
 	elif card_data.effect_id == "quedarse_sin_hojas":
 		if deck_manager.hand.is_empty():
-			deck_manager.draw_cards(1)
+			_draw_cards_with_artifact_bonus(1)
 			_show_hand()
 		else:
 			_begin_discard_selection("player_replace_one", 1, 0)
@@ -2184,7 +2229,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 		player.aplicar_estado("bonus_defensa_temporal", 3, 2)
 	elif card_data.effect_id == "pedir_que_repita":
 		enemy.aplicar_estado("ataque_menos", 3, 1)
-		deck_manager.draw_cards(1)
+		_draw_cards_with_artifact_bonus(1)
 		_show_hand()
 	elif card_data.effect_id == "subrayador_fluorescente":
 		player.next_attack_flat_bonus += 6
@@ -2194,7 +2239,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "audio_de_7_minutos":
 		enemy.aplicar_estado("distraccion", 20, 2)
 	elif card_data.effect_id == "resumen_ajeno":
-		var drawn_cards := deck_manager.draw_cards(2)
+		var drawn_cards := _draw_cards_with_artifact_bonus(2)
 		_show_hand()
 		if not drawn_cards.is_empty():
 			_set_temporary_cost_modifier(drawn_cards[0], -1)
@@ -2210,7 +2255,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "cambio_de_aula":
 		var hand_count := deck_manager.hand.size()
 		deck_manager.discard_hand()
-		deck_manager.draw_cards(hand_count)
+		_draw_cards_with_artifact_bonus(hand_count)
 		_show_hand()
 	elif card_data.effect_id == "profe_de_buen_humor":
 		player.current_energy += 2
@@ -2225,7 +2270,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 		player.aplicar_estado("estres", 0, 1)
 	elif card_data.effect_id == "consulta_salvadora":
 		player.curar(8)
-		deck_manager.draw_cards(1)
+		_draw_cards_with_artifact_bonus(1)
 		player.remove_one_negative_state()
 		_show_hand()
 	elif card_data.effect_id == "semana_sin_parciales":
@@ -2252,7 +2297,7 @@ func _play_machetearse() -> void:
 # MODIFICADO: Ahora activa el modo selección si tienes cartas
 func _discard_one_card_and_draw() -> void:
 	if deck_manager.hand.is_empty():
-		deck_manager.draw_cards(1)
+		_draw_cards_with_artifact_bonus(1)
 		_show_hand()
 	else:
 		_begin_discard_selection("player_replace_one", 1, 0)
@@ -2284,7 +2329,7 @@ func _execute_discard_choice(card_data: CardData, card_ui: CardUI) -> void:
 
 	match discard_selection_mode:
 		"player_replace_one":
-			var drawn_cards := deck_manager.draw_cards(1)
+			var drawn_cards := _draw_cards_with_artifact_bonus(1)
 			if not drawn_cards.is_empty():
 				visual_events.append({"type": "draw", "value": drawn_cards.size(), "source": "player"})
 			_reset_discard_selection()
@@ -2404,7 +2449,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			player.take_damage_ignoring_block(enemy.calcular_dano_enemigo(24), 0.5)
 		"cambio_de_consigna":
 			deck_manager.discard_hand()
-			deck_manager.draw_cards(3)
+			_draw_cards_with_artifact_bonus(3)
 			skip_next_player_draw = true
 			preserve_hand_for_next_turn = true
 			_show_hand()
@@ -2479,7 +2524,7 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			enemy.remove_one_negative_state()
 		"cambio_de_fecha":
 			deck_manager.discard_random_cards(2)
-			deck_manager.draw_cards(1)
+			_draw_cards_with_artifact_bonus(1)
 			_show_hand()
 		"final_definitivo":
 			var damage := 28
@@ -2588,7 +2633,7 @@ func _finish_discard_selection_without_cards(mode: String = "", penalty_damage: 
 
 	match resolved_mode:
 		"player_replace_one":
-			deck_manager.draw_cards(1)
+			_draw_cards_with_artifact_bonus(1)
 			_show_hand()
 		"enemy_forced":
 			if resolved_penalty_damage > 0:
@@ -2604,9 +2649,15 @@ func _finish_discard_selection_without_cards(mode: String = "", penalty_damage: 
 func _gain_player_block(amount: int) -> void:
 	player.gain_block(amount)
 	if amount > 0 and artifact_draw_on_block:
-		var drawn_cards := deck_manager.draw_cards(1)
+		var drawn_cards := _draw_cards_with_artifact_bonus(1)
 		if not drawn_cards.is_empty():
 			_show_hand()
+
+
+func _draw_cards_with_artifact_bonus(amount: int) -> Array[CardData]:
+	var drawn_cards := deck_manager.draw_cards(amount)
+	_apply_artifact_draw_bonus(drawn_cards.size())
+	return drawn_cards
 
 
 func _apply_artifact_draw_bonus(drawn_count: int) -> void:
@@ -2706,7 +2757,7 @@ func _apply_generic_player_card_effect(card_data: CardData) -> void:
 				player.remove_one_negative_state()
 		"robo":
 			if amount > 0:
-				deck_manager.draw_cards(amount)
+				_draw_cards_with_artifact_bonus(amount)
 				_show_hand()
 		"energia":
 			if amount > 0:
@@ -2798,7 +2849,7 @@ func _apply_generic_player_discard_effect(effect_text: String, amount: int) -> v
 		var hand_count := deck_manager.hand.size()
 		deck_manager.discard_hand()
 		if effect_text.contains("roba"):
-			deck_manager.draw_cards(hand_count)
+			_draw_cards_with_artifact_bonus(hand_count)
 		_show_hand()
 		return
 
@@ -2910,8 +2961,7 @@ func _draw_from_effect_text(effect_text: String) -> void:
 	if amount <= 0:
 		return
 
-	var drawn_cards := deck_manager.draw_cards(amount)
-	_apply_artifact_draw_bonus(drawn_cards.size())
+	var drawn_cards := _draw_cards_with_artifact_bonus(amount)
 	_show_hand()
 
 
@@ -3049,7 +3099,9 @@ func _get_temporary_cost_modifier(card_data: CardData) -> int:
 func _recover_last_discard_to_hand() -> void:
 	if deck_manager.discard_pile.is_empty():
 		return
-	var recovered_card: CardData = deck_manager.discard_pile.pop_back()
+	var recovered_card: CardData = deck_manager.recover_last_discard_card()
+	if recovered_card == null:
+		return
 	deck_manager.hand.append(recovered_card)
 	deck_manager.print_deck_debug_counts()
 	_show_hand()

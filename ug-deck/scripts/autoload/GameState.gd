@@ -2,8 +2,8 @@ extends Node
 
 
 const SAVE_FILE_PATH := "user://savegame.save"
-const BASE_PLAYER_HP := 70
-const BASE_PLAYER_ENERGY := 3
+const BASE_PLAYER_HP := 80
+const BASE_PLAYER_ENERGY := 4
 
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
 const ArtifactLoader := preload("res://scripts/ArtifactLoader.gd")
