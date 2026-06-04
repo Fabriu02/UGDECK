@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/GameOverOverlay.gd" id="1_overlay"]
+
+[node name="GameOverOverlay" type="CanvasLayer"]
+script = ExtResource("1_overlay")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="DarkOverlay" type="ColorRect" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.72)
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+ratio = 1.77778
+stretch_mode = 3
+mouse_filter = 2
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="Root/AspectRatioContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand = true

@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://ce5j4bsl1v7w2" path="res://assets/backgrounds/classroom.png" id="5_m7sfx"]
 [ext_resource type="Script" uid="uid://dcslgpcrr8821" path="res://scripts/BattleVisuals.gd" id="6_dhufe"]
 [ext_resource type="AudioStream" uid="uid://bacoc852dyonw" path="res://assets/musica/Pencils_Down.mp3" id="7_bsu3s"]
+[ext_resource type="Script" path="res://scripts/ZoneAnimatedBackground.gd" id="8_bgzon"]
 
 [sub_resource type="Animation" id="Animation_hrc4b"]
 length = 0.001
@@ -125,13 +126,14 @@ _data = {
 scale = Vector2(0.3636364, 0.48214287)
 texture = ExtResource("5_m7sfx")
 centered = false
+script = ExtResource("8_bgzon")
 
 [node name="Visuals" type="Node2D" parent="." unique_id=13347114]
 script = ExtResource("6_dhufe")
 
 [node name="PlayerSprite" type="Sprite2D" parent="Visuals" unique_id=827691270]
-position = Vector2(267.99997, 244)
-scale = Vector2(0.18, 0.18)
+position = Vector2(267.99997, 302)
+scale = Vector2(0.11, 0.11)
 texture = ExtResource("3_sdfhe")
 hframes = 5
 
@@ -139,22 +141,22 @@ hframes = 5
 libraries/ = SubResource("AnimationLibrary_a4ns4")
 
 [node name="EnemySprite" type="Sprite2D" parent="Visuals" unique_id=1801640942]
-position = Vector2(844, 250)
-scale = Vector2(0.7, 0.7)
+position = Vector2(844, 308)
+scale = Vector2(0.44, 0.44)
 
 [node name="PlayerPlaceholder" type="Label" parent="Visuals" unique_id=1025080769]
 offset_left = 192.0
-offset_top = 62.0
+offset_top = 120.0
 offset_right = 347.0
-offset_bottom = 112.0
+offset_bottom = 170.0
 text = "Jugador"
 horizontal_alignment = 1
 
 [node name="EnemyPlaceholder" type="Label" parent="Visuals" unique_id=1871807874]
 offset_left = 825.0
-offset_top = 245.0
+offset_top = 303.0
 offset_right = 980.0
-offset_bottom = 295.0
+offset_bottom = 353.0
 text = "Tom Apostol"
 horizontal_alignment = 1
 
@@ -202,32 +204,32 @@ text = "Intencion"
 
 [node name="HandTitleLabel" type="Label" parent="UI" unique_id=1814040682]
 offset_left = 190.0
-offset_top = 364.0
+offset_top = 384.0
 offset_right = 960.0
-offset_bottom = 388.0
+offset_bottom = 408.0
 text = "Cartas disponibles"
 horizontal_alignment = 1
 
 [node name="HandContainer" type="HBoxContainer" parent="UI" unique_id=264410624]
 offset_left = 190.0
-offset_top = 396.0
+offset_top = 416.0
 offset_right = 960.0
-offset_bottom = 640.0
+offset_bottom = 656.0
 theme_override_constants/separation = 10
 alignment = 1
 
 [node name="EndTurnButton" type="Button" parent="UI" unique_id=1007204836]
-offset_left = 947.0
-offset_top = 294.0
-offset_right = 1127.0
-offset_bottom = 338.0
+offset_left = 988.0
+offset_top = 344.0
+offset_right = 1128.0
+offset_bottom = 386.0
 text = "Terminar turno"
 
 [node name="AbandonCombatButton" type="Button" parent="UI" unique_id=2008890789]
-offset_left = 947.0
-offset_top = 344.0
-offset_right = 1127.0
-offset_bottom = 388.0
+offset_left = 944.0
+offset_top = 18.0
+offset_right = 1134.0
+offset_bottom = 58.0
 text = "Abandonar combate"
 
 [node name="DrawPileArea" type="Control" parent="UI" unique_id=864584979]
