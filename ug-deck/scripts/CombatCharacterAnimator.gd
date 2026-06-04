@@ -5,6 +5,7 @@ signal death_animation_finished
 
 const SPRITES_ROOT := "res://assets/sprites_personajes"
 const FRAME_COLUMNS := 5
+const ANIMATION_SPEED_MULTIPLIER := 0.75
 const ANIMATIONS := ["idle", "attack", "defend", "buff", "debuff", "hurt", "death"]
 const ANIMATION_SETTINGS := {
 	"idle": {"fps": 5.0, "loop": true},
@@ -226,7 +227,8 @@ func _add_spritesheet_animation(frames: SpriteFrames, animation_name: String, pa
 		)
 
 	frames.add_animation(animation_name)
-	frames.set_animation_speed(animation_name, float(ANIMATION_SETTINGS[animation_name]["fps"]))
+	var animation_fps: float = float(ANIMATION_SETTINGS[animation_name]["fps"]) * ANIMATION_SPEED_MULTIPLIER
+	frames.set_animation_speed(animation_name, animation_fps)
 	frames.set_animation_loop(animation_name, bool(ANIMATION_SETTINGS[animation_name]["loop"]))
 
 	for frame_index in range(FRAME_COLUMNS):

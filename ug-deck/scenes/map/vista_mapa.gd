@@ -172,7 +172,7 @@ func _generate_and_visualize():
 func _add_zone_labels() -> void:
 	for zone_index in range(generador_mapa.GENERATED_ZONE_COUNT):
 		var label := Label.new()
-		var start_column := zone_index * generador_mapa.COLUMNS_PER_ZONE
+		var start_column := generador_mapa.get_zone_start_column(zone_index)
 		var end_column := start_column + generador_mapa.COLUMNS_PER_ZONE - 1
 		var zone_center_x := map_offset.x + ((start_column + end_column) * 0.5 * x_spacing)
 

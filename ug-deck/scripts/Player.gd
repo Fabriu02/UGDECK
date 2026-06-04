@@ -1,7 +1,7 @@
 extends Node
 class_name Player
 
-@export var max_hp: int = 50
+@export var max_hp: int = GameState.BASE_PLAYER_HP
 @export var max_energy: int = 3
 
 var current_hp: int
@@ -48,7 +48,7 @@ func reset_for_new_combat() -> void:
 	estados.clear()
 
 func reset_for_new_run() -> void:
-	max_hp = 50
+	max_hp = GameState.BASE_PLAYER_HP
 	current_hp = max_hp
 	sync_hp_to_run_state()
 	reset_for_new_combat()

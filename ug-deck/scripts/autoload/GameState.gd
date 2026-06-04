@@ -2,6 +2,7 @@ extends Node
 
 
 const SAVE_FILE_PATH := "user://savegame.save"
+const BASE_PLAYER_HP := 70
 
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
 
@@ -11,8 +12,8 @@ var nodo_actual_id: int = -1
 var nodos_completados: Array[int] = []
 var dinero: int = 150
 var artilugios: Array[String] = []
-var vida_actual: int = 50
-var vida_maxima: int = 50
+var vida_actual: int = BASE_PLAYER_HP
+var vida_maxima: int = BASE_PLAYER_HP
 var run_started: bool = false
 var zona_actual: int = 1
 var rareza_recompensa_actual: String = "Ingresante"
@@ -57,7 +58,7 @@ func reset_run_progress() -> void:
 	nodos_completados.clear()
 	dinero = 150
 	artilugios.clear()
-	vida_maxima = 50
+	vida_maxima = BASE_PLAYER_HP
 	vida_actual = vida_maxima
 	run_started = false
 	zona_actual = 1
@@ -380,8 +381,8 @@ func load_game() -> bool:
 	for a in saved_artilugios:
 		artilugios.append(String(a))
 
-	vida_actual = int(data.get("vida_actual", 50))
-	vida_maxima = int(data.get("vida_maxima", 50))
+	vida_actual = int(data.get("vida_actual", BASE_PLAYER_HP))
+	vida_maxima = int(data.get("vida_maxima", BASE_PLAYER_HP))
 	run_started = bool(data.get("run_started", false))
 	zona_actual = int(data.get("zona_actual", 1))
 	rareza_recompensa_actual = String(data.get("rareza_recompensa_actual", "Ingresante"))

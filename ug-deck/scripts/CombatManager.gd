@@ -9,6 +9,7 @@ const PLAYER_COMBAT_HUD_SCRIPT := preload("res://scripts/ui/PlayerCombatHUD.gd")
 const STATUS_EFFECT_INFO_SCRIPT := preload("res://scripts/ui/StatusEffectInfo.gd")
 const COMBAT_ANNOUNCEMENT_OVERLAY_SCENE := preload("res://scenes/ui/CombatAnnouncementOverlay.tscn")
 const ZONE_BOSS_REWARD_SCREEN_SCENE := preload("res://scenes/ui/ZoneBossRewardScreen.tscn")
+const GAME_OVER_OVERLAY_SCENE := preload("res://scenes/ui/GameOverOverlay.tscn")
 const MAP_SCENE_PATH := "res://scenes/map/vista_mapa.tscn"
 const MAIN_MENU_SCENE_PATH := "res://scenes/menu/MainMenu.tscn"
 const EXTRA_RARE_REWARD_RARITIES: Array[String] = ["Ingeniero"]
@@ -176,6 +177,7 @@ var player_combat_hud: PlayerCombatHUD
 var combat_animation_controller: CombatAnimationController
 var announcement_overlay: CombatAnnouncementOverlay
 var zone_boss_reward_screen: ZoneBossRewardScreen
+var game_over_overlay: GameOverOverlay
 var combat_input_locked := false
 var multi_enemy_hps: Array = []
 var multi_enemy_max_hps: Array = []
@@ -184,6 +186,7 @@ var multi_enemy_active := false
 var current_oni_visual_phase := 0
 var combat_turn_number := 0
 var clear_mind_blocks_debuff_this_combat := false
+var game_over_in_progress := false
 
 # AGREGADO: Variable para el artilugio "Calculadora Científica"
 var primera_carta_combate_gratis := false
@@ -195,6 +198,7 @@ func _ready() -> void:
 	_setup_combat_animation_controller()
 	_setup_announcement_overlay()
 	_setup_zone_boss_reward_screen()
+	_setup_game_over_overlay()
 	deck_manager.deck_counts_changed.connect(_update_deck_zone_ui)
 	draw_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
 	discard_pile_area.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -249,11 +253,19 @@ func _setup_zone_boss_reward_screen() -> void:
 	zone_boss_reward_screen.reward_selected.connect(_on_zone_boss_reward_selected)
 
 
+func _setup_game_over_overlay() -> void:
+	game_over_overlay = GAME_OVER_OVERLAY_SCENE.instantiate() as GameOverOverlay
+	add_child(game_over_overlay)
+
+
 func _set_combat_input_locked(locked: bool) -> void:
 	combat_input_locked = locked
-	end_turn_button.disabled = locked or waiting_for_discard or battle_has_ended
-	abandon_combat_button.disabled = locked
-	_set_hand_cards_disabled(locked)
+	var combat_finished: bool = battle_has_ended or game_over_in_progress
+	var hand_should_disable: bool = locked or combat_finished
+	var controls_should_disable: bool = locked or waiting_for_discard or combat_finished
+	end_turn_button.disabled = controls_should_disable
+	abandon_combat_button.disabled = controls_should_disable
+	_set_hand_cards_disabled(hand_should_disable)
 
 
 func _set_hand_cards_disabled(disabled: bool) -> void:
@@ -833,7 +845,7 @@ func start_player_turn() -> void:
 
 
 func play_card(card_data: CardData, card_ui: CardUI) -> void:
-	if battle_has_ended or combat_input_locked:
+	if battle_has_ended or combat_input_locked or game_over_in_progress:
 		return
 
 	if not deck_manager.hand.has(card_data):
@@ -891,7 +903,7 @@ func play_card(card_data: CardData, card_ui: CardUI) -> void:
 		_set_combat_input_locked(false)
 
 func end_player_turn() -> void:
-	if battle_has_ended or combat_input_locked:
+	if battle_has_ended or combat_input_locked or game_over_in_progress:
 		return
 
 	if waiting_for_discard:
@@ -911,7 +923,7 @@ func end_player_turn() -> void:
 
 
 func enemy_turn() -> void:
-	if battle_has_ended:
+	if battle_has_ended or game_over_in_progress:
 		return
 
 	_set_combat_input_locked(true)
@@ -928,6 +940,8 @@ func enemy_turn() -> void:
 		if card_to_play != null:
 			enemy_turn_finished_by_card = false
 			await _execute_enemy_card(card_to_play)
+			if battle_has_ended or game_over_in_progress:
+				return
 			if waiting_for_discard:
 				_set_combat_input_locked(false)
 				return
@@ -941,6 +955,9 @@ func enemy_turn() -> void:
 
 
 func _finish_enemy_turn() -> void:
+	if battle_has_ended or game_over_in_progress:
+		return
+
 	if not preserve_hand_for_next_turn:
 		deck_manager.discard_hand()
 		_clear_hand_ui()
@@ -1192,9 +1209,10 @@ func check_combat_end() -> void:
 	if _is_current_encounter_defeated():
 		battle_has_ended = true
 		_save_player_hp_at_combat_end()
+		var gold_reward: int = _grant_combat_gold_reward()
 		if GameState.get_current_combat_kind() == "miniboss":
 			print("Minijefe derrotado")
-		enemy_intent_label.text = "Victoria: aprobaste este combate."
+		enemy_intent_label.text = "Victoria: aprobaste este combate. +$%d" % gold_reward
 		end_turn_button.disabled = true
 		_clear_hand_ui()
 		if _should_show_zone_boss_reward():
@@ -1202,13 +1220,33 @@ func check_combat_end() -> void:
 		else:
 			_show_card_reward()
 	elif player.is_dead():
-		battle_has_ended = true
-		GameState.delete_saved_game()
-		GameState.reset_run_progress()
-		enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
-		end_turn_button.disabled = true
-		_clear_hand_ui()
-		_return_to_main_menu()
+		trigger_game_over()
+
+
+func trigger_game_over() -> void:
+	if game_over_in_progress:
+		return
+
+	game_over_in_progress = true
+	battle_has_ended = true
+	waiting_for_discard = false
+	_reset_discard_selection()
+	_set_combat_input_locked(true)
+	_clear_hand_ui()
+	reward_panel.visible = false
+	deck_viewer_panel.visible = false
+	enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
+
+	if game_over_overlay != null:
+		await game_over_overlay.play_and_wait()
+
+	_complete_game_over_return_to_menu()
+
+
+func _complete_game_over_return_to_menu() -> void:
+	GameState.delete_saved_game()
+	GameState.reset_run_progress()
+	_return_to_main_menu()
 
 
 func _is_current_encounter_defeated() -> bool:
@@ -1231,6 +1269,28 @@ func complete_first_battle_and_return_to_map() -> void:
 	_save_player_hp_at_combat_end()
 	GameState.completar_nodo_actual()
 	_return_to_map()
+
+
+func _grant_combat_gold_reward() -> int:
+	var reward_amount: int = _get_combat_gold_reward_amount()
+	GameState.dinero += reward_amount
+	GameState.save_game()
+	update_ui()
+	print("[COMBAT REWARD] +$%d | Plata total: $%d" % [reward_amount, GameState.dinero])
+	return reward_amount
+
+
+func _get_combat_gold_reward_amount() -> int:
+	var zone_index: int = maxi(GameState.get_current_zone_index(), 1)
+	match GameState.get_current_combat_kind():
+		"boss":
+			return 70 + zone_index * 15
+		"miniboss":
+			return 40 + zone_index * 10
+		"intermediate":
+			return 22 + zone_index * 6
+		_:
+			return 25 + zone_index * 5
 
 
 func _should_show_zone_boss_reward() -> bool:
@@ -1424,6 +1484,9 @@ func _on_reward_card_selected(card_data: CardData, _card_ui: CardUI, reward_mode
 
 
 func abandon_combat() -> void:
+	if game_over_in_progress:
+		return
+
 	battle_has_ended = true
 	_save_player_hp_at_combat_end()
 	_return_to_map()
@@ -1435,7 +1498,7 @@ func _save_player_hp_at_combat_end() -> void:
 
 
 func _return_to_map() -> void:
-	if returning_to_map:
+	if returning_to_map or game_over_in_progress:
 		return
 
 	returning_to_map = true
@@ -1602,7 +1665,7 @@ func _clear_hand_ui() -> void:
 
 
 func _play_visual_events(events: Array) -> void:
-	if combat_animation_controller == null or events.is_empty():
+	if combat_animation_controller == null or events.is_empty() or game_over_in_progress:
 		return
 	await combat_animation_controller.play_sequence(events)
 
@@ -1641,6 +1704,10 @@ func _build_visual_events_from_state_delta(before_state: Dictionary, after_state
 	var events: Array[Dictionary] = []
 	_append_damage_event(events, before_state, after_state, source_actor, target_actor)
 	_append_self_damage_event(events, before_state, after_state, source_actor)
+	if _state_delta_killed_player(before_state, after_state):
+		events.append({"type": "death", "target": "player"})
+		return events
+
 	_append_shield_event(events, before_state, after_state, source_actor)
 	_append_heal_event(events, before_state, after_state, source_actor)
 	_append_card_count_events(events, before_state, after_state)
@@ -1650,6 +1717,10 @@ func _build_visual_events_from_state_delta(before_state: Dictionary, after_state
 	_append_death_events(events, before_state, after_state)
 	_apply_multi_enemy_event_indices(events, before_state, after_state)
 	return events
+
+
+func _state_delta_killed_player(before_state: Dictionary, after_state: Dictionary) -> bool:
+	return int(before_state.get("player_hp", 0)) > 0 and int(after_state.get("player_hp", 0)) <= 0
 
 
 func _append_damage_event(events: Array[Dictionary], before_state: Dictionary, after_state: Dictionary, source_actor: String, target_actor: String) -> void:
