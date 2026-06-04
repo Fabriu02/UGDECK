@@ -44,7 +44,7 @@ func _ready() -> void:
 		player_anim_player.play("idle")
 
 
-func set_player_visual(visual_id: String, sprite_scale: Vector2 = Vector2(0.11, 0.11), sprite_offset: Vector2 = Vector2(0, 53)) -> void:
+func set_player_visual(visual_id: String, sprite_scale: Vector2 = Vector2(0.11, 0.11), sprite_offset: Vector2 = Vector2(0, 0)) -> void:
 	if player_animator == null:
 		_setup_character_animators()
 
@@ -425,7 +425,7 @@ func _load_visual_idle_frame_size(visual_id: String) -> Vector2:
 func _setup_single_status_bars() -> void:
 	if player_status_bar == null:
 		player_status_bar = CHARACTER_STATUS_BAR_SCRIPT.new()
-		player_status_bar.position = player_sprite.position + Vector2(-88, 140)
+		player_status_bar.position = player_sprite.position + Vector2(-88, 80)
 		add_child(player_status_bar)
 
 	if enemy_status_bar == null:
