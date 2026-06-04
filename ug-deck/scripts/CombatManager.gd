@@ -178,6 +178,7 @@ var player_combat_hud: PlayerCombatHUD
 var combat_animation_controller: CombatAnimationController
 var announcement_overlay: CombatAnnouncementOverlay
 var zone_boss_reward_screen: ZoneBossRewardScreen
+var enemy_intent_card_ui: CardUI
 var game_over_overlay: GameOverOverlay
 var combat_input_locked := false
 var multi_enemy_hps: Array = []
@@ -1155,6 +1156,25 @@ func update_ui() -> void:
 	
 	# AGREGADO: Solo actualizamos el texto de intención si NO estamos en modo descarte
 	if not waiting_for_discard:
+		enemy_intent_label.visible = false
+		if enemy.planned_card != null:
+			if enemy_intent_card_ui == null:
+				enemy_intent_card_ui = card_scene.instantiate()
+				ui_layer.add_child(enemy_intent_card_ui)
+				enemy_intent_card_ui.position = Vector2(952, 85)
+				enemy_intent_card_ui.scale = Vector2(1.10, 1.10)
+				enemy_intent_card_ui.disabled = true
+			
+			enemy_intent_card_ui.visible = true
+			enemy_intent_card_ui.setup(enemy.planned_card)
+			enemy_intent_card_ui.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
+		else:
+			if enemy_intent_card_ui != null:
+				enemy_intent_card_ui.visible = false
+	else:
+		if enemy_intent_card_ui != null:
+			enemy_intent_card_ui.visible = false
+		enemy_intent_label.visible = true
 		enemy_intent_label.text = enemy.get_intent_text(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
 		enemy_intent_label.tooltip_text = enemy.get_intent_tooltip(player, deck_manager.hand.size(), player_cards_played_last_turn, player_played_skill_last_turn)
 
@@ -1365,6 +1385,9 @@ func check_combat_end() -> void:
 		var gold_reward: int = _grant_combat_gold_reward()
 		if GameState.get_current_combat_kind() == "miniboss":
 			print("Minijefe derrotado")
+		if enemy_intent_card_ui != null:
+			enemy_intent_card_ui.visible = false
+		enemy_intent_label.visible = true
 		enemy_intent_label.text = "Victoria: aprobaste este combate. +$%d" % gold_reward
 		end_turn_button.disabled = true
 		_clear_hand_ui()
@@ -1390,6 +1413,9 @@ func trigger_game_over() -> void:
 	_clear_hand_ui()
 	reward_panel.visible = false
 	deck_viewer_panel.visible = false
+	if enemy_intent_card_ui != null:
+		enemy_intent_card_ui.visible = false
+	enemy_intent_label.visible = true
 	enemy_intent_label.text = "Derrota: el cuatrimestre te supero."
 
 	if game_over_overlay != null:

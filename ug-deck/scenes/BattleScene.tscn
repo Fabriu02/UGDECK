@@ -7,8 +7,7 @@
 [ext_resource type="Script" uid="uid://dyofysrretafs" path="res://scripts/Enemy.gd" id="4_yk4pu"]
 [ext_resource type="Texture2D" uid="uid://ce5j4bsl1v7w2" path="res://assets/backgrounds/classroom.png" id="5_m7sfx"]
 [ext_resource type="Script" uid="uid://dcslgpcrr8821" path="res://scripts/BattleVisuals.gd" id="6_dhufe"]
-[ext_resource type="AudioStream" uid="uid://bacoc852dyonw" path="res://assets/musica/Pencils_Down.mp3" id="7_bsu3s"]
-[ext_resource type="Script" path="res://scripts/ZoneAnimatedBackground.gd" id="8_bgzon"]
+[ext_resource type="Script" uid="uid://bfakodfi3mpu3" path="res://scripts/ZoneAnimatedBackground.gd" id="8_bgzon"]
 
 [sub_resource type="Animation" id="Animation_hrc4b"]
 length = 0.001
@@ -132,7 +131,7 @@ script = ExtResource("8_bgzon")
 script = ExtResource("6_dhufe")
 
 [node name="PlayerSprite" type="Sprite2D" parent="Visuals" unique_id=827691270]
-position = Vector2(267.99997, 302)
+position = Vector2(267.99997, 244)
 scale = Vector2(0.11, 0.11)
 texture = ExtResource("3_sdfhe")
 hframes = 5
@@ -454,4 +453,3 @@ grow_vertical = 2
 text = "COMIENZA EL COMBATE"
 horizontal_alignment = 1
 vertical_alignment = 1
-

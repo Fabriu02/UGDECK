@@ -214,6 +214,9 @@ static func _build_card_image_path(card_name: String) -> String:
 		result = result.substr(1)
 	while result.ends_with("_"):
 		result = result.substr(0, result.length() - 1)
+	var enemy_path := "res://assets/cards_enemy/%s.png" % result
+	if ResourceLoader.exists(enemy_path):
+		return enemy_path
 	var path := "res://assets/cards/%s.png" % result
 	if ResourceLoader.exists(path):
 		return path
