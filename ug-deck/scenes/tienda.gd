@@ -430,24 +430,24 @@ func _refresh_shop_cards() -> void:
 
 		if not card_data.image_path.is_empty() and ResourceLoader.exists(card_data.image_path):
 			# Con imagen: la carta se muestra como PNG, agregar etiqueta de precio encima
-			card_ui.custom_minimum_size = Vector2(130, 130)
-			card_ui.size = Vector2(130, 130)
+			card_ui.custom_minimum_size = Vector2(180, 255)
+			card_ui.size = Vector2(180, 255)
 			var price_label := Label.new()
 			price_label.text = "$%d" % price
 			price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			price_label.add_theme_font_size_override("font_size", 13)
+			price_label.add_theme_font_size_override("font_size", 20)
 			price_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.1))
 			price_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 			price_label.add_theme_constant_override("shadow_offset_x", 2)
 			price_label.add_theme_constant_override("shadow_offset_y", 2)
 			price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			price_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-			price_label.offset_top = -28
+			price_label.offset_top = -34
 			card_ui.add_child(price_label)
 		else:
 			# Sin imagen: layout de texto con nombre y precio
-			card_ui.custom_minimum_size = Vector2(108, 156)
-			card_ui.size = Vector2(108, 156)
+			card_ui.custom_minimum_size = Vector2(180, 255)
+			card_ui.size = Vector2(180, 255)
 			card_ui.name_label.add_theme_font_size_override("font_size", 9)
 			card_ui.cost_label.add_theme_font_size_override("font_size", 8)
 			card_ui.description_label.add_theme_font_size_override("font_size", 7)
