@@ -337,6 +337,13 @@ func start_battle() -> void:
 	_apply_clear_mind_if_pending()
 	
 	deck_manager.create_starting_deck()
+	
+	if current_enemy_name == FOURTH_ENEMY_NAME:
+		var presentation_scene = load("res://scripts/ui/BossPresentationOverlay.gd").new()
+		add_child(presentation_scene)
+		presentation_scene.play_presentation()
+		await presentation_scene.presentation_finished
+		
 	_set_combat_input_locked(true)
 	await _play_combat_announcement("COMIENZA EL COMBATE")
 	await start_player_turn()
@@ -1804,14 +1811,17 @@ func _apply_card_effect(card_data: CardData) -> void:
 	elif card_data.effect_id == "basic_block":
 		_gain_player_block(card_data.value)
 	elif card_data.effect_id == "mate_salvador":
+		AudioManager.play_sfx("buff_jugador")
 		player.attack_bonus = card_data.value
 		player.attack_bonus_turns = 2
 	elif card_data.effect_id == "trasnochar":
+		AudioManager.play_sfx("buff_jugador")
 		player.lose_hp(card_data.value)
 		player.next_attack_multiplier = 2.0
 	elif card_data.effect_id == "machetearse":
 		_play_machetearse()
 	elif card_data.effect_id == "aprobado_con_4":
+		AudioManager.play_sfx("buff_jugador")
 		player.approved_with_4_turns = 2
 	elif card_data.effect_id == "faltazo":
 		player.skip_next_player_turn = true
@@ -1909,6 +1919,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 			damage += 6
 		_apply_player_attack(damage)
 	elif card_data.effect_id == "crisis_pre_parcial":
+		AudioManager.play_sfx("buff_jugador")
 		player.lose_hp(5)
 		deck_manager.draw_cards(2)
 		player.attack_bonus += 4
@@ -1919,6 +1930,7 @@ func _apply_card_effect(card_data: CardData) -> void:
 		deck_manager.draw_cards(1)
 		_show_hand()
 	elif card_data.effect_id == "mate_compartido":
+		AudioManager.play_sfx("buff_jugador")
 		player.current_energy += 1
 		player.queue_extra_energy_next_turn(1)
 	elif card_data.effect_id == "nervios_de_acero":
@@ -2270,6 +2282,13 @@ func _execute_enemy_card(card_data: CardData) -> void:
 			_apply_generic_enemy_card_effect(card_data)
 			print("DEBUG Enemy: carta sin implementación específica '%s'." % card_data.card_name)
 
+	var took_hit := (player.current_hp < player_hp_before) or (player.block < player_block_before)
+	if took_hit:
+		if current_enemy_name == FIRST_ENEMY_NAME:
+			AudioManager.play_sfx("hit_tom_apostol")
+		elif current_enemy_name.contains("Integral"):
+			AudioManager.play_sfx("hit_integral")
+			
 	print("DEBUG Enemy: resultado '%s' | jugador HP %d->%d | jugador escudo %d->%d | enemigo HP %d->%d | enemigo escudo %d->%d" % [
 		card_data.card_name,
 		player_hp_before,
@@ -2383,6 +2402,9 @@ func _apply_player_attack(base_damage: int) -> void:
 
 
 func _apply_damage_to_current_enemy(amount: int) -> void:
+	if amount > 0:
+		AudioManager.play_sfx("hit_jugador")
+		
 	if not multi_enemy_active:
 		enemy.take_damage(amount)
 		return

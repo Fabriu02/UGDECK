@@ -12,6 +12,13 @@ var sounds: Dictionary = {
 	"romper_escudo": preload("res://assets/sfx/romper escudo.wav"),
 	"abrir_casillero": preload("res://assets/sfx/item casillero.wav"),
 	"comprar_item": preload("res://assets/sfx/comprar item.wav"),
+	"descarte": preload("res://assets/sfx/Descarte mazo sonido.wav"),
+	"buff_jugador": preload("res://assets/sfx/BUFF jugador.wav"),
+	"debuff_jugador": preload("res://assets/sfx/DEBUFF JUGADOR.wav"),
+	"curarse": preload("res://assets/sfx/curarse.wav"),
+	"hit_jugador": preload("res://assets/sfx/hit jugador.wav"),
+	"hit_integral": preload("res://assets/sfx/hit integral.wav"),
+	"hit_tom_apostol": preload("res://assets/sfx/hit tom apostol 1.wav"),
 }
 
 var music: Dictionary = {

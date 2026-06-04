@@ -61,12 +61,16 @@ func draw_cards(amount: int) -> Array[CardData]:
 
 
 func discard_hand() -> void:
+	if not hand.is_empty():
+		AudioManager.play_sfx("descarte")
 	discard_pile.append_array(hand)
 	hand.clear()
 	print_deck_debug_counts()
 
 
 func discard_played_cards() -> void:
+	if not played_cards.is_empty():
+		AudioManager.play_sfx("descarte")
 	discard_pile.append_array(played_cards)
 	played_cards.clear()
 	print_deck_debug_counts()
@@ -78,6 +82,7 @@ func discard_specific_card(card: CardData) -> bool:
 
 	hand.erase(card)
 	discard_pile.append(card)
+	AudioManager.play_sfx("descarte")
 	print_deck_debug_counts()
 	return true
 
@@ -101,6 +106,7 @@ func discard_random_cards(amount: int) -> void:
 		var card := hand[index]
 		hand.remove_at(index)
 		discard_pile.append(card)
+		AudioManager.play_sfx("descarte")
 	print_deck_debug_counts()
 
 

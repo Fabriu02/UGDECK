@@ -171,6 +171,8 @@ func gain_block(amount: int) -> void:
 
 # AGREGADO: Función para curar vida en combate
 func curar(cantidad: int) -> void:
+	if cantidad > 0:
+		AudioManager.play_sfx("curarse")
 	var curacion_final := float(cantidad)
 	
 	# Si está cansado, se cura un 25% menos
@@ -306,6 +308,12 @@ func queue_extra_energy_next_turn(amount: int) -> void:
 
 # NUEVAS FUNCIONES BÁSICAS: Para aplicar y consultar estados
 func aplicar_estado(nombre: String, valor: int, duracion: int) -> void:
+	var debuffs = ["estres", "distraccion", "cansancio", "debil", "panico", "confusion", "trabajo_practico_obligatorio", "defensa_menos"]
+	if debuffs.has(nombre):
+		AudioManager.play_sfx("debuff_jugador")
+	else:
+		AudioManager.play_sfx("buff_jugador")
+		
 	estados.append({
 		"nombre": nombre,
 		"valor": valor,

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://d3ko50etntmci"
+path="res://.godot/imported/DEBUFF JUGADOR.wav-78c840640cdb3bb770752c282b724428.sample"
+
+[deps]
+
+source_file="res://assets/sfx/DEBUFF JUGADOR.wav"
+dest_files=["res://.godot/imported/DEBUFF JUGADOR.wav-78c840640cdb3bb770752c282b724428.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2
