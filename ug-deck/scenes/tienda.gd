@@ -1,8 +1,10 @@
 extends Control
 
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
+const ArtifactLoader := preload("res://scripts/ArtifactLoader.gd")
 const CARD_SCENE := preload("res://scenes/Card.tscn")
 const SHOP_CARD_COUNT := 3
+const SHOP_ITEM_COUNT := 3
 const SHOP_REROLL_COST := 25
 const CARD_REMOVAL_BASE_COST := 50
 const CARD_REMOVAL_COST_STEP := 25
@@ -23,6 +25,7 @@ var remove_button: Button
 var remove_panel: Panel
 var panel_cards_container: GridContainer
 var shop_cards: Array[CardData] = []
+var shop_artifacts: Array[ArtifactData] = []
 
 # Lista de lo que vendemos (Nombre, Precio)
 var inventario = [
@@ -143,7 +146,7 @@ func _actualizar_plata():
 		reroll_button.disabled = GameState.dinero < SHOP_REROLL_COST
 	_refresh_remove_button()
 
-func _generar_items():
+func _generar_items_legacy():
 	for hijo in estante_items.get_children():
 		hijo.queue_free()
 		
@@ -175,7 +178,7 @@ func _generar_items():
 		
 		estante_items.add_child(item_box)
 
-func _comprar(item, boton, tex_rect):
+func _comprar_legacy(item, boton, tex_rect):
 	if GameState.dinero >= item.precio:
 		AudioManager.play_sfx("comprar_item")
 		GameState.dinero -= item.precio
@@ -184,7 +187,7 @@ func _comprar(item, boton, tex_rect):
 		if GameState.INFO_ARTILUGIOS.has(item.nombre):
 			var info_item = GameState.INFO_ARTILUGIOS[item.nombre]
 			if info_item.tipo == "inmediato":
-				_aplicar_efecto_inmediato(info_item.efecto, info_item.valor)
+				_aplicar_efecto_inmediato_legacy(info_item.efecto, info_item.valor)
 				
 		_actualizar_plata()
 		_refresh_remove_button()
@@ -197,7 +200,7 @@ func _comprar(item, boton, tex_rect):
 	else:
 		print("No te alcanza la plata, buscate una beca.")
 
-func _aplicar_efecto_inmediato(efecto: String, valor: int):
+func _aplicar_efecto_inmediato_legacy(efecto: String, valor: int):
 	match efecto:
 		"energia_max":
 			if "energia_maxima" in GameState:
@@ -207,6 +210,85 @@ func _aplicar_efecto_inmediato(efecto: String, valor: int):
 			if "vida_maxima" in GameState:
 				GameState.increase_max_hp(valor, false)
 				print("EFECTO INMEDIATO: Tu vida máxima aumentó a ", GameState.vida_maxima)
+
+func _generar_items() -> void:
+	for hijo: Node in estante_items.get_children():
+		hijo.queue_free()
+
+	shop_artifacts = ArtifactLoader.load_shop_options(SHOP_ITEM_COUNT, GameState.artilugios)
+	for item: ArtifactData in shop_artifacts:
+		var item_box := VBoxContainer.new()
+		item_box.alignment = BoxContainer.ALIGNMENT_CENTER
+		item_box.custom_minimum_size = Vector2(150, 190)
+		item_box.add_theme_constant_override("separation", 3)
+
+		var tex_rect := TextureRect.new()
+		tex_rect.texture = load(item.icon_path)
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.custom_minimum_size = Vector2(46, 46)
+		item_box.add_child(tex_rect)
+
+		var name_label := Label.new()
+		name_label.text = item.artifact_name
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_label.add_theme_font_size_override("font_size", 10)
+		name_label.add_theme_color_override("font_color", Color.BLACK)
+		item_box.add_child(name_label)
+
+		var desc_label := Label.new()
+		desc_label.text = item.description
+		desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc_label.custom_minimum_size = Vector2(145, 58)
+		desc_label.add_theme_font_size_override("font_size", 8)
+		desc_label.add_theme_color_override("font_color", Color.BLACK)
+		item_box.add_child(desc_label)
+
+		var effect_label := Label.new()
+		effect_label.text = _format_artifact_effect(item)
+		effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		effect_label.custom_minimum_size = Vector2(145, 28)
+		effect_label.add_theme_font_size_override("font_size", 8)
+		effect_label.add_theme_color_override("font_color", Color(0.08, 0.18, 0.28))
+		item_box.add_child(effect_label)
+
+		var btn := Button.new()
+		btn.text = "Comprar\n$%d" % item.price
+		btn.custom_minimum_size = Vector2(120, 44)
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.disabled = GameState.dinero < item.price
+		btn.pressed.connect(func(): _comprar(item, btn, tex_rect))
+		item_box.add_child(btn)
+
+		estante_items.add_child(item_box)
+
+
+func _comprar(item: ArtifactData, boton: Button, tex_rect: TextureRect) -> void:
+	if GameState.dinero < item.price:
+		print("No te alcanza la plata, buscate una beca.")
+		return
+
+	AudioManager.play_sfx("comprar_item")
+	GameState.dinero -= item.price
+	GameState.add_artifact_to_run(item.artifact_name)
+	_actualizar_plata()
+	_refresh_remove_button()
+	_refresh_shop_cards()
+	boton.disabled = true
+	boton.text = "COMPRADO"
+	tex_rect.modulate = Color(0.5, 0.5, 0.5)
+	print("Compraste ", item.artifact_name)
+	GameState.save_game()
+
+
+func _format_artifact_effect(item: ArtifactData) -> String:
+	var effect_name: String = item.effect_id.replace("_", " ").capitalize()
+	return "Efecto: %s" % effect_name
+
 
 func _generar_tienda_cartas() -> void:
 	GameState.ensure_run_deck_initialized()

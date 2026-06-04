@@ -190,6 +190,17 @@ var game_over_in_progress := false
 
 # AGREGADO: Variable para el artilugio "Calculadora Científica"
 var primera_carta_combate_gratis := false
+var artifact_block_per_draw := 0
+var artifact_draw_on_block := false
+var artifact_first_turn_extra_draw := 0
+var artifact_first_turn_extra_energy := 0
+var artifact_first_turn_damage := 0
+var artifact_immunity_states: Array[String] = []
+var artifact_debuff_cleanse_interval := 0
+var artifact_heal_after_combat := 0
+var artifact_gold_bonus_after_combat := 0
+var artifact_attack_damage_bonus := 0
+var artifact_copy_card_available := false
 
 
 func _ready() -> void:
@@ -328,8 +339,10 @@ func start_battle() -> void:
 	multi_enemy_names.clear()
 	current_oni_visual_phase = 0
 	temporary_card_cost_modifiers.clear()
+	_reset_artifact_combat_effects()
 	_configure_enemy_for_current_node()
 	player.load_hp_from_run_state()
+	player.max_energy = GameState.energia_maxima
 	var has_temporary_energy_bonus: bool = GameState.consume_temporary_energy_bonus_for_combat()
 	if has_temporary_energy_bonus:
 		player.max_energy += 1
@@ -342,12 +355,14 @@ func start_battle() -> void:
 	
 	# Poner música de combate
 	AudioManager.play_music("pencils_down", -8.0)
+	deck_manager.create_starting_deck()
 	
 	# --- AGREGADO: REVISAMOS LA MOCHILA AL EMPEZAR ---
 	_aplicar_artilugios_inicio_combate()
 	# -------------------------------------------------
 	_apply_clear_mind_if_pending()
 	
+<<<<<<< Updated upstream
 	deck_manager.create_starting_deck()
 	
 	if current_enemy_name == FOURTH_ENEMY_NAME:
@@ -356,12 +371,14 @@ func start_battle() -> void:
 		presentation_scene.play_presentation()
 		await presentation_scene.presentation_finished
 		
+=======
+>>>>>>> Stashed changes
 	_set_combat_input_locked(true)
 	await _play_combat_announcement("COMIENZA EL COMBATE")
 	await start_player_turn()
 
 # --- AGREGADO: LÓGICA DE ARTILUGIOS ---
-func _aplicar_artilugios_inicio_combate() -> void:
+func _aplicar_artilugios_inicio_combate_legacy() -> void:
 	primera_carta_combate_gratis = false
 	
 	for nombre_artilugio in GameState.artilugios:
@@ -380,6 +397,91 @@ func _aplicar_artilugios_inicio_combate() -> void:
 					primera_carta_combate_gratis = true
 					print("⚡ ARTILUGIO: Calculadora lista. Tu primera carta costará 0.")
 # ---------------------------------------
+
+
+func _reset_artifact_combat_effects() -> void:
+	primera_carta_combate_gratis = false
+	artifact_block_per_draw = 0
+	artifact_draw_on_block = false
+	artifact_first_turn_extra_draw = 0
+	artifact_first_turn_extra_energy = 0
+	artifact_first_turn_damage = 0
+	artifact_immunity_states.clear()
+	artifact_debuff_cleanse_interval = 0
+	artifact_heal_after_combat = 0
+	artifact_gold_bonus_after_combat = 0
+	artifact_attack_damage_bonus = 0
+	artifact_copy_card_available = false
+
+
+func _aplicar_artilugios_inicio_combate() -> void:
+	for nombre_artilugio: String in GameState.artilugios:
+		if not GameState.INFO_ARTILUGIOS.has(nombre_artilugio):
+			continue
+
+		var info: Dictionary = GameState.INFO_ARTILUGIOS[nombre_artilugio]
+		var artifact_type: String = String(info.get("tipo", ""))
+		var effect_id: String = String(info.get("efecto", ""))
+		var value: int = int(info.get("valor", 0))
+
+		match artifact_type:
+			"inicio_combate":
+				_apply_artifact_start_effect(effect_id, value)
+			"pasivo_combate":
+				_apply_artifact_passive_setup(effect_id, value)
+			"fin_combate":
+				_apply_artifact_end_setup(effect_id, value)
+
+
+func _apply_artifact_start_effect(effect_id: String, value: int) -> void:
+	match effect_id:
+		"escudo_inicial":
+			_gain_player_block(value)
+		"inmunidad_cansancio":
+			_add_artifact_immunity("cansancio")
+		"aplicar_buff":
+			player.aplicar_estado("nervios_de_acero", 0, 2)
+			player.aplicar_estado("panico", 0, 2)
+		"robar_extra":
+			artifact_first_turn_extra_draw += value
+		"energia_extra":
+			artifact_first_turn_extra_energy += value
+			artifact_first_turn_damage += 3
+
+
+func _apply_artifact_passive_setup(effect_id: String, value: int) -> void:
+	match effect_id:
+		"costo_cero":
+			primera_carta_combate_gratis = true
+		"escudo_por_robo":
+			artifact_block_per_draw += value
+		"inmunidad_distraccion":
+			_add_artifact_immunity("distraccion")
+		"inmunidad_panico":
+			_add_artifact_immunity("panico")
+		"robar_al_defender":
+			artifact_draw_on_block = true
+		"limpiar_debuff":
+			artifact_debuff_cleanse_interval = maxi(value, 1)
+		"plata_extra":
+			artifact_gold_bonus_after_combat += value
+		"dano_extra":
+			artifact_attack_damage_bonus += value
+		"copiar_carta":
+			artifact_copy_card_available = true
+
+
+func _apply_artifact_end_setup(effect_id: String, value: int) -> void:
+	match effect_id:
+		"curacion_fija":
+			artifact_heal_after_combat += value
+		"plata_extra":
+			artifact_gold_bonus_after_combat += value
+
+
+func _add_artifact_immunity(state_name: String) -> void:
+	if not artifact_immunity_states.has(state_name):
+		artifact_immunity_states.append(state_name)
 
 
 func _apply_clear_mind_if_pending() -> void:
@@ -820,6 +922,12 @@ func start_player_turn() -> void:
 	_set_combat_input_locked(true)
 	combat_turn_number += 1
 	player.reset_for_new_turn()
+	if combat_turn_number == 1:
+		player.current_energy += artifact_first_turn_extra_energy
+		if artifact_first_turn_damage > 0:
+			player.take_damage(artifact_first_turn_damage)
+	if artifact_debuff_cleanse_interval > 0 and combat_turn_number % artifact_debuff_cleanse_interval == 0:
+		player.remove_one_negative_state()
 	player_cards_played_this_turn = 0
 	player_attacked_this_turn = false
 	player_played_skill_this_turn = false
@@ -841,7 +949,12 @@ func start_player_turn() -> void:
 	else:
 		preserve_hand_for_next_turn = false
 		var draw_amount := player.get_draw_amount(PLAYER_DRAW_PER_TURN)
+		if combat_turn_number == 1:
+			draw_amount += artifact_first_turn_extra_draw
 		var drawn_cards := deck_manager.draw_cards(draw_amount)
+		_apply_artifact_draw_bonus(drawn_cards.size())
+		if combat_turn_number == 1:
+			_apply_artifact_copy_card_once()
 		await _animate_drawn_cards(drawn_cards)
 
 	_prepare_enemy_intent_for_player_turn()
@@ -1216,6 +1329,7 @@ func check_combat_end() -> void:
 	if _is_current_encounter_defeated():
 		battle_has_ended = true
 		_save_player_hp_at_combat_end()
+		_apply_artifact_end_of_combat_rewards()
 		var gold_reward: int = _grant_combat_gold_reward()
 		if GameState.get_current_combat_kind() == "miniboss":
 			print("Minijefe derrotado")
@@ -1227,6 +1341,8 @@ func check_combat_end() -> void:
 		else:
 			_show_card_reward()
 	elif player.is_dead():
+		if _try_artifact_revival():
+			return
 		trigger_game_over()
 
 
@@ -1248,6 +1364,20 @@ func trigger_game_over() -> void:
 		await game_over_overlay.play_and_wait()
 
 	_complete_game_over_return_to_menu()
+
+
+func _try_artifact_revival() -> bool:
+	var revived_hp: int = GameState.consume_artifact_revival()
+	if revived_hp <= 0:
+		return false
+
+	player.set_current_hp(revived_hp)
+	battle_has_ended = false
+	game_over_in_progress = false
+	_set_combat_input_locked(false)
+	update_ui()
+	print("[ARTIFACT] Examen Recuperatorio activo: revive con %d HP" % revived_hp)
+	return true
 
 
 func _complete_game_over_return_to_menu() -> void:
@@ -1278,8 +1408,15 @@ func complete_first_battle_and_return_to_map() -> void:
 	_return_to_map()
 
 
+func _apply_artifact_end_of_combat_rewards() -> void:
+	if artifact_heal_after_combat > 0:
+		GameState.heal_player(artifact_heal_after_combat)
+		player.load_hp_from_run_state()
+		print("[ARTIFACT REWARD] Cura fin de combate +%d HP" % artifact_heal_after_combat)
+
+
 func _grant_combat_gold_reward() -> int:
-	var reward_amount: int = _get_combat_gold_reward_amount()
+	var reward_amount: int = _get_combat_gold_reward_amount() + artifact_gold_bonus_after_combat
 	GameState.dinero += reward_amount
 	GameState.save_game()
 	update_ui()
@@ -2466,10 +2603,47 @@ func _finish_discard_selection_without_cards(mode: String = "", penalty_damage: 
 
 func _gain_player_block(amount: int) -> void:
 	player.gain_block(amount)
+	if amount > 0 and artifact_draw_on_block:
+		var drawn_cards := deck_manager.draw_cards(1)
+		if not drawn_cards.is_empty():
+			_show_hand()
+
+
+func _apply_artifact_draw_bonus(drawn_count: int) -> void:
+	if artifact_block_per_draw <= 0 or drawn_count <= 0:
+		return
+
+	player.gain_block(artifact_block_per_draw * drawn_count)
+
+
+func _apply_artifact_copy_card_once() -> void:
+	if not artifact_copy_card_available or deck_manager.hand.is_empty():
+		return
+
+	artifact_copy_card_available = false
+	var source_card: CardData = deck_manager.hand.pick_random()
+	deck_manager.hand.append(_copy_combat_card(source_card))
+	deck_manager.print_deck_debug_counts()
+	_show_hand()
+
+
+func _copy_combat_card(card: CardData) -> CardData:
+	return CardData.new().setup(
+		card.card_name,
+		card.cost,
+		card.card_type,
+		card.value,
+		card.description,
+		card.effect_id,
+		card.rareza,
+		card.raw_effect_text,
+		card.image_path,
+		card.enemy_archetypes
+	)
 
 
 func _apply_player_attack(base_damage: int) -> void:
-	_apply_damage_to_current_enemy(player.get_attack_damage(base_damage))
+	_apply_damage_to_current_enemy(player.get_attack_damage(base_damage + artifact_attack_damage_bonus))
 
 
 func _apply_damage_to_current_enemy(amount: int) -> void:
@@ -2694,6 +2868,12 @@ func _apply_generic_state_effects_to_enemy(effect_text: String) -> void:
 
 
 func _apply_enemy_state_to_player(state_name: String, value: int, duration: int) -> void:
+	if artifact_immunity_states.has(state_name):
+		var blocked_state_label: String = state_name.replace("_", " ").capitalize()
+		battle_visuals.show_player_speech("Inmune a %s" % blocked_state_label)
+		print("[ARTIFACT] Inmunidad bloqueó el estado:", state_name)
+		return
+
 	if clear_mind_blocks_debuff_this_combat:
 		clear_mind_blocks_debuff_this_combat = false
 		var state_label: String = state_name.replace("_", " ").capitalize()
@@ -2730,7 +2910,8 @@ func _draw_from_effect_text(effect_text: String) -> void:
 	if amount <= 0:
 		return
 
-	deck_manager.draw_cards(amount)
+	var drawn_cards := deck_manager.draw_cards(amount)
+	_apply_artifact_draw_bonus(drawn_cards.size())
 	_show_hand()
 
 

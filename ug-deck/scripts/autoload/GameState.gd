@@ -3,8 +3,10 @@ extends Node
 
 const SAVE_FILE_PATH := "user://savegame.save"
 const BASE_PLAYER_HP := 70
+const BASE_PLAYER_ENERGY := 3
 
 const PlayerCardLoader := preload("res://scripts/PlayerCardLoader.gd")
+const ArtifactLoader := preload("res://scripts/ArtifactLoader.gd")
 
 # --- DATOS DEL MAPA PROCEDURAL ---
 var map_data: Dictionary = {}
@@ -14,6 +16,8 @@ var dinero: int = 150
 var artilugios: Array[String] = []
 var vida_actual: int = BASE_PLAYER_HP
 var vida_maxima: int = BASE_PLAYER_HP
+var energia_maxima: int = BASE_PLAYER_ENERGY
+var revive_artifact_used := false
 var run_started: bool = false
 var zona_actual: int = 1
 var rareza_recompensa_actual: String = "Ingresante"
@@ -24,9 +28,10 @@ var run_deck_initialized := false
 var shop_removal_count := 0
 var temporary_energy_battles_remaining := 0
 var clear_mind_pending := false
+var INFO_ARTILUGIOS: Dictionary = ArtifactLoader.load_info_artilugios()
 
 
-const INFO_ARTILUGIOS = {
+const INFO_ARTILUGIOS_LEGACY = {
 	"Termo de Mate Supremo": {
 		"tipo": "inmediato", 
 		"efecto": "energia_max", 
@@ -51,8 +56,17 @@ const INFO_ARTILUGIOS = {
 }
 func _ready() -> void:
 	reset_run_progress()
+
+func _load_artifact_info_catalog() -> Dictionary:
+	var catalog: Dictionary = ArtifactLoader.load_info_artilugios()
+	for artifact_name_variant in INFO_ARTILUGIOS_LEGACY.keys():
+		var artifact_name: String = String(artifact_name_variant)
+		if not catalog.has(artifact_name):
+			catalog[artifact_name] = INFO_ARTILUGIOS_LEGACY[artifact_name]
+	return catalog
 	
 func reset_run_progress() -> void:
+	INFO_ARTILUGIOS = _load_artifact_info_catalog()
 	map_data.clear()
 	nodo_actual_id = -1
 	nodos_completados.clear()
@@ -60,6 +74,8 @@ func reset_run_progress() -> void:
 	artilugios.clear()
 	vida_maxima = BASE_PLAYER_HP
 	vida_actual = vida_maxima
+	energia_maxima = BASE_PLAYER_ENERGY
+	revive_artifact_used = false
 	run_started = false
 	zona_actual = 1
 	rareza_recompensa_actual = "Ingresante"
@@ -97,6 +113,60 @@ func increase_max_hp(amount: int, heal_too: bool = false) -> void:
 		heal_player(amount)
 	else:
 		set_player_hp(vida_actual)
+
+func increase_max_energy(amount: int) -> void:
+	energia_maxima = maxi(energia_maxima + amount, 1)
+
+func add_artifact_to_run(artifact_name: String) -> bool:
+	var clean_name: String = artifact_name.strip_edges()
+	if clean_name.is_empty():
+		return false
+
+	if not artilugios.has(clean_name):
+		artilugios.append(clean_name)
+
+	if INFO_ARTILUGIOS.has(clean_name):
+		var info: Dictionary = INFO_ARTILUGIOS[clean_name]
+		if String(info.get("efecto", "")) == "revivir":
+			revive_artifact_used = false
+		if String(info.get("tipo", "")) == "inmediato":
+			_apply_artifact_immediate_effect(clean_name, info)
+
+	return true
+
+func consume_artifact_revival() -> int:
+	if revive_artifact_used:
+		return 0
+
+	for artifact_name: String in artilugios:
+		if not INFO_ARTILUGIOS.has(artifact_name):
+			continue
+
+		var info: Dictionary = INFO_ARTILUGIOS[artifact_name]
+		if String(info.get("efecto", "")) != "revivir":
+			continue
+
+		revive_artifact_used = true
+		artilugios.erase(artifact_name)
+		save_game()
+		return int(info.get("valor", 10))
+
+	return 0
+
+func _apply_artifact_immediate_effect(artifact_name: String, info: Dictionary) -> void:
+	var effect_id: String = String(info.get("efecto", ""))
+	var value: int = int(info.get("valor", 0))
+	match effect_id:
+		"energia_max":
+			increase_max_energy(value)
+			if artifact_name == "Silla Rota del Aula":
+				increase_max_hp(-5, false)
+		"hp_max", "vida_max":
+			increase_max_hp(value, true)
+		"oro_inicial":
+			dinero += value
+		_:
+			pass
 
 func add_temporary_energy_battles(amount: int) -> void:
 	temporary_energy_battles_remaining += maxi(amount, 0)
@@ -329,6 +399,8 @@ func save_game() -> void:
 		"artilugios": artilugios,
 		"vida_actual": vida_actual,
 		"vida_maxima": vida_maxima,
+		"energia_maxima": energia_maxima,
+		"revive_artifact_used": revive_artifact_used,
 		"run_started": run_started,
 		"zona_actual": zona_actual,
 		"rareza_recompensa_actual": rareza_recompensa_actual,
@@ -383,6 +455,8 @@ func load_game() -> bool:
 
 	vida_actual = int(data.get("vida_actual", BASE_PLAYER_HP))
 	vida_maxima = int(data.get("vida_maxima", BASE_PLAYER_HP))
+	energia_maxima = int(data.get("energia_maxima", BASE_PLAYER_ENERGY))
+	revive_artifact_used = bool(data.get("revive_artifact_used", false))
 	run_started = bool(data.get("run_started", false))
 	zona_actual = int(data.get("zona_actual", 1))
 	rareza_recompensa_actual = String(data.get("rareza_recompensa_actual", "Ingresante"))
