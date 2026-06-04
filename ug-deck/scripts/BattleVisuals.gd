@@ -3,7 +3,7 @@ class_name BattleVisuals
 
 const PLAYER_IMAGE_PATH := "res://assets/characters/protagonista mejorado.png"
 const ENEMY_IMAGE_PATH := "res://assets/characters/enemigo 1 mejorado.png"
-const DEFAULT_ENEMY_SCALE := Vector2(0.7, 0.7)
+const DEFAULT_ENEMY_SCALE := Vector2(0.44, 0.44)
 const CHARACTER_STATUS_BAR_SCRIPT := preload("res://scripts/ui/CharacterStatusBar.gd")
 const COMBAT_CHARACTER_ANIMATOR_SCRIPT := preload("res://scripts/CombatCharacterAnimator.gd")
 const ANIMATION_REFERENCE_VISUAL_ID := "tom_apostol"
@@ -43,7 +43,7 @@ func _ready() -> void:
 		player_anim_player.play("idle")
 
 
-func set_player_visual(visual_id: String, sprite_scale: Vector2 = Vector2(0.18, 0.18), sprite_offset: Vector2 = Vector2.ZERO) -> void:
+func set_player_visual(visual_id: String, sprite_scale: Vector2 = Vector2(0.11, 0.11), sprite_offset: Vector2 = Vector2.ZERO) -> void:
 	if player_animator == null:
 		_setup_character_animators()
 
@@ -95,7 +95,7 @@ func show_multi_enemy_group(image_paths: Variant, names: Array, hps: Array, max_
 		if texture != null:
 			var sprite := Sprite2D.new()
 			sprite.texture = texture
-			sprite.position = Vector2(735 + index * 105, 245)
+			sprite.position = Vector2(735 + index * 105, 303)
 			sprite.scale = _get_multi_enemy_sprite_scale(sprite_scales, index)
 			add_child(sprite)
 			multi_enemy_sprites.append(sprite)
@@ -108,7 +108,7 @@ func show_multi_enemy_group(image_paths: Variant, names: Array, hps: Array, max_
 			multi_enemy_animators.append(null)
 
 		var status_bar: CharacterStatusBar = CHARACTER_STATUS_BAR_SCRIPT.new()
-		status_bar.position = Vector2(680 + index * 105, 310)
+		status_bar.position = Vector2(680 + index * 105, 368)
 		status_bar.custom_minimum_size = Vector2(118, 50)
 		status_bar.size = status_bar.custom_minimum_size
 		add_child(status_bar)
@@ -117,7 +117,7 @@ func show_multi_enemy_group(image_paths: Variant, names: Array, hps: Array, max_
 		var label := Label.new()
 		label.text = "%s\n%d/%d" % [names[index], hps[index], max_hp]
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.position = Vector2(680 + index * 105, 115)
+		label.position = Vector2(680 + index * 105, 173)
 		label.size = Vector2(110, 52)
 		add_child(label)
 		multi_enemy_labels.append(label)
@@ -250,7 +250,7 @@ func _get_multi_enemy_image_path(image_paths: Variant, index: int) -> String:
 func _get_multi_enemy_sprite_scale(sprite_scales: Array, index: int) -> Vector2:
 	if index < sprite_scales.size() and typeof(sprite_scales[index]) == TYPE_VECTOR2:
 		return sprite_scales[index]
-	return Vector2(0.18, 0.18)
+	return Vector2(0.11, 0.11)
 
 
 func _get_multi_enemy_visual_id(visual_ids: Array, index: int) -> String:

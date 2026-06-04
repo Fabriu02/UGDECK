@@ -22,9 +22,17 @@ const NORMAL_NODE_SIZE := Vector2(80, 80)
 const FINAL_NODE_SIZE := Vector2(200, 200)
 const ZONE_LABEL_SIZE := Vector2(180, 34)
 const ZONE_LABEL_TOP_OFFSET := 52.0
+const ZONE_SPRITE_BASE_PATH := "res://assets/backgrounds/sprites zonas"
+const ZONE_ANIMATION_FRAME_DURATION := 0.12
+const ZONE_ANIMATION_SIZE := Vector2(880, 495)
+const ZONE_ANIMATION_TOP_OFFSET := 96.0
 
 var map_data: Dictionary
 var visual_nodes = {}
+var zone_animation_rects: Array[TextureRect] = []
+var zone_animation_frames: Array = []
+var zone_animation_time: float = 0.0
+var zone_animation_frame_index: int = 0
 
 var nodo_actual_id: int = -1
 
@@ -69,6 +77,24 @@ func _ready():
 	await get_tree().process_frame
 	_generate_and_visualize()
 
+
+func _process(delta: float) -> void:
+	if zone_animation_rects.is_empty():
+		return
+
+	zone_animation_time += delta
+	if zone_animation_time < ZONE_ANIMATION_FRAME_DURATION:
+		return
+
+	zone_animation_time = fmod(zone_animation_time, ZONE_ANIMATION_FRAME_DURATION)
+	zone_animation_frame_index += 1
+
+	for index in range(zone_animation_rects.size()):
+		var frames: Array = zone_animation_frames[index]
+		if frames.is_empty():
+			continue
+
+		zone_animation_rects[index].texture = frames[zone_animation_frame_index % frames.size()]
 
 func _show_deck_viewer() -> void:
 	for child in deck_viewer_cards_container.get_children():
@@ -116,6 +142,7 @@ func _generate_and_visualize():
 	var generator = generador_mapa.new()
 	map_offset = _get_centered_map_offset(generator)
 
+	_add_zone_animations()
 	_add_zone_labels()
 
 	for node_data in map_data.nodes:
@@ -168,6 +195,88 @@ func _generate_and_visualize():
 	_actualizar_estado_visual()
 	_actualizar_hud()
 	
+
+func _add_zone_animations() -> void:
+	_clear_zone_animations()
+
+	for zone_index in range(generador_mapa.GENERATED_ZONE_COUNT):
+		var zone_number: int = zone_index + 1
+		var frames: Array[Texture2D] = _load_zone_animation_frames(zone_number)
+		if frames.is_empty():
+			continue
+
+		var start_column: int = generador_mapa.get_zone_start_column(zone_index)
+		var end_column: int = start_column + generador_mapa.COLUMNS_PER_ZONE - 1
+		var zone_center_x: float = map_offset.x + ((start_column + end_column) * 0.5 * x_spacing)
+		var animation_rect: TextureRect = TextureRect.new()
+		animation_rect.name = "Zone%dAnimation" % zone_number
+		animation_rect.texture = frames[0]
+		animation_rect.custom_minimum_size = ZONE_ANIMATION_SIZE
+		animation_rect.size = ZONE_ANIMATION_SIZE
+		animation_rect.position = Vector2(zone_center_x - (ZONE_ANIMATION_SIZE.x * 0.5), map_offset.y - ZONE_ANIMATION_TOP_OFFSET)
+		animation_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		animation_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		animation_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		animation_rect.modulate = Color(1.0, 1.0, 1.0, 0.82)
+		animation_rect.show_behind_parent = true
+		animation_rect.z_index = -10
+		$ScrollContainer/contenidomapa.add_child(animation_rect)
+		zone_animation_rects.append(animation_rect)
+		zone_animation_frames.append(frames)
+
+	set_process(not zone_animation_rects.is_empty())
+
+
+func _clear_zone_animations() -> void:
+	for animation_rect in zone_animation_rects:
+		if is_instance_valid(animation_rect):
+			animation_rect.queue_free()
+
+	zone_animation_rects.clear()
+	zone_animation_frames.clear()
+	zone_animation_time = 0.0
+	zone_animation_frame_index = 0
+	set_process(false)
+
+
+func _load_zone_animation_frames(zone_number: int) -> Array[Texture2D]:
+	var frames: Array[Texture2D] = []
+	var zone_path: String = "%s/zona %d" % [ZONE_SPRITE_BASE_PATH, zone_number]
+	var dir: DirAccess = DirAccess.open(zone_path)
+	if dir == null:
+		push_warning("No se encontro la carpeta de sprites para zona %d: %s" % [zone_number, zone_path])
+		return frames
+
+	var frame_paths: Array[String] = []
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	while not file_name.is_empty():
+		if not dir.current_is_dir() and file_name.get_extension().to_lower() == "png":
+			frame_paths.append(zone_path.path_join(file_name))
+		file_name = dir.get_next()
+	dir.list_dir_end()
+
+	frame_paths.sort_custom(_compare_zone_sprite_paths)
+	for frame_path in frame_paths:
+		var texture_resource: Resource = load(frame_path)
+		if texture_resource is Texture2D:
+			frames.append(texture_resource as Texture2D)
+
+	return frames
+
+
+func _compare_zone_sprite_paths(a: String, b: String) -> bool:
+	return _get_zone_sprite_number(a) < _get_zone_sprite_number(b)
+
+
+func _get_zone_sprite_number(path: String) -> int:
+	var base_name: String = path.get_file().get_basename()
+	var sprite_marker_position: int = base_name.find("sprite")
+	if sprite_marker_position == -1:
+		return 0
+
+	var number_text: String = base_name.substr(sprite_marker_position + "sprite".length()).strip_edges()
+	return number_text.to_int()
 
 func _add_zone_labels() -> void:
 	for zone_index in range(generador_mapa.GENERATED_ZONE_COUNT):
