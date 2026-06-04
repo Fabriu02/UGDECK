@@ -99,6 +99,7 @@ func set_professor_deck(
 
 
 func start_turn() -> void:
+	block = 0
 	current_energy = max_energy
 
 

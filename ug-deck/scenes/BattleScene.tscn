@@ -202,14 +202,6 @@ offset_right = 1080.0
 offset_bottom = 88.0
 text = "Intencion"
 
-[node name="HandTitleLabel" type="Label" parent="UI" unique_id=1814040682]
-offset_left = 190.0
-offset_top = 384.0
-offset_right = 960.0
-offset_bottom = 408.0
-text = "Cartas disponibles"
-horizontal_alignment = 1
-
 [node name="HandContainer" type="HBoxContainer" parent="UI" unique_id=264410624]
 offset_left = 190.0
 offset_top = 416.0
@@ -462,5 +454,4 @@ grow_vertical = 2
 text = "COMIENZA EL COMBATE"
 horizontal_alignment = 1
 vertical_alignment = 1
-
 
