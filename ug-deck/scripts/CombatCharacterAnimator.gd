@@ -231,11 +231,22 @@ func _add_spritesheet_animation(frames: SpriteFrames, animation_name: String, pa
 	frames.set_animation_speed(animation_name, animation_fps)
 	frames.set_animation_loop(animation_name, bool(ANIMATION_SETTINGS[animation_name]["loop"]))
 
+	var image := texture.get_image()
+
 	for frame_index in range(FRAME_COLUMNS):
-		var atlas := AtlasTexture.new()
-		atlas.atlas = texture
-		atlas.region = Rect2(frame_index * frame_width, 0, frame_width, texture_height)
-		frames.add_frame(animation_name, atlas)
+		var frame_rect := Rect2i(frame_index * frame_width, 0, frame_width, texture_height)
+		var frame_image: Image = image.get_region(frame_rect)
+		var used_rect: Rect2i = frame_image.get_used_rect()
+		
+		var aligned_frame := image.get_region(Rect2i(0, 0, frame_width, texture_height))
+		aligned_frame.fill(Color(0, 0, 0, 0))
+		
+		if used_rect.size.x > 0 and used_rect.size.y > 0:
+			var new_x: int = int((frame_width - used_rect.size.x) / 2.0)
+			aligned_frame.blit_rect(frame_image, used_rect, Vector2i(new_x, used_rect.position.y))
+			
+		var tex := ImageTexture.create_from_image(aligned_frame)
+		frames.add_frame(animation_name, tex)
 
 
 func _canonical_animation_name(animation_name: String) -> String:
