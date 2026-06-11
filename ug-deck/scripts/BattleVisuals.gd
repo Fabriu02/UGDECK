@@ -270,7 +270,7 @@ func _get_multi_enemy_max_hp(index: int, hps: Array, max_hps: Array) -> int:
 
 
 func _try_load_texture(path: String, sprite: Sprite2D, placeholder: Label) -> void:
-	if not FileAccess.file_exists(path):
+	if not ResourceLoader.exists(path):
 		sprite.visible = false
 		placeholder.visible = true
 		return
@@ -409,7 +409,7 @@ func _get_animation_reference_render_size() -> Vector2:
 
 func _load_visual_idle_frame_size(visual_id: String) -> Vector2:
 	var path := "res://assets/sprites_personajes/%s/idle_%s.png" % [visual_id, visual_id]
-	if not FileAccess.file_exists(path):
+	if not ResourceLoader.exists(path):
 		return Vector2.ZERO
 
 	var texture := load(path) as Texture2D

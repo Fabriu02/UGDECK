@@ -75,8 +75,16 @@ func _load_zone_animation_frames(zone_number: int) -> Array[Texture2D]:
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 	while not file_name.is_empty():
-		if not dir.current_is_dir() and file_name.get_extension().to_lower() == "png":
-			frame_paths.append(zone_path.path_join(file_name))
+		if not dir.current_is_dir():
+			if file_name.get_extension().to_lower() == "png":
+				var full_path := zone_path.path_join(file_name)
+				if not frame_paths.has(full_path):
+					frame_paths.append(full_path)
+			elif file_name.ends_with(".png.import"):
+				var resource_name := file_name.replace(".import", "")
+				var full_path := zone_path.path_join(resource_name)
+				if not frame_paths.has(full_path):
+					frame_paths.append(full_path)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 

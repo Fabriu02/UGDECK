@@ -169,10 +169,6 @@ func get_animation_frame_size(animation_name: String = "idle") -> Vector2:
 
 func _build_sprite_frames(character_visual_id: String) -> SpriteFrames:
 	var folder_path := "%s/%s" % [SPRITES_ROOT, character_visual_id]
-	var dir := DirAccess.open(folder_path)
-	if dir == null:
-		_warn_once("missing_folder_%s" % character_visual_id, "CombatCharacterAnimator: no existe carpeta visual '%s'." % folder_path)
-		return null
 
 	var frames := SpriteFrames.new()
 	if frames.has_animation("default"):
@@ -197,7 +193,7 @@ func _build_sprite_frames(character_visual_id: String) -> SpriteFrames:
 func _find_spritesheet_path(folder_path: String, character_visual_id: String, animation_name: String) -> String:
 	for prefix in FILE_PREFIXES.get(animation_name, [animation_name]):
 		var path := "%s/%s_%s.png" % [folder_path, prefix, character_visual_id]
-		if FileAccess.file_exists(path):
+		if ResourceLoader.exists(path):
 			return path
 	return ""
 
