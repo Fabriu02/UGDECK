@@ -30,8 +30,7 @@ func _ready() -> void:
 
 func _on_continuar_pressed() -> void:
 	if GameState.load_game():
-		await get_tree().create_timer(0.08).timeout
-		get_tree().change_scene_to_file(MAP_SCENE_PATH)
+		SceneTransition.change_scene(MAP_SCENE_PATH)
 	else:
 		_show_feedback("Error cargando partida")
 
@@ -39,14 +38,12 @@ func _on_continuar_pressed() -> void:
 func _on_jugar_pressed() -> void:
 	GameState.delete_saved_game()
 	GameState.start_new_run()
-	await get_tree().create_timer(0.08).timeout
-	get_tree().change_scene_to_file(MAP_SCENE_PATH)
+	SceneTransition.change_scene(MAP_SCENE_PATH)
 
 
 func _on_opciones_pressed() -> void:
 	# MODIFICADO: Quitamos los prints y el feedback, y agregamos el cambio de escena
-	await get_tree().create_timer(0.08).timeout
-	get_tree().change_scene_to_file(OPTIONS_SCENE_PATH)
+	SceneTransition.change_scene(OPTIONS_SCENE_PATH)
 
 
 func _on_salir_pressed() -> void:

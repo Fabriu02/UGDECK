@@ -18,9 +18,14 @@ var _full_card_image: TextureRect = null
 @onready var margin_container: MarginContainer = $MarginContainer
 
 
+var _hover_tween: Tween
+
 func _ready() -> void:
 	pressed.connect(_on_pressed)
-
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	
+	resized.connect(func(): pivot_offset = Vector2(size.x / 2.0, size.y))
 
 func setup(data: CardData) -> void:
 	card_data = data
@@ -99,3 +104,19 @@ func _build_card_text(data: CardData) -> String:
 		parts.append(data.description)
 
 	return "\n\n".join(parts)
+
+
+func _on_mouse_entered() -> void:
+	if _hover_tween and _hover_tween.is_valid():
+		_hover_tween.kill()
+	_hover_tween = create_tween()
+	_hover_tween.tween_property(self, "scale", Vector2(1.15, 1.15), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	z_index = 10
+
+
+func _on_mouse_exited() -> void:
+	if _hover_tween and _hover_tween.is_valid():
+		_hover_tween.kill()
+	_hover_tween = create_tween()
+	_hover_tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	z_index = 0

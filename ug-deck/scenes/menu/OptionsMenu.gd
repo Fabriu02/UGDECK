@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func _on_volver_pressed() -> void:
 	# Volvemos al menú principal
-	get_tree().change_scene_to_file("res://scenes/menu/MainMenu.tscn")
+	SceneTransition.change_scene("res://scenes/menu/MainMenu.tscn")
 
 func _on_pantalla_toggled(toggled_on: bool) -> void:
 	# Cambia entre pantalla completa y modo ventana

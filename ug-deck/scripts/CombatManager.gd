@@ -366,10 +366,10 @@ func start_battle() -> void:
 	# -------------------------------------------------
 	_apply_clear_mind_if_pending()
 	
-	if current_enemy_name == FOURTH_ENEMY_NAME:
+	if current_enemy_name in [FIRST_ENEMY_NAME, SECOND_ENEMY_NAME, THIRD_ENEMY_NAME, FOURTH_ENEMY_NAME]:
 		var presentation_scene = load("res://scripts/ui/BossPresentationOverlay.gd").new()
 		add_child(presentation_scene)
-		presentation_scene.play_presentation()
+		presentation_scene.play_presentation(current_enemy_name)
 		await presentation_scene.presentation_finished
 		
 	_set_combat_input_locked(true)

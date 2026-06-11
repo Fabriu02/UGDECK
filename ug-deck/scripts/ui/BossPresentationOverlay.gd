@@ -6,9 +6,6 @@ signal presentation_finished
 var color_rect: ColorRect
 var texture_rect: TextureRect
 
-const IMAGE_1_PATH = "res://assets/Presentaciones/Eloni1.png"
-const IMAGE_2_PATH = "res://assets/Presentaciones/Eloni2.png"
-
 func _ready() -> void:
 	layer = 100 # Ensure it's on top of everything
 	
@@ -25,12 +22,34 @@ func _ready() -> void:
 	texture_rect.modulate.a = 0.0 # Start transparent
 	add_child(texture_rect)
 
-func play_presentation() -> void:
-	var img1 = load(IMAGE_1_PATH)
-	var img2 = load(IMAGE_2_PATH)
+func play_presentation(boss_name: String) -> void:
+	var path1 := ""
+	var path2 := ""
+	
+	match boss_name:
+		"El Oni":
+			path1 = "res://assets/Presentaciones/Eloni1.png"
+			path2 = "res://assets/Presentaciones/Eloni2.png"
+		"Tom Apostol":
+			path1 = "res://assets/Presentaciones/Tom apostol 1.png"
+			path2 = "res://assets/Presentaciones/Tom apostol 2.png"
+		"Pepo":
+			path1 = "res://assets/Presentaciones/Pepo 1.png"
+			path2 = "res://assets/Presentaciones/Pepo 2.png"
+		"Tomás Khum":
+			path1 = "res://assets/Presentaciones/Thomas 1.png"
+			path2 = "res://assets/Presentaciones/Thomas 2.png"
+		_:
+			push_error("BossPresentationOverlay: Boss desconocido %s" % boss_name)
+			presentation_finished.emit()
+			queue_free()
+			return
+			
+	var img1 = load(path1)
+	var img2 = load(path2)
 	
 	if not img1 or not img2:
-		push_error("BossPresentationOverlay: Could not load El Oni images!")
+		push_error("BossPresentationOverlay: No se encontraron imagenes para %s" % boss_name)
 		presentation_finished.emit()
 		queue_free()
 		return
