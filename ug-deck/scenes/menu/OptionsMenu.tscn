@@ -70,16 +70,10 @@ theme_override_colors/font_focus_color = Color(0, 0, 0, 1)
 theme_override_colors/font_pressed_color = Color(0, 0, 0, 1)
 theme_override_colors/font_hover_color = Color(0, 0, 0, 1)
 theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 1)
-theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_focus_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_hover_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.4)
 theme_override_constants/icon_max_width = -60
 theme_override_font_sizes/font_size = 22
-theme_override_colors/button_checked_color = Color(1, 1, 1, 1)
-theme_override_colors/button_unchecked_color = Color(1.8247963, 1.8247963, 1.8247963, 1)
+theme_override_colors/button_checked_color = Color(0, 1, 0, 1)
+theme_override_colors/button_unchecked_color = Color(1.8247963, 0, 0, 1)
 text = "Pantalla Completa"
 
 [node name="VolumenLabel" type="Label" parent="TextureRect2/CenterContainer/VBoxContainer" unique_id=948671382]
