@@ -357,8 +357,8 @@ func start_battle() -> void:
 	print("[COMBAT START] HP cargada desde RunState:", GameState.vida_actual, "/", GameState.vida_maxima)
 	print("[NEXT COMBAT] HP cargada:", player.current_hp, "/", player.max_hp)
 	
-	# Poner música de combate
-	AudioManager.play_music("pencils_down", -8.0)
+	# Detener música anterior
+	AudioManager.stop_music()
 	deck_manager.create_starting_deck()
 	
 	# --- AGREGADO: REVISAMOS LA MOCHILA AL EMPEZAR ---
@@ -371,6 +371,19 @@ func start_battle() -> void:
 		add_child(presentation_scene)
 		presentation_scene.play_presentation(current_enemy_name)
 		await presentation_scene.presentation_finished
+		
+		# Poner música de jefe
+		var boss_music := "pencils_down"
+		match current_enemy_name:
+			FIRST_ENEMY_NAME: boss_music = "integrar_por_partes"
+			SECOND_ENEMY_NAME: boss_music = "pipo"
+			THIRD_ENEMY_NAME: boss_music = "pentagono_final_boss"
+			FOURTH_ENEMY_NAME: boss_music = "peponi"
+		
+		AudioManager.play_music(boss_music, -8.0)
+	else:
+		# Combate normal
+		AudioManager.play_music("pencils_down", -8.0)
 		
 	_set_combat_input_locked(true)
 	await _play_combat_announcement("COMIENZA EL COMBATE")
@@ -1791,6 +1804,8 @@ func _animate_drawn_cards(drawn_cards: Array[CardData]) -> void:
 		return
 
 	await get_tree().process_frame
+	if not is_inside_tree():
+		return
 
 	var existing_card_count: int = hand_container.get_child_count()
 	var final_card_count: int = existing_card_count + drawn_cards.size()
@@ -1808,6 +1823,8 @@ func _animate_drawn_cards(drawn_cards: Array[CardData]) -> void:
 		animated_cards.append(card_ui)
 
 	await get_tree().process_frame
+	if not is_inside_tree():
+		return
 
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
@@ -1850,6 +1867,8 @@ func _animate_drawn_cards(drawn_cards: Array[CardData]) -> void:
 
 
 func _get_card_draw_start_position(card_ui: CardUI, card_index: int = 0, card_count: int = 1) -> Vector2:
+	if not is_inside_tree():
+		return Vector2.ZERO
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	var card_width: float = maxf(card_ui.size.x, card_ui.custom_minimum_size.x)
 	var spacing: float = 24.0

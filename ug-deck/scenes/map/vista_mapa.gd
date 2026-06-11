@@ -75,7 +75,9 @@ func _ready():
 	nodo_actual_id = GameState.nodo_actual_id
 
 	await get_tree().process_frame
-	_generate_and_visualize()
+	await _generate_and_visualize()
+	await get_tree().process_frame
+	_centrar_camara_en_nodo(GameState.nodo_actual_id)
 
 
 func _process(delta: float) -> void:
@@ -427,3 +429,26 @@ func _aplicar_zoom(cambio: float):
 	if zoom_actual != viejo_zoom:
 		$ScrollContainer/contenidomapa.scale = Vector2(zoom_actual, zoom_actual)
 		$ScrollContainer/contenidomapa.custom_minimum_size = map_base_size * zoom_actual
+
+func _centrar_camara_en_nodo(node_id: int) -> void:
+	var target_node_id = node_id
+	
+	# Si no hay nodo actual (-1), enfocamos al comienzo del mapa
+	if target_node_id == -1 and not map_data.get("nodes", []).is_empty():
+		for node in map_data.nodes:
+			if node.position.x == 0:
+				target_node_id = node.id
+				break
+
+	if not visual_nodes.has(target_node_id):
+		return
+		
+	var boton = visual_nodes[target_node_id]
+	var center_pos = boton.position + (boton.size / 2.0)
+	var scroll = $ScrollContainer
+	var half_screen = scroll.size / 2.0
+	
+	var target_scroll = (center_pos * zoom_actual) - half_screen
+	
+	scroll.scroll_horizontal = int(target_scroll.x)
+	scroll.scroll_vertical = int(target_scroll.y)

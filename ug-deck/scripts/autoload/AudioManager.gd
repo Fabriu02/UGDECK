@@ -23,6 +23,10 @@ var sounds: Dictionary = {
 
 var music: Dictionary = {
 	"pencils_down": preload("res://assets/musica/Pencils_Down.mp3"),
+	"integrar_por_partes": preload("res://assets/musica/integrar por partes.mp3"),
+	"pentagono_final_boss": preload("res://assets/musica/pentagono_final_boss.mp3"),
+	"peponi": preload("res://assets/musica/peponi.mp3"),
+	"pipo": preload("res://assets/musica/pipo.mp3"),
 }
 
 func _ready() -> void:
